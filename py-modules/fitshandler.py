@@ -1,13 +1,14 @@
 
-import fitsio
-from numpy import int as ndint
-from numpy import array,dot,inf,delete,sort,zeros,unravel_index,argmax
+from astropy.io import fits
+from numpy      import int as ndint
+from numpy      import array,dot,inf,delete,sort,zeros,unravel_index,argmax
 
 class fitsHandler(object): pass
 
 class Response(fitsHandler):
     def __init__(self, response):
-        self.ebounds     = [(elow,ehigh) for _,elow,ehigh in fitsio.read(response,ext=2)]
+        fitsio           = fits.open(response)
+        self.ebounds     = [(elow,ehigh) for _,elow,ehigh in fitsio[2].data]
         self.ebins       = []
         self.ebinAvg     = []
 
@@ -19,8 +20,8 @@ class Response(fitsHandler):
         row   = 5
 
         energies = []
-        nchannels = fitsio.read_header(response,ext=1)['DETCHANS']
-        data = list(fitsio.read(response,ext=1))
+        nchannels = fitsio[1].header['DETCHANS']
+        data = list(fitsio[1].data)
         for record in data:
             self.ebins.append(record[ehigh]-record[elow])
             self.ebinAvg.append((record[ehigh]+record[elow])/2.0)
@@ -109,7 +110,9 @@ class Response(fitsHandler):
 
 class Data(fitsHandler):
     def __init__(self, data):
-        data, h         = fitsio.read(data,header = True)
+        fitsio          = fits.open(data)
+        data            = fitsio[1].data
+        h               = fitsio[1].header
         self.exposure   = h['EXPOSURE']
         self.resp       = None
         try:
@@ -121,7 +124,7 @@ class Data(fitsHandler):
         self.oscales    = []
         self.oerrors    = []
 
-        CHANNEL = 0
+        #CHANNEL = 0
         COUNTS  = 1
         QUALITY = 2
         AREASCAL= 3
@@ -194,7 +197,7 @@ class Data(fitsHandler):
             if model != None:
                 sums = [0,0]
 
-            start = 0
+            #start = 0
             scale = 0
             count = 0
             trans = 0
@@ -222,7 +225,8 @@ class Data(fitsHandler):
 
 class Events(fitsHandler):
     def __init__(self, event_file):
-        self.events = sort(fitsio.read(event_file,columns=('x','y')))
+        fitsio      = fits.open(event_file)
+        self.events = sort(fitsio[1].data[:,['x','y']])
         xmax        = self.events[-1][0]
         ymax        = max((a[1] for a in self.events))
         self.map    = zeros((ymax,xmax),dtype=ndint)

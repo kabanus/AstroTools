@@ -1,11 +1,9 @@
 from glob import glob
-from plotInt import Iplot
 import os.path
 from model import _singleModel,modelExport
-from itertools import izip
 
 #Constants
-from numpy import pi,exp,isnan
+from numpy import pi,exp
 c   = 3*10**5  # km/s
 elec= 4.80320451*10**-10 #esu
 m_e = 9.10938356*10**-28 #gram
@@ -26,8 +24,8 @@ masses = { #keV
     'S' : 29868000
 }
 
-deflinepath = '/home/uperetz/Sync/linux_home/sources/py-modules/appdata/ionbyion/lines'
-
+deflinepath = os.path.dirname(os.path.realpath(__file__))+'/../appdata/ionbyion/lines'
+ 
 class Ion:
     def __init__(self ,mass):
         self.m = mass

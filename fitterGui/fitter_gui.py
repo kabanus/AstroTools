@@ -6,15 +6,14 @@ Created on Mar 15, 2013
 @author: kabanus
 '''
 if True or __name__ == "__main__":
-    from Tkinter import Tk,StringVar,IntVar,LEFT,TOP,Entry,Frame,N,S,E,W,Label,END,Button,BOTH,Canvas,Checkbutton
+    from Tkinter import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
     from tkFileDialog import askopenfilename
     import tkMessageBox as messagebox
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
     from fitter import Fitter
     from plotInt import Iplot,plt
-    from modelreader import modelReader
+    from modelReader import modelReader
     from simplewindows import runMsg
-    from entrywindows  import paramReader
     from parameterframe import parameterFrame
     from helperfunctions import make_frames
     from gui import Gui
@@ -164,14 +163,11 @@ if True or __name__ == "__main__":
                 return
             
             iparam = (index,param)
-            try:
-                error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
-            except KeyError: pass
-            
+
             try:
                 m = runMsg(self)
                 self.errors[iparam] = self.fitter.error(index,param)
-            except (ValueError,KeyError) as e:
+            except (ValueError,KeyError):
                 messagebox.showerror('No such parameter!','Check yourself')
                 return
             except KeyboardInterrupt: 
