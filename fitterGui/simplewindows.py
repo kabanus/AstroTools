@@ -1,4 +1,4 @@
-from Tkinter import Toplevel,Frame,Button,TOP,Label,LEFT,W,BOTH,Canvas,Scrollbar,RIGHT,BOTTOM,N,S
+from Tkinter import Toplevel,Frame,Button,TOP,Label,LEFT,BOTH,Canvas,N,S,W
 import tkMessageBox as messagebox
 from helperfunctions import updateFrame,genScrollCanvas
 
@@ -51,7 +51,7 @@ class Help(simpleWindow):
 
         canvas = Canvas(frame)
         self.canvasFrame,scrollbar = genScrollCanvas(self.root,frame,canvas)
-        canvas.grid(row=0,column=0)
+        canvas.grid(row=0,column=0,sticky=N+S)
         scrollbar.grid(row=0,column=1,rowspan=2,sticky=N+S)
         canvas.bind("<Configure>", self.updateFrame) 
         
@@ -99,7 +99,7 @@ class Help(simpleWindow):
         self.helplabel("c    : Switch to commandline.", "")
         self.helplabel("H    : You're looking at it.","")
 
-        Button(frame, text = 'OK', command = self.root.destroy).grid(row=1,column=0,columnspan=2)
+        Button(frame, text = 'OK', command = self.root.destroy).grid(row=1,column=0,columnspan=2,sticky=N+S)
         self.root.bind("<Key-Escape>",lambda event: self.root.destroy())
 
     def rpad(self,substring):
@@ -113,7 +113,6 @@ class Help(simpleWindow):
 
     def lpad(self,substring):
         if substring[0] == " ": 
-            os = substring
             substring = substring[1:]
             try: word = substring.index(" ")
             except ValueError:
@@ -140,7 +139,7 @@ class runMsg(simpleWindow):
     def __init__(self,parent,msg = "Running calculation"):
         simpleWindow.__init__(self,parent,"",'running',msg)
         Label(self.root, text = "Cancel from terminal with Ctrl-C").pack()
-        self.parent.dataCanvas.update_idletasks()
+        self.parent.root.update()
     def destroy(self):
         self.root.destroy()
 

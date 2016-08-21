@@ -1,6 +1,6 @@
 from Tkinter import Frame,N,S,E,W,Button,Label,BOTH,TOP,Canvas,Scrollbar
 from commandline import commandLine
-from plotInt import Iplot
+from astropy.convolution import boundary_wrap
 ALL = N+S+E+W
 
 def make_frames(self):
@@ -42,9 +42,11 @@ def genScrollCanvas(root,root_frame, canvas):
     canvas.configure(yscrollcommand=scrollbar.set)
     canvas.bind("<Configure>",updateFrame)
     canvas_frame = Frame(canvas)
-    canvas_frame.pack()
+    canvas_frame.pack(fill=BOTH)
+    #Catch both windows and linux
     root.bind("<Button-4>",onscroll(canvas,-1).do)
     root.bind("<Button-5>",onscroll(canvas,1).do)
+    root.bind("<MouseWheel>",onscroll(canvas,0).do)
     canvas.create_window((0,0),window=canvas_frame,anchor='nw')
     return canvas_frame,scrollbar
 
@@ -53,7 +55,10 @@ class onscroll(object):
         self.canvas = canvas
         self.direct = direction
     def do(self, event):
-        self.canvas.yview_scroll(self.direct,"units")
+        direct = self.direct
+        if not direct:
+            direct = -1*event.delta/120
+        self.canvas.yview_scroll(direct,"units")
 
 def updateFrame(event):
     event.widget.configure(scrollregion = event.widget.bbox('all'))

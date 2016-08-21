@@ -82,8 +82,7 @@ class lightCurve:
         if time > self.table[-1][0] or time < self.table[0][0]:
             raise lightCurve.lcOutOfBound()
         for i in range(0,len(self.table)):
-            if self.table[i][0] > time: return index
-            index = i
+            if self.table[i][0] > time: return i
 
     def dFvar(self):
         N  = len(self.table)

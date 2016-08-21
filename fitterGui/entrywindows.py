@@ -1,5 +1,5 @@
 
-from Tkinter import Entry,Toplevel,LEFT,Label
+from Tkinter import Entry,LEFT,Label
 import tkMessageBox as messagebox
 from plotInt import Iplot
 from simplewindows import simpleWindow
@@ -34,7 +34,6 @@ class ignoreReader(entryWindow):
 
     def parse(self, event):
         res = []
-        count = 0
         try:
             res = self.entry.get().split()
             channels = []
@@ -104,7 +103,7 @@ class Save(entryWindow):
             return
 
         try: entryWindow.__init__(self,parent,'data',"saver",title,30)
-        except AttributeError as e: return
+        except AttributeError: return
         self.saver = saver
         self.default_ext = default_ext
 

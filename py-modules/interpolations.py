@@ -7,7 +7,6 @@ class Curve:
     def __init__(self, curve, llength = 3):
         self.vector = sorted(deepcopy(curve),key = lambda x: x[0])     
         self.stats = []
-        fsum = 0
         for line in self.vector:
             if len(line) != llength: 
                 raise self.LengthError("Bad line length in line " + str(line))
@@ -107,8 +106,6 @@ class linear(Interpolation):
         last  = self.vector[index]
         line  = self.vector[index+1]
         slope = (line[1]-last[1])/float(line[0]-last[0])
-        #TODO fix error slope
-        err_slope = 0
         try: return [t,last[1]+slope*(t-last[0]), last[2]]
         except IndexError: return [t,last[1]+slope*(t-last[0])]
 

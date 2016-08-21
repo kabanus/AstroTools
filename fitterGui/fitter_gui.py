@@ -19,7 +19,7 @@ if True or __name__ == "__main__":
     from gui import Gui
     ALL = N+S+W+E
     Iplot.quiet()
-
+    
     class App(object):
         def __init__( self, h = 500, w = 800, b = 5 ):        
             self.root = Tk()
@@ -45,7 +45,7 @@ if True or __name__ == "__main__":
             self.paramLabels = {}
             self.ranfit      = False
             self.errors      = {}
-
+            
             make_frames(self)
             self.params = parameterFrame(self,self.canvasDataFrame)
             self.params.label()

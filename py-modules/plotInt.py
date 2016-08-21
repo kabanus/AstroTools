@@ -2,9 +2,9 @@
 
 import matplotlib.pyplot as plt
 plt.ion()
-class Iplot:
+class Iplot(object):
     block=False
-    class axis:
+    class axis(object):
         def __init__(self,sizer,labelr,ind):
             self.sizer  = sizer
             self.labelr = labelr

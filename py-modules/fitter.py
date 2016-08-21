@@ -1,9 +1,7 @@
 from plotInt import Iplot
-from astropy.io import fits
-from fitshandler import fitsHandler,Response,Data
+from fitshandler import Response,Data
 from scipy.optimize import curve_fit
 from itertools import izip
-import os
 
 CHANNEL = 0
 ENERGY  = 1
@@ -188,10 +186,8 @@ class Fitter(object):
             else: oldchi = tmp
             if not limit: raise self.errorNotConverging()
 
-        current = front  = self.chisq()
-        back    = bestchi
+        current = self.chisq()
         frontp  = self.current[iparam]
-
         while abs(abs(current - bestchi)-1) > epsilon and backp != frontp:
             next_calculation = (frontp+backp)/2.0
             self.setp({iparam:next_calculation})
@@ -201,10 +197,8 @@ class Fitter(object):
             if needfit: self.fit()
             current = self.chisq()
             if abs(current-bestchi) < 1:
-                back = current
                 backp = self.current[iparam]
             else:
-                front = current
                 frontp = self.current[iparam]
        
         result = self.current[iparam]

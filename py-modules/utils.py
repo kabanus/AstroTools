@@ -28,17 +28,17 @@ def decToSex(coord):
             s = sign*s
     return deg,int(m),s
 
-def timer(com,iter=1):
+def timer(com,iters=1):
     t = 0 
-    for _ in range(iter):
-         begin = clock()
-         com() 
-         t+= (clock()-begin)
-    return t/iter
+    for _ in range(iters):
+        begin = clock()
+        com() 
+        t+= (clock()-begin)
+    return t/iters
 
 def timelist (l):
     def check():
-        for x in l: pass
+        for _ in l: pass
     return check
 
 

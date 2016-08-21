@@ -3,7 +3,6 @@
 #the old school methods.
 #Based on Fortran programs given to me by shay. Fortran sucks.
 import interpolations 
-import matplotlib
 
 #Wraps a CCF and its swap. It does not inherit it, it contains two CCFs.
 class PICCF:
@@ -39,7 +38,7 @@ class CCF:
         self.interpolated= self.interp(curve2)
         if self.vector[ 0][0] > self.interpolated.vector[-1][0] or\
            self.vector[-1][0] < self.interpolated.vector[ 0][0]:
-           raise self.noCCFIntersect()
+            raise self.noCCFIntersect()
         self.firstlc = firstlc
    
     def __len__(self):
@@ -93,7 +92,6 @@ class CCF:
         if not  step:  step = abs(final)/float(max(
                             len(self.vector),len(self.interpolated.vector)))
         t = start
-        c = 0
         while t <= final:
             yield [t,self(t)]
             t += step
