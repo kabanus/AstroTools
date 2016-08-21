@@ -94,7 +94,6 @@ class commandLine(object):
             except (KeyError,IndexError):
                 messagebox.showerror('Failed to parse!',str(self.index)+':'+self.param+' is not a model parameter')
                 break
-            except self.parent.fitter.current.alreadyThawed: pass
             except ValueError as e:
                 passDoubleFreeze = "list.remove"
                 if e.message[:len(passDoubleFreeze)] != passDoubleFreeze:

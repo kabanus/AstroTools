@@ -87,7 +87,7 @@ class Fitter(object):
         return sum(((self.data.cts[i]-self.result[i])**2/self.data.errors[i]**2 for i in range(len(self.data.channels))))
 
     def reduced_chisq(self):
-        return self.chisq()/(len(self.data.channels)-len(self.current.getThawed()))
+        return self.chisq()/(len(self.data.channels)-len(self.getThawed()))
 
     def append(self, *args):
         for model in args:
@@ -138,6 +138,8 @@ class Fitter(object):
 
     def thaw(self, *params):
         self.current.thaw(*params)
+    def getThawed(self):
+        return self.current.getThawed()
     def freeze(self, *params):
         self.current.freeze(*params)
     def setp(self,pDict):
@@ -204,11 +206,10 @@ class Fitter(object):
             else:
                 front = current
                 frontp = self.current[iparam]
-        
+       
         result = self.current[iparam]
         self.thaw(iparam)
         self.calc(save)
-        print result,result-self.current[iparam]
         return result - self.current[iparam]
 
     _writePlot = lambda self,table: "\n".join((" ".join((str(x) for x in line)) for line in table))

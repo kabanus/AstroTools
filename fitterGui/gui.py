@@ -57,7 +57,7 @@ class Gui(object):
         self.parent.canvas.get_tk_widget().bind("<i>",lambda event: ignoreReader(self.parent))
         self.parent.canvas.get_tk_widget().bind("<z>",lambda event: zoomReader(self.parent))
         self.parent.canvas.get_tk_widget().bind("<s>",lambda event: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'))
-        self.parent.canvas.get_tk_widget().bind("<f>",lambda event: self.parent.runFit())
+        self.parent.canvas.get_tk_widget().bind("<F>",lambda event: self.parent.runFit())
         self.parent.canvas.get_tk_widget().bind("<m>",lambda event: self.parent.loadModel())
         self.parent.canvas.get_tk_widget().bind("<1>",lambda event: event.widget.focus_set())
         self.parent.canvas.get_tk_widget().bind("<c>",lambda event: self.parent.commandline.entry.focus_set())

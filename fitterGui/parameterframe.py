@@ -1,4 +1,4 @@
-from Tkinter import Label, Entry, LEFT, W, N, S, E, IntVar, Checkbutton,StringVar,Button
+from Tkinter import Label, Entry, LEFT, W, N, S, E, IntVar, Checkbutton,StringVar,Button,END
 from entrywindows import paramReader
 import tkMessageBox as messagebox
 ALL = W+N+S+E

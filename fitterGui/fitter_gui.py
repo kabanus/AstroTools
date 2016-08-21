@@ -196,7 +196,7 @@ if True or __name__ == "__main__":
                 self.refreshPlot()
             except (AttributeError,self.fitter.dataResponseMismatch): pass
             finally:
-                print "\a"
+                self.root.bell() 
                 m.destroy()
 
         def runFit(self):
@@ -220,7 +220,7 @@ if True or __name__ == "__main__":
                 messagebox.showerror('Failed fit!',e)
                 raise
             finally:
-                print "\a"
+                self.root.bell() 
                 m.destroy()
             try:
                 for index,param in thawed:

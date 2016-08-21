@@ -60,7 +60,7 @@ class Help(simpleWindow):
         self.helplabel("C,W,A: Channel, wavelength, energy on axes.", "")
         self.helplabel("d,r,t: Load data/response transmission.", "")
         self.helplabel("R,i,z: Rebin/ignore/zoom", "")
-        self.helplabel("m,f,s: load model/fit/save", "")
+        self.helplabel("m,F,s: load model/fit/save", "")
         self.helplabel("c    : Switch to commandline.", "")
         self.helplabel("H    : You're looking at it.","")
 

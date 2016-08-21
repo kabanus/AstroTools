@@ -128,7 +128,7 @@ class modelReader(object):
 
     def parse(self,event = None):
         model = self.entry.get()
-        models = model.replace('+(','+').replace(')+','+').replace('*(','+').replace(')*','+').replace('(','+').replace(')','+').replace('*','+').strip('+').split('+')
+        models = model.replace(" ","").replace('+(','+').replace(')+','+').replace('*(','+').replace(')*','+').replace('(','+').replace(')','+').replace('*','+').strip('+').split('+')
         for m in models: 
             if m not in MODELS:
                 if m == '':

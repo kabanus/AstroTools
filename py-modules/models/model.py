@@ -178,8 +178,10 @@ class _composite(Model):
             if key == '*':
                 for (check,param),_ in self.getParams():
                     if check != index: continue
+                    if param in self.thawed[index-1]: continue
                     self.thawed[index-1].append(param)
             else:
+                if key in self.thawed[index-1]: continue
                 self.thawed[index-1].append(key)
 
     def freeze(self, *args):
@@ -202,7 +204,9 @@ class _composite(Model):
             if key == '*':
                 self.thawed[index-1] = []
             else:
-                self.thawed[index-1].remove(key)
+                try:
+                    self.thawed[index-1].remove(key)
+                except ValueError: pass
 
     def initArgs(self):
         return [self.params[i][p] for i in range(len(self.thawed))for p in self.thawed[i]]
