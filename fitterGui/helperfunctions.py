@@ -1,6 +1,5 @@
 from Tkinter import Frame,N,S,E,W,Button,Label,BOTH,TOP,Canvas,Scrollbar
 from commandline import commandLine
-from astropy.convolution import boundary_wrap
 ALL = N+S+E+W
 
 def make_frames(self):

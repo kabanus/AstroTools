@@ -6,6 +6,29 @@ Created on Mar 15, 2013
 @author: kabanus
 '''
 if True or __name__ == "__main__":
+    import os
+    if os.name == 'nt':
+        #Windows ctrl-c handling
+        try:
+            import win32api
+            import thread
+            import ctypes
+            import imp
+            
+            basepath = imp.find_module('numpy')[1]
+            ctypes.CDLL(os.path.join(basepath,'core','libmmd.dll'))
+            ctypes.CDLL(os.path.join(basepath,'core','libifcoremd.dll'))
+            def handler(dwCtrlType, hook_sigint = thread.interrupt_main):
+                if dwCtrlType == 0: # CTRL_C_EVENT
+                    hook_sigint()
+                    return 1
+                return 0 # chain to the next handler
+            win32api.SetConsoleCtrlHandler(handler, 1)
+        except ImportError:
+            print("Warning: win32api module not found, you will not be able to Ctlr-C calculations. To fix\n" +
+                  "this try 'pip installPyWin32' from any terminal,  or download and  install binary  from\n" +
+                  "https://sourceforge.net/projects/pywin32/files/pywin32/.")
+
     from Tkinter import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
     from tkFileDialog import askopenfilename
     import tkMessageBox as messagebox
