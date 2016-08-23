@@ -14,6 +14,7 @@ class Fitter(object):
     class dataResponseMismatch(Exception): pass
     class noIgnoreBeforeLoad(Exception): pass
     class errorNotConverging(Exception): pass
+    class newBestFitFound(Exception): pass
 
     def __init__(self, data = None, resp = None):
         self.ptype     = CHANNEL
@@ -181,6 +182,8 @@ class Fitter(object):
             self.calc()
             if needfit: self.fit()
             tmp = self.chisq()
+            if tmp < bestchi:
+                raise self.newBestFitFound()
             if tmp == oldchi: 
                 limit -= 1
             else: oldchi = tmp
@@ -196,6 +199,8 @@ class Fitter(object):
             self.calc()
             if needfit: self.fit()
             current = self.chisq()
+            if current < bestchi:
+                raise self.newBestFitFound()
             if abs(current-bestchi) < 1:
                 backp = self.current[iparam]
             else:

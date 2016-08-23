@@ -187,27 +187,36 @@ if True or __name__ == "__main__":
             
             iparam = (index,param)
 
+            #Message construct used so beep is heard before message, and save return on each one.
             try:
                 m = runMsg(self)
+                err = ''
                 self.errors[iparam] = self.fitter.error(index,param)
             except (ValueError,KeyError):
-                messagebox.showerror('No such parameter!','Check yourself')
-                return
+                title, err = ('No such parameter!','Check yourself')
             except KeyboardInterrupt: 
-                messagebox.showerror('Halt',"Caught Keyboard")
-                return
+                title, err = ('Halt',"Caught Keyboard")
             except self.fitter.errorNotConverging:
-                messagebox.showerror('Error not converging!',"Statistic insensitve to parameter")
-                return 
+                title, err = ('Error not converging!',"Statistic insensitve to parameter")
+            except self.fitter.newBestFitFound:
+                title, err = ('Error not converging!',"Found new best fit! Space not convex.")
             except RuntimeError:
-                messagebox.showerror('Failed error calculation!',"Running fit with nothing thawed (at all)?")
-                return 
+                title, err = ('Failed error calculation!',"Running with nothing thawed (at all)?")
             finally:
-                self.fitter.thaw(iparam)
                 m.destroy()
+                self.ring()
+                if err:
+                    messagebox.showerror(title,err)
+                    return
             error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
             self.thawedDict[(index,param)][1].set('(%.2E)'%error)
             self.paramLabels[(index,param)][2].configure(relief='flat',state='disabled')
+
+        def ring(self):
+            #Windows
+            self.root.bell() 
+            #Anywhere else
+            print "\a"
 
         def calc(self):
             m = runMsg(self)
@@ -219,7 +228,7 @@ if True or __name__ == "__main__":
                 self.refreshPlot()
             except (AttributeError,self.fitter.dataResponseMismatch): pass
             finally:
-                self.root.bell() 
+                self.ring()
                 m.destroy()
 
         def runFit(self):
@@ -243,7 +252,7 @@ if True or __name__ == "__main__":
                 messagebox.showerror('Failed fit!',e)
                 raise
             finally:
-                self.root.bell() 
+                self.ring()
                 m.destroy()
             try:
                 for index,param in thawed:

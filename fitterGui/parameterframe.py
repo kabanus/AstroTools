@@ -62,9 +62,11 @@ class parameterFrame(object):
         self.parent.ranfit = False
 
     def label(self, delThawed = True):
-        for labels in self.parent.paramLabels.values():
+        while self.parent.paramLabels:
+            _,labels = self.parent.paramLabels.popitem()
             for label in labels: 
                 label.destroy()
+
         count = 1
         if self.parent.fitter.current == None: return
         if delThawed: self.parent.thawedDict = {}
