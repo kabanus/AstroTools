@@ -24,10 +24,11 @@ if True or __name__ == "__main__":
                     return 1
                 return 0 # chain to the next handler
             win32api.SetConsoleCtrlHandler(handler, 1)
-        except ImportError:
-            print("Warning: win32api module not found, you will not be able to Ctlr-C calculations. To fix\n" +
-                  "this try 'pip installPyWin32' from any terminal,  or download and  install binary  from\n" +
-                  "https://sourceforge.net/projects/pywin32/files/pywin32/.")
+        except (ImportError,WindowsError):
+            print("Warning: win32api  module  not found, you will  not be able to Ctlr-C  calculations. To fix\n" +
+                  "this try 'pip installPyWin32'  from  any   terminal,  or download and  install binary  from\n" +
+                  "https://sourceforge.net/projects/pywin32/files/pywin32/. This warning may also be generated\n"+
+                  "on Windows machines if numpy or something close is missing.")
 
     from Tkinter import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
     from tkFileDialog import askopenfilename
@@ -195,13 +196,13 @@ if True or __name__ == "__main__":
             except (ValueError,KeyError):
                 title, err = ('No such parameter!','Check yourself')
             except KeyboardInterrupt: 
-                title, err = ('Halt',"Caught Keyboard")
+                title, err = ('Halt',"Caught Keyboard - thawed parameters may have changed.")
             except self.fitter.errorNotConverging:
-                title, err = ('Error not converging!',"Statistic insensitve to parameter")
+                title, err = ('Error not converging!',"Statistic insensitive to parameter")
             except self.fitter.newBestFitFound:
                 title, err = ('Error not converging!',"Found new best fit! Space not convex.")
-            except RuntimeError:
-                title, err = ('Failed error calculation!',"Running with nothing thawed (at all)?")
+                self.params.resetErrors()
+                self.params.label(False)
             finally:
                 m.destroy()
                 self.ring()

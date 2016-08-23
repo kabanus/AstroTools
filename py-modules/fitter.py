@@ -126,7 +126,7 @@ class Fitter(object):
 
     def fit(self):
         model = self.current
-        args  = self.current.initArgs()
+        args  = self.initArgs()
        
         bestfit,self.errs = curve_fit(self.tofit,self.energies(),self.data.cts,
                                                   p0=args,sigma=self.data.errors)
@@ -139,6 +139,8 @@ class Fitter(object):
         self.current.thaw(*params)
     def getThawed(self):
         return self.current.getThawed()
+    def initArgs(self):
+        return self.current.initArgs()
     def freeze(self, *params):
         self.current.freeze(*params)
     def setp(self,pDict):
@@ -163,8 +165,10 @@ class Fitter(object):
 
     #epsilon is allowed deviation from '1' when comparing chisq
     def oneSidedError(self, index, param, direction, epsilon, acceleration):
-        save    = dict(izip(self.current.getThawed(),self.current.initArgs()))
         iparam  = (index,param)
+        thawed  = iparam in self.getThawed()
+        self.thaw(iparam)
+        save    = dict(izip(self.getThawed(),self.initArgs()))
         self.freeze(iparam)
         bestchi = self.chisq()
         backp   = self.current[iparam]
@@ -183,11 +187,15 @@ class Fitter(object):
             if needfit: self.fit()
             tmp = self.chisq()
             if tmp < bestchi:
+                if thawed: self.thaw(iparam)
                 raise self.newBestFitFound()
             if tmp == oldchi: 
                 limit -= 1
             else: oldchi = tmp
-            if not limit: raise self.errorNotConverging()
+            if not limit: 
+                if thawed: self.thaw(iparam)
+                self.calc(save)
+                raise self.errorNotConverging()
 
         current = self.chisq()
         frontp  = self.current[iparam]
@@ -200,6 +208,7 @@ class Fitter(object):
             if needfit: self.fit()
             current = self.chisq()
             if current < bestchi:
+                if thawed: self.thaw(iparam)
                 raise self.newBestFitFound()
             if abs(current-bestchi) < 1:
                 backp = self.current[iparam]
@@ -207,8 +216,8 @@ class Fitter(object):
                 frontp = self.current[iparam]
        
         result = self.current[iparam]
-        self.thaw(iparam)
         self.calc(save)
+        if thawed: self.thaw(iparam)
         return result - self.current[iparam]
 
     _writePlot = lambda self,table: "\n".join((" ".join((str(x) for x in line)) for line in table))

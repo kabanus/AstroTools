@@ -82,7 +82,7 @@ class Help(simpleWindow):
                        u"Once a fit is performed you can press this buttons on thawed parameters to compute the \u03C7\u00B2 "+
                        "based proper errors, though this may take a while depending on the amount of thawed parameters."+
                        " Once this is done the errors will be black and the button flattened (until you change "+
-                       "somthing/fit).\n\n","")
+                       "somthing/fit). Note if a new best fit is found this will reflect in the parameter window.\n\n","")
        
         self.helplabel("The command line","",16)
         self.helplabel("The command line on the bottom left is useful for batch inputting commands " +
