@@ -82,13 +82,15 @@ for m in models.exported:
 PARAMS = {'Table' : lambda: '"'+askopenfilename()+'"', 'function': lambda: getFunc().activate()}
 PARAMNAMES  = {'Table' : ('file'), 'function': ('expression')}
 class modelReader(object):
-    def __init__(self,parent):
+    def __init__(self,parent,gui = True):
         global currentReader
         currentReader = self
         self.border = parent.border
         self.width  = parent.width
         self.height = parent.height
         self.parent = parent
+
+        if not gui: return
         self.root   = Toplevel(self.parent.root)
         self.root.transient(self.parent.root)
         self.root.wm_geometry("+%d+%d" %(parent.root.winfo_rootx(), parent.root.winfo_rooty()))
@@ -127,7 +129,10 @@ class modelReader(object):
         return txt
 
     def parse(self,event = None):
-        model = self.entry.get()
+        try:
+            model = self.entry.get()
+        except AttributeError:
+            model = event
         models = model.replace(" ","").replace('+(','+').replace(')+','+').replace('*(','+').replace(')*','+').replace('(','+').replace(')','+').replace('*','+').strip('+').split('+')
         for m in models: 
             if m not in MODELS:
@@ -157,7 +162,8 @@ class modelReader(object):
         self.parent.fitter.append(model)
         self.parent.model = str(model)
         self.parent.modelLoaded() 
-        self.root.destroy()
+        try: self.root.destroy()
+        except AttributeError: pass
 
     def make_frames(self):
         self.main = Frame(self.root,width=self.width, height=self.height, bg = 'black')

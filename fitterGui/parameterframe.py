@@ -61,7 +61,13 @@ class parameterFrame(object):
             l3.configure(relief='raised',state='normal')
         self.parent.ranfit = False
 
-    def label(self, delThawed = True):
+    def relabel(self):
+        for iparam,value in self.parent.fitter.current.getParams():
+            entry = self.parent.paramLabels[iparam][1]
+            entry.delete(0,END)
+            entry.insert(0,str(value))
+
+    def draw(self):
         while self.parent.paramLabels:
             _,labels = self.parent.paramLabels.popitem()
             for label in labels: 
@@ -69,7 +75,7 @@ class parameterFrame(object):
 
         count = 1
         if self.parent.fitter.current == None: return
-        if delThawed: self.parent.thawedDict = {}
+        self.parent.thawedDict = {}
         for (index,param),value in sorted(self.parent.fitter.current.getParams()):
             l1 = Label(self.frame, text=str(index)+":"+param,width=6,justify = LEFT, font = ('courier',12),bg='aliceblue',anchor=N+W)
             l1.grid(sticky=ALL,row=count, column=0),
@@ -90,9 +96,6 @@ class parameterFrame(object):
             exec('l4 = Checkbutton(self.frame,variable=v, text="thawed", command=lambda: self.parent.toggleParam('+str(index)+',"'+param+
                             '"))') in locals(), globals()
             l4.grid(sticky=ALL,row=count,column=3)
-            if not delThawed:
-                v.set(self.parent.thawedDict[(index,param)][0].get())
-                i.set(self.parent.thawedDict[(index,param)][1].get())
             self.parent.thawedDict[(index,param)] = [v,i]
             self.parent.paramLabels[(index,param)]=(l1,l2,l3,l4)
             count += 1

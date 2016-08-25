@@ -79,7 +79,12 @@ class commandLine(object):
         if self.parent.fitter.current == None:
             messagebox.showerror('No model!', 'Please load model first')
             return
-        res = event.widget.get().split(',')
+        
+        try: 
+            res = event.widget.get().split(',')
+        except AttributeError:
+            res = event.split(',')
+            
         needReset = False
         for cmdstr in res:
             cmd = cmdstr.replace(' ','')
@@ -100,8 +105,10 @@ class commandLine(object):
                     messagebox.showerror('Failed to parse!',self.param+' is not a model parameter, missing index?')
                     break
             self.cmdHist.append(cmd.replace('thaw','thaw ').replace('freeze','freeze '))
-            event.widget.delete(0,len(cmdstr))
-            if res[-1] != cmdstr: event.widget.delete(0,1)
+            try:
+                event.widget.delete(0,len(cmdstr))
+                if res[-1] != cmdstr: event.widget.delete(0,1)
+            except AttributeError: pass
         if needReset:
             self.parent.params.resetErrors()
         self.parent.doAndPlot(self.parent.calc)

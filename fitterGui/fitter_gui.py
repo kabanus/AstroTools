@@ -30,17 +30,18 @@ if True or __name__ == "__main__":
                   "https://sourceforge.net/projects/pywin32/files/pywin32/. This warning may also be generated\n"+
                   "on Windows machines if numpy or something close is missing.")
 
-    from Tkinter import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
-    from tkFileDialog import askopenfilename
     import tkMessageBox as messagebox
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-    from fitter import Fitter
-    from plotInt import Iplot,plt
-    from modelReader import modelReader
-    from simplewindows import runMsg
-    from parameterframe import parameterFrame
+    from Tkinter         import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
+    from tkFileDialog    import askopenfilename
+    from fitter          import Fitter
+    from plotInt         import Iplot,plt
+    from modelReader     import modelReader
+    from simplewindows   import runMsg
+    from entrywindows    import ignoreReader
+    from parameterframe  import parameterFrame
     from helperfunctions import make_frames
-    from gui import Gui
+    from gui             import Gui
     ALL = N+S+W+E
     Iplot.quiet()
     
@@ -72,7 +73,7 @@ if True or __name__ == "__main__":
             
             make_frames(self)
             self.params = parameterFrame(self,self.canvasDataFrame)
-            self.params.label()
+            self.params.draw()
 
             self.root.bind("<Key-Escape>",self._quit)
             self.root.protocol('WM_DELETE_WINDOW',self._quit) 
@@ -101,7 +102,7 @@ if True or __name__ == "__main__":
 
         def modelLoaded(self):
             self.datatitle.set(self.fitter.current)
-            self.params.label()
+            self.params.draw()
             self.calc()
 
         def toggleParam(self,index,param):
@@ -123,7 +124,60 @@ if True or __name__ == "__main__":
             try:
                 self.commandline.dump(self.dumpParams())
             except AttributeError: pass
+
+        def loadSession(self,fname):
+            init = {}
+            for line in open(fname):
+                index = line.index(':')
+                init[line[:index]] = line[index+1:].strip('\n')
+
+            self.fitter.resp = None
+            try: self.load(self.fitter.loadData,init['data'])
+            except KeyError: pass
+            try: 
+                if self.fitter.resp == None: self.load(self.fitter.loadResp,init['resp'])
+            except KeyError: pass
+            try: self.load(self.fitter.transmit,init['tran'])
+            except KeyError: pass
+            try: self.fitter.setplot(int(init['ptype']))
+            except KeyError: pass
+            
+            try:
+                ignored = init['Ignored']
+                ig = ignoreReader(self,False)
+                ig.parse(ignored)
+            except KeyError: pass
         
+            try: 
+                model_str = init['model']
+                model     = modelReader(self,False)
+                model.parse(init['model'])
+
+                self.commandline.parseCmd(init['param'])
+            except KeyError: raise
+            self.refreshPlot()
+
+        def saveSession(self, name, extension):
+            fd = open(name+'.'+extension,'w')
+            writeline = lambda string: fd.write(string+'\n')
+            
+            try: writeline('data:' +self.fitter.data_file)
+            except AttributeError: pass
+            try: writeline('resp:' +self.fitter.resp_file)
+            except AttributeError: pass
+            try: writeline('tran:' +self.fitter.transmit_file)
+            except AttributeError: pass
+            try: writeline('ptype:'+str(self.fitter.ptype))
+            except AttributeError: pass
+            try: writeline(self.ignored.get())
+            except AttributeError: pass
+            try: writeline('model:'+self.fitter.current.__str__())
+            except AttributeError: pass
+            try: writeline('param:'+self.dumpParams())
+            except AttributeError: pass
+            
+            fd.close()
+
         def saveParams(self, name, extension):
             if extension:
                 name += '.'+extension
@@ -157,8 +211,8 @@ if True or __name__ == "__main__":
                 paramFile.write(p.encode('utf-8')+'\n')
             paramFile.close
 
-        def load(self, what):
-            res = askopenfilename()
+        def load(self, what, res = None):
+            if res == None: res = askopenfilename()
             if not res: return 
             m = runMsg(self,"Loading data")
             try: what(res)
@@ -202,7 +256,7 @@ if True or __name__ == "__main__":
             except self.fitter.newBestFitFound:
                 title, err = ('Error not converging!',"Found new best fit! Space not convex.")
                 self.params.resetErrors()
-                self.params.label(False)
+                self.params.relabel()
             finally:
                 m.destroy()
                 self.ring()
@@ -224,7 +278,7 @@ if True or __name__ == "__main__":
             try:
                 self.fitter.checkLoaded()
                 self.fitter.calc()
-                self.params.label(False)
+                self.params.relabel()
                 self.params.resetErrors()
                 self.refreshPlot()
             except (AttributeError,self.fitter.dataResponseMismatch): pass
@@ -260,7 +314,7 @@ if True or __name__ == "__main__":
                     self.thawedDict[(index,param)][1].set('(%.2E)'%self.fitter.stderr[(index,param)])
             except AttributeError as e:
                 pass
-            self.params.label(False)
+            self.params.relabel()
 
         def doAndPlot(self, func):
             try: func()

@@ -28,14 +28,20 @@ class rebinReader(entryWindow):
         self.root.destroy()
 
 class ignoreReader(entryWindow):
-    def __init__(self, parent):
+    def __init__(self, parent, gui = True):
+        if not gui:
+            self.parent = parent
+            return
         try: entryWindow.__init__(self,parent,'data/response',"ignorer","Ignore x-axis values")
         except AttributeError: return
 
     def parse(self, event):
         res = []
         try:
-            res = self.entry.get().split()
+            try:
+                res = self.entry.get().split()
+            except AttributeError:
+                res = event.split()
             channels = []
             for rng in res:
                 try:
@@ -70,7 +76,9 @@ class ignoreReader(entryWindow):
         if len(deleted) == 1:
             ignored = ' ' + str(deleted[0]+1)
         self.parent.ignored.set("Ignored:"+ignored)
-        self.root.destroy()
+        try:
+            self.root.destroy()
+        except AttributeError: pass
 
     def setUnits(self,start,end = ''):
         if end != '':
