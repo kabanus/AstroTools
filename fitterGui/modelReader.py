@@ -6,10 +6,9 @@ Created on Mar 15, 2013
 
 from Tkinter import LEFT,N,S,E,W,Button,Toplevel,Frame,Entry,Label
 from tkFont import Font
-from tkFileDialog import askopenfilename
 from re import finditer
+from helperfunctions import getfile
 import models
-from time import sleep
 import tkMessageBox as messagebox
 ALL = N+S+W+E
 
@@ -79,7 +78,7 @@ MODELS = dict(((str(m),(m.description,m)) for m in models.exported.values()))
 for m in models.exported:
     exec(m+' = MODELS["'+m+'"][1]')
 
-PARAMS = {'Table' : lambda: '"'+askopenfilename()+'"', 'function': lambda: getFunc().activate()}
+PARAMS = {'Table' : lambda: '"'+getfile()+'"', 'function': lambda: getFunc().activate()}
 PARAMNAMES  = {'Table' : ('file'), 'function': ('expression')}
 class modelReader(object):
     def __init__(self,parent,gui = True):
@@ -130,31 +129,42 @@ class modelReader(object):
 
     def parse(self,event = None):
         try:
-            model = self.entry.get()
+            model = self.entry.get().replace(" ","")
         except AttributeError:
-            model = event
-        models = model.replace(" ","").replace('+(','+').replace(')+','+').replace('*(','+').replace(')*','+').replace('(','+').replace(')','+').replace('*','+').strip('+').split('+')
-        for m in models: 
+            model = event.replace(" ","")
+        models = model.replace('+(','+').replace(')+','+').replace('*(','+').replace(')*','+').replace('*','+').strip('+').split('+')
+        used = []
+        for m in models:
+            m = m.strip('(').strip(')')
+            try: 
+                index = m.index('(') 
+                m = m[:index]
+            except ValueError: pass
             if m not in MODELS:
                 if m == '':
                     messagebox.showerror( 'Bad syntax!', 'Bad operation or empty equation.' )
                 else:
                     messagebox.showerror( 'Bad syntax!', m + ' is NOT a model, see table below (CASE SENSITIVE).' )
                 return
-        
-        models = set(models)
+            used.append(m)
+        models = set(used)
         try: 
             for m in models:
                 padded = 0
                 for p in finditer(m,model):
                     args = '()'
-                    if m in PARAMS:
-                        args = '('+PARAMS[m]()+')'
+                    if  m in PARAMS:
+                        try:
+                            print model[padded+p.end()]
+                            if model[padded+p.end()] == '(':
+                                args = ''
+                            else: 
+                                args = '('+PARAMS[m]()+')'
+                        except IndexError:
+                            args = '('+PARAMS[m]()+')'
                     model = model[:padded+p.end()] + args + model[padded+p.end():]
                     padded += len(args)
             exec('model = ' + model)
-        except TypeError:
-            return
         except Exception as e:
             messagebox.showerror("Failed to build model!",str(e)+'\n\nFinal model attempted to execute: '+model)
             return

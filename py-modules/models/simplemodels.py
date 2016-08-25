@@ -11,9 +11,7 @@ class simple(_singleModel):
     def _calculate(self,atrange):
         return self(atrange)
 
-@modelExport
-class function(simple):
-    description = 'Analytic function of wavelength'
+class Function(simple):
     class paramsMustBeDict(Exception): pass
     def __init__(self,expression, params):
         simple.__init__(self)
@@ -23,28 +21,38 @@ class function(simple):
         except AttributeError:
             raise self.paramsMustBeDict()
         self.params = params
+        self.expression = expression
         exec('self.func = lambda x,'+','.join(params.keys())+': '+expression)
-    
+   
     def __call__(self,x):
         return self.func(x,**self.params)
 
+#Pure lambda, overwrite __str__
 @modelExport
-class powerlaw(function):
+class function(Function):
+    description = 'Analytic function of energy'
+    def __init__(self,expression,params):
+        Function.__init__(self,expression,params)
+    def __str__(self):
+        return 'function('+self.expression+','+str(self.params)+')'
+
+@modelExport
+class powerlaw(Function):
     description = 'Energy powerlaw'
     def __init__(self):
-        function.__init__(self,"K*x**-a",{'K':1,'a':2})
+        Function.__init__(self,"K*x**-a",{'K':1,'a':2})
 
 @modelExport
-class alorentz(function):
+class alorentz(Function):
     description = "Lorentzian centered in Angstrom"
     def __init__(self):
-        function.__init__(self,"norm/(pi*g*(1+((keVAfac/x-center)/g)**2))",{'norm':0,'g':1,'center':1})
+        Function.__init__(self,"norm/(pi*g*(1+((keVAfac/x-center)/g)**2))",{'norm':0,'g':1,'center':1})
 
-class bbody(function):
+class bbody(Function):
     description = 'Blackbody'
     def __init__(self):
         dE = str(0.03)
-        function.__init__(self,"(N*8.0525*x**2*"+dE+")/(kT**4*(exp(x/kT)-1))",{'N':1,'kT':0.5})
+        Function.__init__(self,"(N*8.0525*x**2*"+dE+")/(kT**4*(exp(x/kT)-1))",{'N':1,'kT':0.5})
 
 @modelExport
 class Table(simple):
@@ -52,6 +60,7 @@ class Table(simple):
     def __init__(self,table):
         simple.__init__(self)
         try: 
+            self.fname = table
             table = [[float(x) for x in line.split()] for line in open(table)]
         except IOError: pass
         self.interpolation = linear(table)
@@ -62,6 +71,11 @@ class Table(simple):
             try:
                 yield self.interpolation(energy)[1]
             except self.interpolation.outOfRange: yield 0
+
+    def __str__(self):
+        try: return 'Table("'+self.fname+'")'
+        except:
+            return 'Table<object>'
 
 class Tables(simple):
     def __init__(self,params,tablehash):

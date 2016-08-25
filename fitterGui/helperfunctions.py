@@ -1,5 +1,7 @@
 from Tkinter import Frame,N,S,E,W,Button,Label,BOTH,TOP,Canvas,Scrollbar
+from tkFileDialog import askopenfilename
 from commandline import commandLine
+from os import path
 ALL = N+S+E+W
 
 def make_frames(self):
@@ -61,4 +63,8 @@ class onscroll(object):
 
 def updateFrame(event):
     event.widget.configure(scrollregion = event.widget.bbox('all'))
+    
+                
+def getfile():
+    return path.relpath(askopenfilename())
 

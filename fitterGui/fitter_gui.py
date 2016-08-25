@@ -33,14 +33,13 @@ if True or __name__ == "__main__":
     import tkMessageBox as messagebox
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
     from Tkinter         import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
-    from tkFileDialog    import askopenfilename
     from fitter          import Fitter
     from plotInt         import Iplot,plt
     from modelReader     import modelReader
     from simplewindows   import runMsg
     from entrywindows    import ignoreReader
     from parameterframe  import parameterFrame
-    from helperfunctions import make_frames
+    from helperfunctions import make_frames, getfile
     from gui             import Gui
     ALL = N+S+W+E
     Iplot.quiet()
@@ -149,7 +148,6 @@ if True or __name__ == "__main__":
             except KeyError: pass
         
             try: 
-                model_str = init['model']
                 model     = modelReader(self,False)
                 model.parse(init['model'])
 
@@ -212,7 +210,7 @@ if True or __name__ == "__main__":
             paramFile.close
 
         def load(self, what, res = None):
-            if res == None: res = askopenfilename()
+            if res == None: res = getfile()
             if not res: return 
             m = runMsg(self,"Loading data")
             try: what(res)

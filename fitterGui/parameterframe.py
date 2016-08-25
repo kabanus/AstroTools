@@ -66,6 +66,10 @@ class parameterFrame(object):
             entry = self.parent.paramLabels[iparam][1]
             entry.delete(0,END)
             entry.insert(0,str(value))
+        self.parent.dataCanvas.update_idletasks()
+        try: 
+            self.parent.statistic.set(u"Reduced \u03C7\u00B2: " + str(self.parent.fitter.reduced_chisq()))
+        except (AttributeError,IndexError): pass
 
     def draw(self):
         while self.parent.paramLabels:
