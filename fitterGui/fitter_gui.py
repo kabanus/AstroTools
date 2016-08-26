@@ -33,6 +33,7 @@ if True or __name__ == "__main__":
     import tkMessageBox as messagebox
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
     from Tkinter         import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
+    from tkMessageBox    import askquestion 
     from fitter          import Fitter
     from plotInt         import Iplot,plt
     from modelReader     import modelReader
@@ -88,6 +89,8 @@ if True or __name__ == "__main__":
 
             self.root.rowconfigure(0,weight=1)
             self.root.columnconfigure(0,weight=1)
+            #For windows
+            self.root.focus_force()
             self.root.mainloop()
 
         def refreshPlot(self):
@@ -153,9 +156,9 @@ if True or __name__ == "__main__":
                 model.parse(init['model'])
                 self.commandline.parseCmd(init['param'])
                 e = init['errors'].split(',')
-                if e: self.runFit()
+                self.ranfit = True
                 l = 4
-                for index,param,mine,maxe in ([e[n] for n in range(i,i+l) ] for i in range(len(e)/l)):
+                for index,param,mine,maxe in ([e[n] for n in range(i,i+l) ] for i in range(0,len(e),l)):
                     iparam = (int(index),param)
                     self.errors[iparam] = (float(mine),float(maxe))
                     error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
@@ -286,12 +289,12 @@ if True or __name__ == "__main__":
             m = runMsg(self)
             try:
                 self.fitter.checkLoaded()
-                self.fitter.calc()
-                self.params.relabel()
-                self.params.resetErrors()
+                self.fitter.calc()              
                 self.refreshPlot()
             except (AttributeError,self.fitter.dataResponseMismatch): pass
             finally:
+                self.params.relabel()
+                self.params.resetErrors()
                 self.ring()
                 m.destroy()
 
@@ -316,6 +319,8 @@ if True or __name__ == "__main__":
                 messagebox.showerror('Failed fit!',e)
                 raise
             finally:
+                self.params.relabel()
+                self.params.resetErrors()
                 self.ring()
                 m.destroy()
             try:
@@ -342,6 +347,7 @@ if True or __name__ == "__main__":
             self.ignored.set("Ignored:")
 
         def _quit(self, event = None):
+            if askquestion("Exit","Sure?") == 'no': return
             self.root.quit()
             self.root.destroy() 
 

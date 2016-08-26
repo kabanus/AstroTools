@@ -1,6 +1,5 @@
 from inspect import getargspec
 from copy import deepcopy
-from scipy.optimize import curve_fit
 import operator
 from itertools import izip
 from numpy import zeros
@@ -55,7 +54,7 @@ class _singleModel(Model):
         if args[0] == "*" or args[0][1] == "*":
             self.thawed = self.params.keys()
             return
-        for index,key in args:
+        for _,key in args:
             self.params[key]
             if key in self.thawed:
                 continue
@@ -66,7 +65,7 @@ class _singleModel(Model):
             print 'wtf'
             self.thawed = []
             return
-        for index,key in args:
+        for _,key in args:
             try:
                 self.thawed.remove(key)
             except ValueError: pass

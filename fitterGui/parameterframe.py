@@ -60,6 +60,7 @@ class parameterFrame(object):
         for _,_,l3,_ in self.parent.paramLabels.values():
             l3.configure(relief='raised',state='normal')
         self.parent.ranfit = False
+        self.parent.errors = {}
 
     def relabel(self):
         for iparam,value in self.parent.fitter.current.getParams():
