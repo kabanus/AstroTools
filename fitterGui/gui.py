@@ -37,7 +37,7 @@ class Gui(object):
         self.load    = (lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadData)),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp)), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
-                        lambda: self.parent.load(self.parent.loadSession))
+                        self.parent.loadSession)
         self.ignore  = (lambda: ignoreReader(self.parent), lambda: self.parent.doAndPlot(self.parent.resetIgnore))
         self.zoom    = (lambda: zoomReader(self.parent), lambda: self.parent.fitter.reset(ignore=False))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),
@@ -60,7 +60,7 @@ class Gui(object):
         self.parent.canvas.get_tk_widget().bind("<z>",lambda event: zoomReader(self.parent))
         self.parent.canvas.get_tk_widget().bind("<s>",lambda event: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'))
         self.parent.canvas.get_tk_widget().bind("<S>",lambda event: Save(self.parent,self.parent.saveSession,"Save session",'fsess'))
-        self.parent.canvas.get_tk_widget().bind("<L>",lambda event: self.parent.load(self.parent.loadSession))
+        self.parent.canvas.get_tk_widget().bind("<L>",lambda event: self.parent.loadSession())
         self.parent.canvas.get_tk_widget().bind("<F>",lambda event: self.parent.runFit())
         self.parent.canvas.get_tk_widget().bind("<m>",lambda event: self.parent.loadModel())
         self.parent.canvas.get_tk_widget().bind("<1>",lambda event: event.widget.focus_set())

@@ -124,8 +124,9 @@ if True or __name__ == "__main__":
                 self.commandline.dump(self.dumpParams())
             except AttributeError: pass
 
-        def loadSession(self,fname):
+        def loadSession(self):
             init = {}
+            fname = getfile()
             for line in open(fname):
                 index = line.index(':')
                 init[line[:index]] = line[index+1:].strip('\n')
@@ -150,9 +151,17 @@ if True or __name__ == "__main__":
             try: 
                 model     = modelReader(self,False)
                 model.parse(init['model'])
-
                 self.commandline.parseCmd(init['param'])
-            except KeyError: raise
+                e = init['errors'].split(',')
+                if e: self.runFit()
+                l = 4
+                for index,param,mine,maxe in ([e[n] for n in range(i,i+l) ] for i in range(len(e)/l)):
+                    iparam = (int(index),param)
+                    self.errors[iparam] = (float(mine),float(maxe))
+                    error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
+                    self.thawedDict[iparam][1].set('(%.2E)'%error)
+                    self.paramLabels[iparam][2].configure(relief='flat',state='disabled')
+            except KeyError: pass
             self.refreshPlot()
 
         def saveSession(self, name, extension):
@@ -172,6 +181,8 @@ if True or __name__ == "__main__":
             try: writeline('model:'+self.fitter.current.__str__())
             except AttributeError: pass
             try: writeline('param:'+self.dumpParams())
+            except AttributeError: pass
+            try: writeline('errors:'+str(self.errors).translate(None,"(){} '").replace(':',','))
             except AttributeError: pass
             
             fd.close()
