@@ -57,6 +57,8 @@ def binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal):
     current = self.chisq()
     frontp  = self.current[iparam]
     backp   = initial
+    limit   = 15
+    ofrontp = frontp
     while abs(abs(current - bestchi)-goal) > epsilon and backp != frontp:
         if not self.insert_and_continue(iparam,(frontp+backp)/2.0): break
         self.calc()
@@ -69,6 +71,12 @@ def binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal):
             backp = self.current[iparam]
         else:
             frontp = self.current[iparam]
+        if ofrontp == frontp:
+            limit -= 1
+        else: ofrontp == frontp
+        if not limit:
+            self.setp({iparam:frontp})
+            return 
    
 
 def run_away(self,initial,needfit,bestchi,thawed,iparam,save,direction,v0):
