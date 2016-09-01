@@ -57,8 +57,8 @@ class Help(simpleWindow):
         
         self.helplabel("Modelling gui, Uria Peretz, 2016\n")
         self.helplabel("Most of it is self explanatory:","",16)
-        self.helplabel("Load         : Load data/response fits file, XMM/Chandra format for now."+
-                       " Transmission can be applied to data (divides it) - two columns with num channel rows.")
+        self.helplabel("Load         : Load session or data/response fits file, XMM/Chandra format for now.")
+        self.helplabel("Save         : Save session, plot, plot data or parameters (with errors).")
         self.helplabel("Zoom         : Persistent zoom in on area of plot, does not affect fit.")
         self.helplabel("Rebin        : Rebins to channel amount.")
         self.helplabel("Ignore       : Ignore channels in fitting and plotting, or reset to all.")
@@ -94,8 +94,9 @@ class Help(simpleWindow):
         self.helplabel("Useful shortcuts (click plot area to get keyboard focus):", "",16)
         self.helplabel("C,W,A: Channel, wavelength, energy on axes.", "")
         self.helplabel("d,r,t: Load data/response transmission.", "")
-        self.helplabel("R,i,z: Rebin/ignore/zoom", "")
-        self.helplabel("m,F,s: load model/fit/save", "")
+        self.helplabel("R,i,z: Rebin/ignore/zoom.", "")
+        self.helplabel("m,F,s: Load model/fit/save parameters.", "")
+        self.helplabel("L,S: : Load/Save fitting session.", "")
         self.helplabel("c    : Switch to commandline.", "")
         self.helplabel("H    : You're looking at it.","")
 

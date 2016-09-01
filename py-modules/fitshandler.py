@@ -2,6 +2,7 @@
 from astropy.io import fits
 from numpy      import int as ndint
 from numpy      import array,dot,inf,delete,sort,zeros,unravel_index,argmax
+from itertools  import izip
 
 class fitsHandler(object): pass
 
@@ -31,7 +32,7 @@ class Response(fitsHandler):
             #Speed things up!!! Also - while kills speed for some reason.
             matrow = list(record[row])
             energies.append([])
-            for start_channel,nchannel in zip(record[fch][:grps],record[nch][:grps]):
+            for start_channel,nchannel in izip(record[fch][:grps],record[nch][:grps]):
                 for _ in range(channel,start_channel):
                     energies[-1].append(0)
                     channel += 1
@@ -154,6 +155,9 @@ class Data(fitsHandler):
         self.oerrors    = array(self.oerrors)
         self.reset()
 
+    def dumpCounts(self):
+        return self.cts
+
     def reset(self):
         self.deleted  = set()
         self.channels = array(self.ochannels ,copy=True)
@@ -181,7 +185,7 @@ class Data(fitsHandler):
     def transmit(self,table):
         try:
             transmission = array([float(x) for x in open(table)])
-        except IOError: transmission = array(table)
+        except: transmission = array(list(table))
         self.otransmission = transmission
         self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
         self.cts /= self.transmission

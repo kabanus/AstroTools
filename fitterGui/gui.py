@@ -39,7 +39,7 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
                         self.parent.loadSession)
         self.ignore  = (lambda: ignoreReader(self.parent), lambda: self.parent.doAndPlot(self.parent.resetIgnore))
-        self.zoom    = (lambda: zoomReader(self.parent), lambda: self.parent.fitter.reset(ignore=False))
+        self.zoom    = (lambda: zoomReader(self.parent), lambda: self.parent.doAndPlot(lambda: self.parent.fitter.reset(ignore=False)))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),
                         lambda: Save(self.parent), 
                         lambda: Save(self.parent,lambda name,ext: self.parent.fitter.plot('.'.join((name,ext))),"Save plot data",'dat'),

@@ -65,6 +65,14 @@ def updateFrame(event):
     event.widget.configure(scrollregion = event.widget.bbox('all'))
     
                 
-def getfile():
-    return path.relpath(askopenfilename())
-
+def getfile(*defaults):
+    filetypes = list()
+    defaultextension = '.*'
+    for filetype in defaults:
+        if defaultextension == '.*': defaultextension = filetype
+        filetypes.append((filetype.capitalize()+' file','*.'+filetype))
+    filetypes.append(('All files','*.*'))
+    thefile = askopenfilename(defaultextension = defaultextension,
+                              filetypes = filetypes)
+    if not thefile: return None 
+    return path.relpath(thefile)

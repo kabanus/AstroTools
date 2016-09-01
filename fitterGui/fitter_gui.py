@@ -129,10 +129,11 @@ if True or __name__ == "__main__":
 
         def loadSession(self):
             init = {}
-            fname = getfile()
+            fname = getfile('fsess')
+            if not fname: return
             for line in open(fname):
                 index = line.index(':')
-                init[line[:index]] = line[index+1:].strip('\n')
+                init[line[:index]] = line[index+1:].strip('\n').strip()
 
             self.fitter.resp = None
             try: self.load(self.fitter.loadData,init['data'])
@@ -185,9 +186,9 @@ if True or __name__ == "__main__":
             except AttributeError: pass
             try: writeline('param:'+self.dumpParams())
             except AttributeError: pass
-            try: writeline('errors:'+str(self.errors).translate(None,"(){} '").replace(':',','))
-            except AttributeError: pass
-            
+            if self.errors:
+                writeline('errors:'+str(self.errors).translate(None,"(){} '").replace(':',','))
+           
             fd.close()
 
         def saveParams(self, name, extension):
@@ -224,7 +225,7 @@ if True or __name__ == "__main__":
             paramFile.close
 
         def load(self, what, res = None):
-            if res == None: res = getfile()
+            if res == None: res = getfile('ds','dat','RMF','RSP')
             if not res: return 
             m = runMsg(self,"Loading data")
             try: what(res)
@@ -268,6 +269,7 @@ if True or __name__ == "__main__":
             except self.fitter.newBestFitFound:
                 title, err = ('Error not converging!',"Found new best fit! Space not convex.")
                 self.params.resetErrors()
+                self.ranfit = False
                 self.params.relabel()
             finally:
                 m.destroy()
@@ -295,6 +297,7 @@ if True or __name__ == "__main__":
             finally:
                 self.params.relabel()
                 self.params.resetErrors()
+                self.ranfit = False
                 self.ring()
                 m.destroy()
 
@@ -326,7 +329,7 @@ if True or __name__ == "__main__":
             try:
                 for index,param in thawed:
                     self.thawedDict[(index,param)][1].set('(%.2E)'%self.fitter.stderr[(index,param)])
-            except AttributeError as e:
+            except (KeyError,AttributeError):
                 pass
             self.params.relabel()
 
@@ -340,7 +343,10 @@ if True or __name__ == "__main__":
             except Exception as e:
                 messagebox.showerror('Failed',e)
                 raise
+
             self.refreshPlot()
+            #In case we changed axes, change ignore values to fit
+            ignoreReader(self,False).parse("")
 
         def resetIgnore(self):
             self.fitter.reset(zoom=False)

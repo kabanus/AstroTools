@@ -155,7 +155,6 @@ class modelReader(object):
                     args = '()'
                     if  m in PARAMS:
                         try:
-                            print model[padded+p.end()]
                             if model[padded+p.end()] == '(':
                                 args = ''
                             else: 
@@ -165,6 +164,7 @@ class modelReader(object):
                     model = model[:padded+p.end()] + args + model[padded+p.end():]
                     padded += len(args)
             exec('model = ' + model)
+        except TypeError: return
         except Exception as e:
             messagebox.showerror("Failed to build model!",str(e)+'\n\nFinal model attempted to execute: '+model)
             return

@@ -62,7 +62,6 @@ class _singleModel(Model):
 
     def freeze(self, *args):
         if args[0] == "*" or args[0][1] == "*":
-            print 'wtf'
             self.thawed = []
             return
         for _,key in args:
@@ -223,11 +222,13 @@ class _composite(Model):
 
     def setp(self, pDict):
         for index,key in pDict:
+            iparam = (index,key)
             if index < self.second.index:
-                self.first.setp({(index,key): pDict[(index,key)]})
+                self.first.setp({iparam: pDict[iparam]})
+                self.params[index-1][key] = self.first[iparam]
             else:
-                self.second.setp({(index,key): pDict[(index,key)]})
-            self.params[index-1][key] = pDict[(index,key)]
+                self.second.setp({iparam: pDict[iparam]})
+                self.params[index-1][key] = self.second[iparam]
    
     def resetChanged(self):
         self.first.resetChanged()
