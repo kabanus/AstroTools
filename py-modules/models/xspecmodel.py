@@ -19,6 +19,7 @@ try:
             self.efile    = 'fitterModel.Energies'
             self.plot('model')
             self.plot.xAxis='keV'
+            self.string = modelString
 
         def update(self):
             self.plot()
@@ -47,6 +48,9 @@ try:
         def setp(self, pDict):
             _singleModel.setp(self,pDict)
             self.model.setPars(*self.params.values())
+    
+        def __str__(self):
+            return 'Xspec("'+self.string+'")'
 
 except ImportError:
     print "Warning: No XSPEC module found, won't be able to use XSPEC models. If this is unexpected, make sure you're in an HEADAS environemnt."

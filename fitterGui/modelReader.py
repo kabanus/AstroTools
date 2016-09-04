@@ -8,14 +8,41 @@ from Tkinter import LEFT,N,S,E,W,Button,Toplevel,Frame,Entry,Label
 from tkFont import Font
 from re import finditer
 from helperfunctions import getfile
+from entrywindows import strReader
 import models
 import tkMessageBox as messagebox
 ALL = N+S+W+E
 
 currentReader = None
+
+currentXread = None
+class XspecLoader(strReader):
+    def __init__(self):
+        global currentXread
+        strReader.__init__(self,currentReader,"Enter Xspec model string")
+        if currentXread: currentXread.eventDestroy(None)
+        currentXread = self
+        self.good = False
+
+    def activate(self):
+        self.root.wait_window()
+        return "'"+self.string+"'"
+
+    def parse(self,event):
+        self.string = strReader.parse(self,event).replace(" ","")
+        try: 
+            self.model = models.Xspec(self.string)
+            self.good = True
+        except Exception as e:
+            print '-'+str(e)+'-'
+            if str(e) == 'Model Command Error' or str(e):
+                messagebox.showerror("Bad XSPEC string",'Consult XSPEC manual')
+                return
+            raise
+        self.eventDestroy(None) 
+
 currentGetfun = None
-class getFunc:
-    class failedToInit(Exception): pass
+class getFunc(object):
     def __init__(self):
         global currentGetfun
         if currentGetfun: currentGetfun.eventDestroy(None)
@@ -78,8 +105,9 @@ MODELS = dict(((str(m),(m.description,m)) for m in models.exported.values()))
 for m in models.exported:
     exec(m+' = MODELS["'+m+'"][1]')
 
-PARAMS = {'Table' : lambda: '"'+getfile()+'"', 'function': lambda: getFunc().activate()}
-PARAMNAMES  = {'Table' : ('file'), 'function': ('expression')}
+PARAMS = {'Table' : lambda: '"'+getfile()+'"', 'function': lambda: getFunc().activate(),
+          'Xspec' : lambda: XspecLoader().activate()}
+PARAMNAMES  = {'Table' : ('file'), 'function': ('expression'), 'Xspec' : 'XSPEC model'}
 class modelReader(object):
     def __init__(self,parent,gui = True):
         global currentReader

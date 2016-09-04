@@ -12,6 +12,14 @@ class entryWindow(simpleWindow):
         self.entry.pack()
         self.entry.focus_set()
 
+class strReader(entryWindow):
+    def __init__(self, parent,title):
+        try: entryWindow.__init__(self,parent,'',"stringer",title)
+        except AttributeError: return
+
+    def parse(self,event):
+        return self.entry.get()
+
 class rebinReader(entryWindow):
     def __init__(self, parent):
         try: entryWindow.__init__(self,parent,'data',"rebinner","Rebin")
