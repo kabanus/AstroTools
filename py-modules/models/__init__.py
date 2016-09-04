@@ -1,8 +1,5 @@
-import os
-import sys
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
-from model import exported
-from ionbyion import *
-from simplemodels import *
+from _export import exported
+for model in exported:
+    exec(model+'='+'exported["'+model+'"]')
 

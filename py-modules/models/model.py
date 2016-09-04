@@ -83,10 +83,10 @@ class _singleModel(Model):
         return 2
     
     def calculate(self,xlist):
-        self.resetChanged()
         if len(xlist) != len(self.array):
             self.array = zeros(len(xlist))
         for i, el in enumerate(self._calculate(xlist)): self.array[i] = el
+        self.resetChanged()
         return self.array
 
 

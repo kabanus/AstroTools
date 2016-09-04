@@ -35,6 +35,8 @@ class Fitter(object):
         self.current.thaw(*params)
     def getThawed(self):
         return self.current.getThawed()
+    def getParams(self):
+        return list(self.current.getParams())
     def initArgs(self):
         return self.current.initArgs()
     def freeze(self, *params):

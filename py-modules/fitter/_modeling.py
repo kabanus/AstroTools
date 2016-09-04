@@ -44,9 +44,10 @@ def tofit(self, elist, *args):
 def fit(self):
     model = self.current
     args  = self.initArgs()
-   
+  
     bestfit,self.errs = curve_fit(self.tofit,self.energies(),self.data.cts,
-                                              p0=args,sigma=self.data.errors)
+                                  p0=args,sigma=self.data.errors)
+
     self.stderr  = dict(izip(model.getThawed(),
                     [self.errs[j][j]**0.5 for j in range(len(self.errs))]))
    
