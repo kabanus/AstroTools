@@ -110,6 +110,8 @@ class Response(fitsHandler):
                 yield (row[0],row[2]*dE/dl)
 
 class Data(fitsHandler):
+    class transmissionMismatch(Exception): pass
+
     def __init__(self, data):
         fitsio          = fits.open(data)
         data            = fitsio[1].data
@@ -155,8 +157,34 @@ class Data(fitsHandler):
         self.oerrors    = array(self.oerrors)
         self.reset()
 
+    def __div__(self,other):
+        you   = other.dumpCounts()
+        me    = self.dumpCounts()
+        div   = me/you
+        err   = ((self.errors/me)**2+(me*other.errors/you**2)**2)**0.5
+        return div,err
+        
+
+    def firstNonZero(self, i, direction):
+        while not self.cts[i]:
+            i += direction
+        return i
+
     def dumpCounts(self):
-        return self.cts
+        clean = self.cts
+        for i in range(len(clean)):
+            if not clean[i]:
+                if i == 0:
+                    clean[i] = clean[self.firstNonZero(0,1)]
+                elif i == len(clean)-1:
+                    clean[i] = clean[self.firstNonZero(-1,-1)]
+                else:
+                    back  = self.firstNonZero(i,-1)
+                    try: front = self.firstNonZero(i,1)
+                    except IndexError:
+                        front = i
+                    clean[i] = (clean[back]+clean[front])/2.0 
+        return clean
 
     def reset(self):
         self.deleted  = set()
@@ -186,6 +214,8 @@ class Data(fitsHandler):
         try:
             transmission = array([float(x) for x in open(table)])
         except: transmission = array(list(table))
+        if len(transmission) != len(self.cts):
+            raise transmissionMismatch("Got "+str(transmission)+" with length "+str(len(transmission))+".")
         self.otransmission = transmission
         self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
         self.cts /= self.transmission
