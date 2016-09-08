@@ -1,8 +1,11 @@
 
-from astropy.io import fits
-from numpy      import int as ndint
-from numpy      import array,dot,inf,delete,sort,zeros,unravel_index,argmax
-from itertools  import izip
+from astropy.io        import fits
+from astropy.table     import Table
+from numpy             import int as ndint
+from numpy             import max as ndmax
+from numpy             import array,dot,inf,delete,sort,zeros,unravel_index,argmax
+from itertools         import izip
+from matplotlib.pyplot import imshow,show,figure
 
 class fitsHandler(object): pass
 
@@ -259,17 +262,48 @@ class Data(fitsHandler):
 
 class Events(fitsHandler):
     def __init__(self, event_file):
-        fitsio      = fits.open(event_file)
-        self.events = sort(fitsio[1].data[:,['x','y']])
+        fitsio      = Table.read(event_file,hdu=1)
+        self.events = sort(fitsio['X','Y'])
         xmax        = self.events[-1][0]
         ymax        = max((a[1] for a in self.events))
         self.map    = zeros((ymax,xmax),dtype=ndint)
 
         X = 0
         Y = 1
-        for event in self.events: 
+        maximum = 0
+        for event in self.events:
             self.map[event[Y]-1][event[X]-1] += 1
-           
+        self.xl,self.xr,self.yb,self.yt = (1,len(self.map[0]),1,len(self.map))
+      
+    def outOfBound(self,x,y):
+        return x < self.xl or x > self.xr or y < self.yb or y > self.yt
+
+    def _plotval(self,x,y):
+        x = int(x+1)
+        y = int(y+1)
+        try:
+            if self.outOfBound(x,y): return 'Out'
+            return str(self[x,y])
+        except IndexError: 
+            return 'Out'
+
+    def plot(self):
+        fig  = figure()
+        axes = fig.add_subplot(111)
+        vals = lambda x,y: 'x=%d, y=%d, z=%s'%(x+1,y+1,self._plotval(x,y))
+       
+        img = axes.imshow(self.map,origin='lower',cmap='gray',interpolation=None)
+        a    = axes.get_xticks()
+        a[1] = 1
+        axes.set_xticks(a)
+        a    = axes.get_yticks()
+        a[1] = 1
+        axes.set_yticks(a)
+        img.set_extent((0.5,len(self.map[0]+0.5),0.5,len(self.map)+0.5))
+        axes.format_coord = vals
+        show(block=False)
+        return axes
+
     def centroid(self,ignore = ()):
         return tuple((x+1 for x in unravel_index(argmax(self.map),self.map.shape)[::-1]))
 
@@ -299,9 +333,13 @@ class Events(fitsHandler):
         center = self.centroid()
         while self.is_effective_radius(center,R): R += 1
         return center+(R,)
+    
+    def max(self):
+        return ndmax(self.map)
 
-    def background(self, outer_coefficient = 2):
+    def background(self, outer_coefficient = 2, constant = None):
         x,y, Rmin = self.object()
+        if constant != None: return x,y,constant[0],constant[1]
         return x,y,Rmin,Rmin*outer_coefficient
 
     def __iter__(self): 
