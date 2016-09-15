@@ -129,6 +129,7 @@ class Data(fitsHandler):
         self.ocounts    = []
         self.oscales    = []
         self.oerrors    = []
+        self.grouping   = 1
 
         #CHANNEL = 0
         COUNTS  = 1
@@ -160,34 +161,40 @@ class Data(fitsHandler):
         self.oerrors    = array(self.oerrors)
         self.reset()
 
+    def group(self,binfactor):
+        self.grouping = binfactor
+
+    @staticmethod
+    def padgrouped(vector, binfactor):
+        res = [] 
+        for line in vector:
+            count = 1
+            res.append(line)
+            while count < binfactor:
+                res.append(line)
+                count += 1
+        return res
+
+    def __len__(self):
+        return len(self.channels)
+
+    def __getitem__(self,i):
+        return self.channels[i],self.counts[i],self.errors[i]*self.exposure*self.scales[i]
+
     def __div__(self,other):
-        you   = other.dumpCounts()
-        me    = self.dumpCounts()
-        div   = me/you
-        err   = ((self.errors/me)**2+(me*other.errors/you**2)**2)**0.5
+        you   = list(other.rebin(self.grouping,counts=True,include_bad=True))
+        me    = list( self.rebin(self.grouping,counts=True,include_bad=True))
+        div   = []
+        err   = []
+        for i in range(len(you)):
+            if you[i][1]:
+                you[i][1] = float(you[i][1])
+                div.append(me[i][1]/you[i][1])
+                err.append( ((me[i][2]/you[i][1])**2+(me[i][1]*you[i][2]/you[i][1]**2)**2)**0.5 )
+            else:
+                div.append(0)
+                err.append(0)
         return div,err
-        
-
-    def firstNonZero(self, i, direction):
-        while not self.cts[i]:
-            i += direction
-        return i
-
-    def dumpCounts(self):
-        clean = self.cts
-        for i in range(len(clean)):
-            if not clean[i]:
-                if i == 0:
-                    clean[i] = clean[self.firstNonZero(0,1)]
-                elif i == len(clean)-1:
-                    clean[i] = clean[self.firstNonZero(-1,-1)]
-                else:
-                    back  = self.firstNonZero(i,-1)
-                    try: front = self.firstNonZero(i,1)
-                    except IndexError:
-                        front = i
-                    clean[i] = (clean[back]+clean[front])/2.0 
-        return clean
 
     def reset(self):
         self.deleted  = set()
@@ -223,18 +230,19 @@ class Data(fitsHandler):
         self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
         self.cts /= self.transmission
 
-    def rebin(self,binfactor, model = None):
+    def rebin(self,binfactor = None, model = None, errors = None, counts = False, include_bad = False):
+        if binfactor == None:
+            binfactor = self.grouping
         cts = self.counts
         if model != None:
-            cts  = model
+            cts = model
         
         ind = 0
         while ind < len(self.channels):
             sums = [0,0,0]
-            if model != None:
+            if model != None and errors == None:
                 sums = [0,0]
 
-            #start = 0
             scale = 0
             count = 0
             trans = 0
@@ -243,21 +251,27 @@ class Data(fitsHandler):
                 sums[0] += self.channels[ind]
                 sums[1] += cts[ind]
                 count   += 1
+                if errors != None:
+                    sums[2] += errors[ind]
                 try: trans += self.transmission[ind]
                 except AttributeError: pass
                 ind += 1
-           
+            
             sums[0] /= float(count)
             if model == None:
-                if not scale: continue
-                sums[2] = sums[1]**0.5/self.exposure/scale
-                sums[1] = sums[1]/self.exposure/scale
-                if trans:
-                    trans   /= float(count)
-                    sums[1] = sums[1]/trans
-                    sums[2] = sums[2]/trans
+                if not include_bad and not scale: continue
+                sums[2] = sums[1]**0.5
+                if not counts: 
+                    sums[2] = sums[2]/self.exposure/scale
+                    sums[1] = sums[1]/self.exposure/scale
+                    if trans:
+                        trans   /= float(count)
+                        sums[1] = sums[1]/trans
+                        sums[2] = sums[2]/trans
             else:
                 sums[1] /= float(count)
+                if errors != None:
+                    sums[2] /= float(count)
             yield sums
 
 class Events(fitsHandler):
