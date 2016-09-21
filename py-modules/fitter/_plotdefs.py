@@ -62,6 +62,8 @@ def plot(self, save = None):
         Iplot.x.label('$\AA$')
         Iplot.y.label('ph s$^{-1}$ $\AA^{-1}$')
 
+    y = self.ystart
+    if self.ystart == None: y = 0
     Iplot.x.resize(self.xstart,self.xstop)
-    Iplot.y.resize(self.ystart,self.ystop)
+    Iplot.y.resize(y,self.ystop)
     

@@ -7,6 +7,7 @@ Created on Mar 15, 2013
 '''
 if True or __name__ == "__main__":
     import os
+    from sys import argv
     if os.name == 'nt':
         #Windows ctrl-c handling
         try:
@@ -46,6 +47,7 @@ if True or __name__ == "__main__":
     Iplot.quiet()
     
     class App(object):
+        debug = False
         def __init__( self, h = 500, w = 800, b = 5 ):        
             self.root = Tk()
             self.root.wm_title("The amazing fitter!")
@@ -62,11 +64,13 @@ if True or __name__ == "__main__":
             self.datatitle=StringVar()
             self.datatitle.set("No active model")
             self.respfile    = StringVar()
-            self.respfile.set("No response loaded")
+            self.respfile.set("No response")
             self.datafile    = StringVar()
-            self.datafile.set("No data loaded")
+            self.datafile.set("No data")
+            self.backfile    = StringVar()
+            self.backfile.set("No bg")
             self.transfile   = StringVar()
-            self.transfile.set("No tranmission loaded")
+            self.transfile.set("No tranmission")
             self.paramLabels = {}
             self.ranfit      = False
             self.errors      = {}
@@ -82,6 +86,7 @@ if True or __name__ == "__main__":
             nav = NavigationToolbar2TkAgg(self.canvas,self.main)
             Label(nav,textvar= self.datafile,padx=self.border).pack(side=LEFT)
             Label(nav,textvar= self.respfile,padx=self.border).pack(side=LEFT)
+            Label(nav,textvar=self.backfile,padx=self.border).pack(side=LEFT)
             Label(nav,textvar=self.transfile,padx=self.border).pack(side=LEFT)
             Gui(self,self.gui)
             
@@ -223,19 +228,22 @@ if True or __name__ == "__main__":
             for p in params:
                 paramFile.write(p.encode('utf-8')+'\n')
             paramFile.close
-
+    
         def load(self, what, res = None):
             if res == None: res = getfile('ds','dat','RMF','RSP')
             if not res: return 
             m = runMsg(self,"Loading data")
             try: what(res)
-            except (ValueError,IOError) as e:
+            except (ValueError,IOError,KeyError) as e:
                 messagebox.showerror('Bad file!','Please check file is correct format:\n'+str(e))
+                if self.debug: raise
+                return
             except Exception as e: 
                 if str(e).find('ndarray') > -1:
                     messagebox.showerror('Bad file!','Tranmission and data have a different amount of channels!')
                 else:
                     raise
+                if self.debug: raise
                 return 
             finally:
                 m.destroy() 
@@ -245,12 +253,15 @@ if True or __name__ == "__main__":
             except AttributeError: pass
             try:  self.respfile.set('Response: ' + self.fitter.resp_file.split('/')[-1]) 
             except AttributeError: pass
+            try:  self.backfile.set('BG: ' + self.fitter.back_file.split('/')[-1]) 
+            except AttributeError: pass
             try:  self.datafile.set('Data: ' + self.fitter.data_file.split('/')[-1]) 
             except AttributeError: pass
 
         def getError(self, index, param):
             if not self.ranfit:
                 messagebox.showerror('Why would you want to?!','Run fit before calculating errors')
+                if self.debug: raise
                 return
             
             iparam = (index,param)
@@ -306,9 +317,11 @@ if True or __name__ == "__main__":
                 thawed = self.fitter.current.getThawed()
                 if not thawed:
                     messagebox.showerror('Failed fit!',"No thawed parameters!")
+                    if self.debug: raise
                     return
             except AttributeError:
                     messagebox.showerror('Failed fit!',"No model loaded!")
+                    if self.debug: raise
                     return
             m = runMsg(self)
             try:
@@ -337,6 +350,7 @@ if True or __name__ == "__main__":
             try: func()
             except AttributeError as e:
                 messagebox.showerror('Failed','No model/data/resp loaded\n\n'+str(e))
+                if self.debug: raise
                 return 
             except KeyboardInterrupt: 
                 messagebox.showerror('Halt',"Caught Keyboard")
@@ -346,7 +360,8 @@ if True or __name__ == "__main__":
 
             self.refreshPlot()
             #In case we changed axes, change ignore values to fit
-            ignoreReader(self,False).parse("")
+            try: ignoreReader(self,False).parse("")
+            except AttributeError: pass
 
         def resetIgnore(self):
             self.fitter.reset(zoom=False)
@@ -357,5 +372,7 @@ if True or __name__ == "__main__":
             self.root.quit()
             self.root.destroy() 
 
+    if len(argv) > 1 and argv[1] == "-debug":
+        App.debug = True
     App()     
   

@@ -16,6 +16,10 @@ def loadData(self,data):
     self.plot()
     self.data_file = data
 
+def loadBack(self,back):
+    self.data.loadback(back)
+    self.back_file = back
+
 def checkLoaded(self):
     try: 
         if len(self.data.channels) != len(self.resp.matrix):

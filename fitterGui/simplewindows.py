@@ -91,14 +91,14 @@ class Help(simpleWindow):
                         "command by command and stop if one of the commands fails (leaving the rest of the command line " +
                         " intact for a quick fix.)\n\n","")
         
-        self.helplabel("Useful shortcuts (click plot area to get keyboard focus):", "",16)
-        self.helplabel("C,W,A: Channel, wavelength, energy on axes.", "")
-        self.helplabel("d,r,t: Load data/response transmission.", "")
-        self.helplabel("R,i,z: Rebin/ignore/zoom.", "")
-        self.helplabel("m,F,s: Load model/fit/save parameters.", "")
-        self.helplabel("L,S: : Load/Save fitting session.", "")
-        self.helplabel("c    : Switch to commandline.", "")
-        self.helplabel("H    : You're looking at it.","")
+        self.helplabel("Useful shortcuts (middle click plot area to get keyboard focus):", "",16)
+        self.helplabel("C,W,A  : Channel, wavelength, energy on axes.", "")
+        self.helplabel("d,r,t,b: Load data/response/transmission/background.", "")
+        self.helplabel("R,i,z  : Rebin/ignore/zoom.", "")
+        self.helplabel("m,F,s  : Load model/fit/save parameters.", "")
+        self.helplabel("L,S:   : Load/Save fitting session.", "")
+        self.helplabel("c      : Switch to commandline.", "")
+        self.helplabel("H      : You're looking at it.","")
 
         Button(frame, text = 'OK', command = self.root.destroy).grid(row=1,column=0,columnspan=2,sticky=N+S)
         self.root.bind("<Key-Escape>",lambda event: self.root.destroy())

@@ -25,7 +25,7 @@ class Fitter(object):
     from _plotdefs import badPlotType, badZoomRange
 
     #Methods
-    from _datadefs import loadResp, loadData, checkLoaded, transmit, ignore, reset
+    from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset
     from _modeling import chisq,reduced_chisq,append,delete,activate,nameModel,energies,tofit,fit
     from _error    import error,oneSidedError,slide_away,binary_find_chisq,run_away,insert_and_continue
     from _plotdefs import zoomto,rebin,setplot,_plotOrSave,plot

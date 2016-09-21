@@ -9,7 +9,7 @@ class Gui(object):
         self.parent = parent
         self.menuCommands()
         for  title,cmd, labels in (
-                ('Load'  , self.load   , ('Data','Response','Transmission','Session')),
+                ('Load'  , self.load   , ('Data','Response','Background','Transmission','Session')),
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
                 ('Rebin' , lambda: rebinReader(parent), None),
                 ('Zoom'  ,   self.zoom, ('Zoom','Reset')),
@@ -36,6 +36,7 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(2)))
         self.load    = (lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadData)),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp)), 
+                        lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadBack)), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
                         self.parent.loadSession)
         self.ignore  = (lambda: ignoreReader(self.parent), lambda: self.parent.doAndPlot(self.parent.resetIgnore))
@@ -54,6 +55,7 @@ class Gui(object):
         self.parent.canvas.get_tk_widget().bind("<H>",lambda event: Help(self.parent))
         self.parent.canvas.get_tk_widget().bind("<R>",lambda event: rebinReader(self.parent))
         self.parent.canvas.get_tk_widget().bind("<d>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadData)))
+        self.parent.canvas.get_tk_widget().bind("<b>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadBack)))
         self.parent.canvas.get_tk_widget().bind("<r>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp))) 
         self.parent.canvas.get_tk_widget().bind("<t>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)))
         self.parent.canvas.get_tk_widget().bind("<i>",lambda event: ignoreReader(self.parent))
@@ -63,7 +65,7 @@ class Gui(object):
         self.parent.canvas.get_tk_widget().bind("<L>",lambda event: self.parent.loadSession())
         self.parent.canvas.get_tk_widget().bind("<F>",lambda event: self.parent.runFit())
         self.parent.canvas.get_tk_widget().bind("<m>",lambda event: self.parent.loadModel())
-        self.parent.canvas.get_tk_widget().bind("<1>",lambda event: event.widget.focus_set())
+        self.parent.canvas.get_tk_widget().bind("<2>",lambda event: event.widget.focus_set())
         self.parent.canvas.get_tk_widget().bind("<c>",lambda event: self.parent.commandline.entry.focus_set())
 
     def makeMenu(self, col, title, labels, commands):
