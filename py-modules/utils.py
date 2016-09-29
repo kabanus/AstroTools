@@ -1,5 +1,9 @@
 from time import clock
 
+def lookin(module,string):
+    for x in dir(module):
+        if string in x: print x
+
 def frange(stop,start=None,step=1):
     if start != None:
         tmp   = stop

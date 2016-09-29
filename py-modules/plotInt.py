@@ -4,29 +4,89 @@ import matplotlib.pyplot as plt
 plt.ion()
 class Iplot(object):
     block=False
+    second = None
     class axis(object):
-        def __init__(self,sizer,labelr,ind):
-            self.sizer  = sizer
-            self.labelr = labelr
-            self.ind = ind
+        class noSuchAxis(Exception): pass
+        def __init__(self,axis):
+            if axis == 'x':
+                self.ind = 0
+            elif axis == 'y':
+                self.ind = 1
+            else:
+                raise noSuchAxis(axis)
+            self.axis = axis
+            exec("self.sizer  = Iplot.axes.set_"+axis+"lim") 
+            exec("self.labelr = Iplot.axes.set_"+axis+"label")
+            self.sizer2    = None
+            self.labelr2   = None
+            self.transform = None
+        def twin(self,function):
+            op = 'y'
+            if self.transform == None:
+                if self.ind: op = 'x'
+                exec(
+                    'self.second    = Iplot.axes.twin'+op+'();'+
+                    'self.sizer2    = self.second.set_'+self.axis+'lim;'+
+                    'self.labelr2   = self.second.set_'+self.axis+'ticklabels;'
+                    )
+                self.second.minorticks_on()
+            self.transform = function
+            self.resize()
+
         def resize(self,start = None,stop = None):
             if stop == None:
-                stop = plt.axis()[self.ind*2+1]
+                stop = Iplot.axes.axis()[self.ind*2+1]
             if start == None:
-                start = plt.axis()[self.ind*2]
+                start = Iplot.axes.axis()[self.ind*2]
             if start >= stop: raise Exception("Bad range! stop must be greater then start: "+str(start)+">="+str(stop))
             self.sizer(start,stop)
+            plt.draw()
+            if self.sizer2 != None:
+                self.sizer2(start,stop)
+                #Can't comprehend to support empty labels
+                newlabels = []
+                exec('labels = Iplot.axes.get_'+self.axis+'majorticklabels()')
+                negative = u'\u2212'
+                for label in labels:
+                    if label.get_text():
+                        label = label.get_text()
+                        if label[0] == negative:
+                            label = '-' + label[1:] 
+                        label = float(label)
+                        try:
+                            newlabels.append("%.2f"%self.transform(label))
+                        except TypeError:
+                            newlabels.append(self.transform(label))
+                    else: newlabels.append(label.get_text())
+                self.labelr2(newlabels)
+            plt.draw()
         def get_bounds(self):
-            return plt.axis()[self.ind*2:self.ind*2+2]
+            return Iplot.axes.axis()[self.ind*2:self.ind*2+2]
         def label(self,title):
             self.labelr(title)
 
-    x = axis(plt.xlim,plt.xlabel,0) 
-    y = axis(plt.ylim,plt.ylabel,1)
-    
+    @staticmethod
+    def init():
+        global Iplot
+        Iplot.axes = plt.gca()
+        Iplot.axes.minorticks_on()
+        Iplot.x = Iplot.axis('x') 
+        Iplot.y = Iplot.axis('y')
+   
+    @staticmethod
+    def secondAxis(function,axis='x'):
+        exec('axis=Iplot.'+axis)
+        axis.twin(function)
+    @staticmethod
+    def hideSecondAxis(axis='x'):
+        exec('axis=Iplot.'+axis)
+        if axis.transform != None:
+            axis.twin(lambda x: '')
+        
     @staticmethod
     def clearPlots():
-        plt.clf()
+        Iplot.axes.clear()
+        Iplot.axes.minorticks_on()
         if plt.isinteractive():
             plt.show(block=False)
 
@@ -39,14 +99,14 @@ class Iplot(object):
         My = Mx = float("-Inf")
         index = col = 0
         cols = 1.0/len(args)
-        plotter = plt.plot
+        plotter = Iplot.axes.plot
         autosize = True
         for c in args:
             if c == 'nosize':
                 autosize = False
                 continue
             if c == 'scatter': 
-                plotter = plt.scatter
+                plotter = Iplot.axes.scatter
                 continue
             try: xv = c.vector
             except AttributeError: xv = c
@@ -61,12 +121,12 @@ class Iplot(object):
                 index+=1
                 plotter(*xv[:2],c=[col,0,1-col],**dict(kwargsl,**kwargs))
             except IndexError:
-                if plotter == plt.scatter:
+                if plotter == Iplot.axes.scatter:
                     plotter(*xv[:2],s=2,c=[col,0,1-col],**kwargs)
                 else: 
                     plotter(*xv[:2],c=[col,0,1-col],**kwargs)
             if len(tmp) > 2: 
-                plt.errorbar(*xv,linestyle="None",capsize = 0)
+                Iplot.axes.errorbar(*xv,linestyle="None",capsize = 0)
             if autosize:
                 if min(xv[0]) < mx or max(xv[0]) > Mx or\
                    min(xv[1]) < my or max(xv[1]) > My:
@@ -78,15 +138,17 @@ class Iplot(object):
                     if max(xv[1]) > My: My = max(xv[1])
             col += cols
         if autosize:
-            plt.xlim(mx-stepx,Mx+stepx)
-            plt.ylim(my-stepy,My+stepy)
+            Iplot.axes.set_xlim(mx-stepx,Mx+stepx)
+            Iplot.axes.set_ylim(my-stepy,My+stepy)
         if plt.isinteractive():
             plt.show(block=Iplot.block)
+        if Iplot.x.transform != None: Iplot.x.resize()
+        if Iplot.y.transform != None: Iplot.y.resize()
 
     @staticmethod
     def annotate(labels,data,**kwargs):
         for i in range(len(labels)):
-            plt.annotate(labels[i],xy=data[i],textcoords='offset points',
+            Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset points',
                          xytext=(-15,10),**kwargs)
 
     @staticmethod
@@ -107,3 +169,4 @@ class Iplot(object):
         print("-I- plotCurves      = Accepts any number of curves and plots them.")
         print("-I-                   Can be used with *Iccf.tables and Iccf.peaks.")
         print("-I-                   'scatter' keyword will make all remaining plots scatter.")
+

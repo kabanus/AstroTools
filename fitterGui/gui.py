@@ -1,5 +1,5 @@
 from Tkinter import Button,Menubutton,N,S,W,E,Menu
-from entrywindows import zoomReader, rebinReader, ignoreReader, Save, paramReader
+from entrywindows import zoomReader, rebinReader, ignoreReader, Save, paramReader, zReader
 from simplewindows import Help
 ALL = N+S+E+W
 
@@ -9,11 +9,13 @@ class Gui(object):
         self.parent = parent
         self.menuCommands()
         for  title,cmd, labels in (
-                ('Load'  , self.load   , ('Data','Response','Background','Transmission','Session')),
+                ('Load'  , self.load   , ('Data','Response','Background',
+                                          'Transmission','Session')),
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
-                ('Rebin' , lambda: rebinReader(parent), None),
-                ('Zoom'  ,   self.zoom, ('Zoom','Reset')),
-                ('Ignore', self.ignore, ('Ignore','Reset')),
+                ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
+                                          'Rest frame axis Z','Remove rest frame axis',
+                                          'Shift data Z','Remove data Z')),
+                ('Ignore', self.ignore,  ('Ignore','Reset')),
                 ('Model' , parent.loadModel, None),
                 ('Fit'   , parent.runFit, None),
                 ('Run'   , self.calc, ('Model','Error')),
@@ -40,7 +42,13 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
                         self.parent.loadSession)
         self.ignore  = (lambda: ignoreReader(self.parent), lambda: self.parent.doAndPlot(self.parent.resetIgnore))
-        self.zoom    = (lambda: zoomReader(self.parent), lambda: self.parent.doAndPlot(lambda: self.parent.fitter.reset(ignore=False)))
+        self.plot    = (lambda: zoomReader(self.parent), 
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.reset(ignore=False)),
+                        lambda: rebinReader(self.parent),
+                        lambda: zReader(self.parent,False),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(False)),
+                        lambda: zReader(self.parent,True),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(True)))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),
                         lambda: Save(self.parent), 
                         lambda: Save(self.parent,lambda name,ext: self.parent.fitter.plot('.'.join((name,ext))),"Save plot data",'dat'),

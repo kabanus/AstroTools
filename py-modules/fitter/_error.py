@@ -4,8 +4,8 @@ class errorNotConverging(Exception): pass
 class newBestFitFound(Exception): pass
 
 def error(self, index, param, epsilon = 0.05, v0 = 0.3):
-    return (self.oneSidedError(index,param,-1,epsilon,v0),
-            self.oneSidedError(index,param, 1,epsilon,v0))
+    return (oneSidedError(self,index,param,-1,epsilon,v0),
+            oneSidedError(self,index,param, 1,epsilon,v0))
 
 #epsilon is allowed deviation from '1' when comparing chisq
 def oneSidedError(self, index, param, direction, epsilon,v0):
@@ -20,9 +20,9 @@ def oneSidedError(self, index, param, direction, epsilon,v0):
     #90% confidence interval
     goal = 2.76
 
-    self.run_away(initial,needfit,bestchi,thawed,iparam,save,direction,v0)
-    self.binary_find_chisq(initial,needfit,bestchi,thawed,iparam,epsilon,goal)
-    self.slide_away(iparam,needfit,bestchi,direction,epsilon,goal,save,thawed,v0)
+    run_away(self,initial,needfit,bestchi,thawed,iparam,save,direction,v0)
+    binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal)
+    slide_away(self,iparam,needfit,bestchi,direction,epsilon,goal,save,thawed,v0)
 
     result = self.current[iparam]
     self.calc(save)
@@ -38,7 +38,7 @@ def slide_away(self,iparam,needfit,bestchi,direction,epsilon,goal,save,thawed,v0
     #Do
     while True:
         prev    = self.current[iparam]
-        if not self.insert_and_continue(iparam,self.current[iparam]+v0*t): break
+        if not insert_and_continue(self,iparam,self.current[iparam]+v0*t): break
         self.calc()
         if needfit: self.fit()
         current = self.chisq()
@@ -46,7 +46,7 @@ def slide_away(self,iparam,needfit,bestchi,direction,epsilon,goal,save,thawed,v0
         if not limit: 
             if thawed: self.thaw(iparam)
             self.calc(save)
-            raise errorNotConverging()
+            raise self.errorNotConverging()
         limit -= 1
     #While
         if abs(abs(current-bestchi)-goal) >= epsilon: break
@@ -60,7 +60,7 @@ def binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal):
     limit   = 15
     ofrontp = frontp
     while abs(abs(current - bestchi)-goal) > epsilon and backp != frontp:
-        if not self.insert_and_continue(iparam,(frontp+backp)/2.0): break
+        if not insert_and_continue(self,iparam,(frontp+backp)/2.0): break
         self.calc()
         if needfit: self.fit()
         current = self.chisq()
@@ -86,7 +86,7 @@ def run_away(self,initial,needfit,bestchi,thawed,iparam,save,direction,v0):
     t       = 1
 
     while abs(oldchi-bestchi) < 2.76:
-        if not self.insert_and_continue(iparam,self.current[iparam]+v0*t): break
+        if not insert_and_continue(self,iparam,self.current[iparam]+v0*t): break
         self.calc()
         if needfit: self.fit()
         tmp = self.chisq()

@@ -405,9 +405,10 @@ class Events(fitsHandler):
             valid += res[1]
         return valid/float(count) >= 0.5
 
-    def object(self):
+    def object(self, constant = None):
         R = 0
         center = self.centroid()
+        if constant != None: return center + (constant,)
         while self.is_effective_radius(center,R): R += 1
         return center+(R,)
     

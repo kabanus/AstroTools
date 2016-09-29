@@ -83,6 +83,8 @@ if True or __name__ == "__main__":
             self.root.protocol('WM_DELETE_WINDOW',self._quit) 
 
             self.canvas = FigureCanvasTkAgg( plt.get_current_fig_manager().canvas.figure, master = self.main)
+            #Only load figure after manager has been set
+            self.fitter.initplot()
             nav = NavigationToolbar2TkAgg(self.canvas,self.main)
             Label(nav,textvar= self.datafile,padx=self.border).pack(side=LEFT)
             Label(nav,textvar= self.respfile,padx=self.border).pack(side=LEFT)

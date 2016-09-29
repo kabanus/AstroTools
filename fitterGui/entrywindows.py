@@ -20,6 +20,21 @@ class strReader(entryWindow):
     def parse(self,event):
         return self.entry.get()
 
+class zReader(entryWindow):
+    def __init__(self, parent,data):
+        try: entryWindow.__init__(self,parent,'data',"ashifter","Rest frame")
+        except AttributeError: return
+        self.data = data
+    def parse(self, event):
+        try: 
+            res = float(self.entry.get())
+        except ValueError:
+            messagebox.showerror('Bad Z!', 'Only float please')
+            return 
+
+        self.parent.doAndPlot(lambda: self.parent.fitter.shift(res,self.data))
+        self.root.destroy()
+
 class rebinReader(entryWindow):
     def __init__(self, parent):
         try: entryWindow.__init__(self,parent,'data',"rebinner","Rebin")
