@@ -215,8 +215,8 @@ class Data(fitsHandler):
         return self.channels[i],self.counts[i],self.errors[i]*self.exposure*self.scales[i]
 
     def __div__(self,other):
-        you   = list(other.rebin(self.grouping,counts=True,include_bad=True))
-        me    = list( self.rebin(self.grouping,counts=True,include_bad=True))
+        you   = list(other.rebin(self.grouping,include_bad=True))
+        me    = list( self.rebin(self.grouping,include_bad=True))
         div   = []
         err   = []
         for i in range(len(you)):
