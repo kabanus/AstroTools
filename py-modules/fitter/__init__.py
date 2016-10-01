@@ -1,8 +1,6 @@
 class Fitter(object):
-    CHANNEL = 0
-    ENERGY  = 1
-    WAVE    = 2
-
+    from _plotdefs import CHANNEL,ENERGY,WAVE
+    
     def __init__(self, data = None, resp = None):
         self.axisz     = None
         self.dataz     = None
@@ -15,6 +13,7 @@ class Fitter(object):
         self.xstop     = None
         self.ystart    = None
         self.ystop     = None
+        self.plotmodel = False
         self.initplot() 
         if data is not None:
             self.loadData(data)
@@ -31,7 +30,7 @@ class Fitter(object):
     from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset
     from _modeling import chisq,reduced_chisq,append,delete,activate,nameModel,energies,tofit,fit
     from _error    import error
-    from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift,initplot
+    from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift,initplot,plotModel
 
     #Model wrappers
     def thaw(self, *params):
@@ -49,5 +48,5 @@ class Fitter(object):
     def calc(self,pDict = {}):
         self.setp(pDict)
         self.result = self.tofit(self.energies())
-        self.plot()
+        self.plot(user = False)
 

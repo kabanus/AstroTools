@@ -1,4 +1,5 @@
 from plotInt import Iplot
+from numpy   import array
 
 CHANNEL = 0
 ENERGY  = 1
@@ -15,30 +16,17 @@ def zoomto(self, xstart = None, xstop = None, ystart = None, ystop = None):
     self.xstop  = xstop
     self.ystart = ystart
     self.ystop  = ystop
-    self.plot()
+    self.plot(user = False)
 
 def rebin(self, count):
     self.binfactor = count
-    self.plot()
+    self.plot(user = False)
 
 def setplot(self, plotType):
     if plotType not in [self.ENERGY, self.CHANNEL, self.WAVE]: 
         raise self.badPlotType(plotType)
     self.ptype = plotType
-    self.plot()
-
-_writePlot = lambda self,table: "\n".join((" ".join((str(x) for x in line)) for line in table))
-def _plotOrSave(save,*args):
-    if save == None:
-        Iplot.plotCurves(*args)
-    else:
-        fd = open(save,'w')
-        fd.write('#Data\n')
-        fd.write(_writePlot(args[-1]))
-        if len(args) > 3:
-            fd.write('\n#Model\n')
-            fd.write(_writePlot(args[1]))
-        fd.close()
+    self.plot(user = False)
 
 def _embedz(z,ptype):
     if ptype == WAVE:
@@ -54,7 +42,7 @@ def shift(self,z,data = False):
         self.axisz = z
     else:
         self.dataz = z
-    self.plot()
+    self.plot(user = False)
 
 def removeShift(self,data = False):
     if not data:
@@ -62,43 +50,74 @@ def removeShift(self,data = False):
         Iplot.hideSecondAxis()
     else:
         self.dataz = None
-    self.plot()
+    self.plot(user = False)
 
 def _shiftlist(l,z,ptype):
     shift = _embedz(z,ptype)
     return ([shift(x[0])]+x[1:] if shift(x[0]) != '' else x for x in l)
 
-def _labelaxes(self):
+def _labelaxes(self, model):
     if self.ptype == self.CHANNEL:
         Iplot.x.label('Channel')
         Iplot.y.label('ph s$^{-1}$ channel$^{-1}$')
     if self.ptype == self.ENERGY:
         Iplot.x.label('keV')
-        Iplot.y.label('ph s$^{-1}$ keV$^{-1}$')
+        if model != None:
+            Iplot.y.label('ph s$^{-1}$ keV$^{-1}$ cm$^{-2}$')
+        else:
+            Iplot.y.label('ph s$^{-1}$ keV$^{-1}$')
     if self.ptype == self.WAVE:
         Iplot.x.label('$\AA$')
         Iplot.y.label('ph s$^{-1}$ $\AA^{-1}$')
 
-def plot(self, save = None):
-    Iplot.clearPlots()
-    plots = [self.data.rebin(self.binfactor)]
-    if len(self.result) == len(self.data.channels):
-        plots.append(self.data.rebin(self.binfactor,self.result))
-    for i in range(len(plots)):
-        if self.ptype == self.ENERGY:
-            plots[i] = self.resp.energy(plots[i])
-        if self.ptype == self.WAVE:
-            plots[i] = self.resp.wl(plots[i])
-        if self.dataz != None:
-            plots[i] = _shiftlist(plots[i],self.dataz,self.ptype)
+def plotModel(self,start,stop,delta):
+    energies = array(
+        [start+i*delta for i in range(1+int((stop-start)/delta))])
+    model = self.current.tofit(energies)
+    self.plotmodel = zip(energies,model)
+    self.plot(user = False)
 
-    if len(plots) == 1:    
-        _plotOrSave(save,(),'scatter',list(plots[0]))
+_writePlot = lambda self,table: "\n".join((" ".join((str(x) for x in line)) for line in table))
+def _plotOrSave(save,*args):
+    if save == None:
+        Iplot.plotCurves(*args)
     else:
-        _plotOrSave(save,(),list(plots[1]),'scatter',list(plots[0]))
+        fd = open(save,'w')
+        fd.write('#Data\n')
+        fd.write(_writePlot(args[-1]))
+        if len(args) > 3:
+            fd.write('\n#Model\n')
+            fd.write(_writePlot(args[1]))
+        fd.close()
+
+def plot(self, save = None, user = True):
+    Iplot.clearPlots()
+    model = None
+    if not user and self.plotmodel:
+        model = self.plotmodel
+
+    if model == None:
+        self.plotmodel = None
+        plots = [self.data.rebin(self.binfactor)]
+        if len(self.result) == len(self.data.channels):
+            plots.append(self.data.rebin(self.binfactor,self.result))
+        for i in range(len(plots)):
+            if self.ptype == self.ENERGY:
+                plots[i] = self.resp.energy(plots[i])
+            if self.ptype == self.WAVE:
+                plots[i] = self.resp.wl(plots[i])
+            if self.dataz != None:
+                plots[i] = _shiftlist(plots[i],self.dataz,self.ptype)
+        if len(plots) == 1:
+            _plotOrSave(save,(),'scatter',list(plots[0]))
+        else:
+            _plotOrSave(save,(),list(plots[1]),'scatter',list(plots[0]))
+    else:
+        self.ptype = self.ENERGY
+        _plotOrSave(save,(),model)
     if save != None: return
 
-    _labelaxes(self)
+    _labelaxes(self,model)
 
     if self.axisz != None:
         Iplot.secondAxis(_embedz(self.axisz,self.ptype))

@@ -131,7 +131,13 @@ class Iplot(object):
                 if min(xv[0]) < mx or max(xv[0]) > Mx or\
                    min(xv[1]) < my or max(xv[1]) > My:
                     stepx = abs(xv[0][1] - xv[0][0]) 
-                    stepy = abs(xv[1][1] - xv[1][0]) 
+                    stepy = abs(xv[1][1] - xv[1][0])
+                    if not stepx:
+                        stepx = abs(stepx)
+                        if not stepx: stepx = 1
+                    if not stepy:
+                        stepy = abs(stepy)
+                        if not stepy: stepy = 1
                     if min(xv[0]) < mx: mx = min(xv[0])
                     if max(xv[0]) > Mx: Mx = max(xv[0])
                     if min(xv[1]) < my: my = min(xv[1])

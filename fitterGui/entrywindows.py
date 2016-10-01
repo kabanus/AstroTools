@@ -166,6 +166,31 @@ class paramReader(entryWindow):
         self.do(index,param)
         self.root.destroy()
 
+class rangeReader(simpleWindow):
+    def __init__(self, parent):
+        try: simpleWindow.__init__(self,parent,'model',"mranger","Range in keV")
+        except AttributeError: return
+        
+        self.entries = []
+        for col,axis in enumerate(('min','max')):
+            Label(self.root,text=axis).grid(row = 0, column=col*2)
+            self.entries.append(Entry(self.root,justify = LEFT, font = ('courier',12), width = 4, border = parent.border))
+            self.entries[-1].grid(row = 0, column=col*2+1)
+        self.entries[0].focus_set()
+
+    def parse(self, event):
+        try:
+            start = float(self.entries[0].get())
+            stop  = float(self.entries[1].get())
+            if start >= stop: raise ValueError
+        except ValueError:
+            messagebox.showerror('Bad range!', 'Please enter floats, and min < max')
+            return
+
+        self.parent.doAndPlot(lambda: self.parent.fitter.plotModel(start,stop,(stop-start)/1000.0))
+        self.root.destroy()
+
+
 class zoomReader(simpleWindow):    
     def __init__(self, parent):
         try: simpleWindow.__init__(self,parent,'data',"zoomer","Zoom")
@@ -183,7 +208,7 @@ class zoomReader(simpleWindow):
 
         self.entries[0].focus_set()
 
-    def parse(self, axis):
+    def parse(self, event):
         res = [self.parent.fitter.xstart,self.parent.fitter.xstop,
                self.parent.fitter.ystart,self.parent.fitter.ystop]
         count = 0

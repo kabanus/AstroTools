@@ -1,5 +1,5 @@
 from Tkinter import Button,Menubutton,N,S,W,E,Menu
-from entrywindows import zoomReader, rebinReader, ignoreReader, Save, paramReader, zReader
+from entrywindows import zoomReader, rebinReader, ignoreReader, Save, paramReader, zReader, rangeReader
 from simplewindows import Help
 ALL = N+S+E+W
 
@@ -14,7 +14,7 @@ class Gui(object):
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
                 ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
                                           'Rest frame axis Z','Remove rest frame axis',
-                                          'Shift data Z','Remove data Z')),
+                                          'Shift data Z','Remove data Z','Model')),
                 ('Ignore', self.ignore,  ('Ignore','Reset')),
                 ('Model' , parent.loadModel, None),
                 ('Fit'   , parent.runFit, None),
@@ -48,7 +48,8 @@ class Gui(object):
                         lambda: zReader(self.parent,False),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(False)),
                         lambda: zReader(self.parent,True),
-                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(True)))
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(True)),
+                        lambda: rangeReader(self.parent))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),
                         lambda: Save(self.parent), 
                         lambda: Save(self.parent,lambda name,ext: self.parent.fitter.plot('.'.join((name,ext))),"Save plot data",'dat'),

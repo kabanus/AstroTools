@@ -13,7 +13,7 @@ def loadData(self,data):
     if self.data.resp != None:
         self.loadResp(self.data.resp)
     self.checkLoaded()
-    self.plot()
+    self.plot(user = False)
     self.data_file = data
 
 def loadBack(self,back):
@@ -28,7 +28,7 @@ def checkLoaded(self):
 
 def transmit(self, table):
     self.data.transmit(table)
-    self.plot()
+    self.plot(user = False)
     self.transmit_file = table
 
 def ignore(self, minX, maxX):
@@ -40,7 +40,7 @@ def ignore(self, minX, maxX):
             if self.ptype == self.ENERGY : channels = self.resp.energy(ignore = (minX, maxX))
             if self.ptype == self.WAVE: channels    = self.resp.energy(forwl = True, ignore = (minX, maxX))
             fitshandler.ignore(channels)
-        self.plot()
+        self.plot(user = False)
     except AttributeError:
         raise self.noIgnoreBeforeLoad()
 
@@ -55,6 +55,6 @@ def reset(self, zoom = True, ignore = True):
             try:
                 fitshandler.reset()
             except AttributeError: pass
-            self.plot()
-    self.plot()
+            self.plot(user = False)
+    self.plot(user = False)
 
