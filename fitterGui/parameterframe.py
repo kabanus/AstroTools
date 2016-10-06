@@ -81,9 +81,9 @@ class parameterFrame(object):
         if self.parent.fitter.current == None: return
         self.parent.thawedDict = {}
         for (index,param),value in sorted(self.parent.fitter.current.getParams()):
-            l1 = Label(self.frame, text=str(index)+":"+param,width=6,justify = LEFT, font = ('courier',12),bg='aliceblue',anchor=N+W)
+            l1 = Label(self.frame, text=str(index)+":"+param,width=12,justify = LEFT, font = ('courier',12),bg='aliceblue',anchor=N+W)
             l1.grid(sticky=ALL,row=count, column=0),
-            l2 = Entry(self.frame,justify = LEFT, font = ('courier',12),bg='aliceblue',width=13)
+            l2 = Entry(self.frame,justify = LEFT, font = ('courier',12),bg='aliceblue',width=7)
             l2.insert(0,str(value))
             l2.grid(sticky=ALL,row=count, column=1)
             exec('l2.bind("<FocusOut>",lambda event: self.entryOut(event,'+str(index)+',"'+param+'"))') in locals(), globals()

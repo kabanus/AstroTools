@@ -37,6 +37,10 @@ try:
             fd.close()
             xspec.AllModels.setEnergies(self.efile)
             self.update()
+        
+        @staticmethod
+        def lmod(package, path):
+            xspec.AllModels.lmod(package,path)
     
         def _calculate(self, atrange):
             if not array_equal(atrange,self.energies):

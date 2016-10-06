@@ -1,5 +1,6 @@
 from inspect import getargspec
 from copy import deepcopy
+from copy import Error as copyError
 import operator
 from itertools import izip
 from numpy import zeros
@@ -118,8 +119,10 @@ class _singleModel(Model):
 
 class _composite(Model):
     def __init__(self,model1,model2,relation):
-        self.first    = deepcopy(model1)
-        self.second   = deepcopy(model2)
+        try: self.first    = deepcopy(model1)
+        except copyError: self.first = model1
+        try: self.second   = deepcopy(model2)
+        except copyError: self.second = model2
         self.relation = relation
         self.propagate_index()
         self.params = []

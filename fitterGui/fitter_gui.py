@@ -48,6 +48,7 @@ if True or __name__ == "__main__":
     
     class App(object):
         debug = False
+        xspec_packages = []
         def __init__( self, h = 500, w = 800, b = 5 ):        
             self.root = Tk()
             self.root.wm_title("The amazing fitter!")
@@ -70,7 +71,7 @@ if True or __name__ == "__main__":
             self.backfile    = StringVar()
             self.backfile.set("No bg")
             self.transfile   = StringVar()
-            self.transfile.set("No tranmission")
+            self.transfile.set("No transmission")
             self.paramLabels = {}
             self.ranfit      = False
             self.errors      = {}
@@ -101,6 +102,8 @@ if True or __name__ == "__main__":
             self.root.mainloop()
 
         def refreshPlot(self):
+            try: self.fitter.plot()
+            except AttributeError: pass
             self.canvas.show()
             self.canvas.get_tk_widget().pack( side = TOP, fill = BOTH, expand = 1) 
 
@@ -252,7 +255,8 @@ if True or __name__ == "__main__":
             if self.fitter.current != None: 
                 self.calc()
             try: self.transfile.set('Transmission: ' + self.fitter.transmit_file.split('/')[-1]) 
-            except AttributeError: pass
+            except AttributeError: 
+                self.untransmit(label_only = True)
             try:  self.respfile.set('Response: ' + self.fitter.resp_file.split('/')[-1]) 
             except AttributeError: pass
             try:  self.backfile.set('BG: ' + self.fitter.back_file.split('/')[-1]) 
@@ -314,6 +318,12 @@ if True or __name__ == "__main__":
                 self.ring()
                 m.destroy()
 
+        def untransmit(self,label_only = False):
+            self.transfile.set("No transmission")
+            self.transmit_file = ""
+            if label_only: return
+            self.doAndPlot(self.fitter.untransmit)
+
         def runFit(self):
             try:
                 thawed = self.fitter.current.getThawed()
@@ -374,7 +384,22 @@ if True or __name__ == "__main__":
             self.root.quit()
             self.root.destroy() 
 
-    if len(argv) > 1 and argv[1] == "-debug":
-        App.debug = True
+    readingX = False
+    if len(argv) > 1:
+        for arg in argv[1:]:
+            if arg == '-xspec-packages':
+                readingX = True
+                continue
+            if arg[0] == '-': 
+                readingX = False
+                if arg == '-debug':
+                    App.debug = True
+                continue
+            if readingX:
+                if not len(App.xspec_packages) or len(App.xspec_packages[-1]) > 1:
+                    App.xspec_packages.append([arg])
+                else: App.xspec_packages[-1].append(arg)
+        if len(App.xspec_packages) and len(App.xspec_packages[-1]) != 2:
+            raise Exception("Xspec packages should be pairs of <name> <path>. Got odd number of args.")
     App()     
   

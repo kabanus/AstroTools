@@ -15,6 +15,8 @@ def loadData(self,data):
     self.checkLoaded()
     self.plot(user = False)
     self.data_file = data
+    try: self.untransmit()
+    except AttributeError: pass
 
 def loadBack(self,back):
     self.data.loadback(back)
@@ -25,6 +27,10 @@ def checkLoaded(self):
         if len(self.data.channels) != len(self.resp.matrix):
             raise self.dataResponseMismatch(len(self.data.channels),len(self.resp.matrix))
     except AttributeError: pass
+
+def untransmit(self):
+    self.data.untransmit()
+    del(self.transmit_file)
 
 def transmit(self, table):
     self.data.transmit(table)

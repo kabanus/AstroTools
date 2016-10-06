@@ -125,6 +125,9 @@ class modelReader(object):
         self.root.resizable(0,0) 
         self.make_frames()
 
+        for package in self.parent.xspec_packages:
+            models.Xspec.lmod(*package)
+
         Button( self.main, text = 'Parse', command = self.parse).grid( column = 2, row = 3, rowspan = 2, sticky = ALL)
         Button( self.main, text = 'Cancel', command = self.root.destroy).grid( column = 2, row = 1, rowspan = 2, sticky = ALL)
 
@@ -160,7 +163,27 @@ class modelReader(object):
             model = self.entry.get().replace(" ","")
         except AttributeError:
             model = event.replace(" ","")
-        models = model.replace('+(','+').replace(')+','+').replace('*(','+').replace(')*','+').replace('*','+').strip('+').split('+')
+        models  = ['']
+        inparam = False
+        last    = ''
+        paramrng= []
+        for i in range(len(model)):
+            char = model[i]
+            if char == '"' or char == "'": pass
+            elif char == ')':
+                if inparam:
+                    inparam = False
+                    paramrng[-1].append(i)
+            elif inparam: pass
+            elif char in '+*':
+                models.append('')
+            elif char == '(' and last and last not in '+*(':
+                inparam  = True
+                paramrng.append([i])
+            else: 
+                models[-1] += char
+            last = char
+
         used = []
         for m in models:
             m = m.strip('(').strip(')')
@@ -180,8 +203,14 @@ class modelReader(object):
             for m in models:
                 padded = 0
                 for p in finditer(m,model):
+                    inparam = False
+                    for rng in paramrng:
+                        if p.start() >= rng[0] and p.start() <= rng[1]:
+                            inparam = True
+                            break
+                    if inparam: continue
                     args = '()'
-                    if  m in PARAMS:
+                    if m in PARAMS:
                         try:
                             if model[padded+p.end()] == '(':
                                 args = ''
@@ -192,11 +221,12 @@ class modelReader(object):
                     model = model[:padded+p.end()] + args + model[padded+p.end():]
                     padded += len(args)
             exec('model = ' + model)
-        except TypeError: return
+        except TypeError: raise
         except Exception as e:
             messagebox.showerror("Failed to build model!",str(e)+'\n\nFinal model attempted to execute: '+model)
+            if self.parent.debug: raise
             return
-
+        
         self.parent.fitter.append(model)
         self.parent.model = str(model)
         self.parent.modelLoaded() 

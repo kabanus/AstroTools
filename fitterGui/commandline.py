@@ -13,12 +13,15 @@ class commandLine(object):
         self.entry.bind("<Up>"    ,lambda event: self.traverseCmd(event, True))
         self.entry.bind("<Down>"  ,lambda event: self.traverseCmd(event, False))
 
+    def parseParam(self):
+        params = self.param.split(':')
+        self.index = int(params[0])
+        self.param = ":".join(params[1:]).strip()
+
     def parseThaw(self, cmd):
         self.param = cmd[4:]
+        self.parseParam()
         if self.param != '*':
-            self.index,self.param = self.param.split(':')
-            self.index = int(self.index)
-            self.param = self.param.strip()
             if self.param == '*':
                 for self.param in self.parent.thawedDict:
                     if self.param[0] != self.index: continue
@@ -35,9 +38,7 @@ class commandLine(object):
     def parseFreeze(self, cmd):
         self.param = cmd[6:]
         if self.param != '*':
-            self.index,self.param = self.param.split(':')
-            self.index = int(self.index)
-            self.param = self.param.strip()
+            self.parseParam()
             if self.param == '*':
                 for self.param in self.parent.thawedDict:
                     if self.param[0] != self.index: continue
@@ -57,9 +58,7 @@ class commandLine(object):
     def parseSet(self, cmd):
         try:
             self.param,value = cmd.split('=')
-            self.index,self.param = self.param.split(':')
-            self.index = int(self.index)
-            self.param = self.param.strip()
+            self.parseParam()
         except ValueError:
             messagebox.showerror('Failed to parse!','Command must be either freeze <index:param>, thaw <index:param>, or <index:param>=<value>')
             return False 

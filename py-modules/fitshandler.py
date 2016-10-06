@@ -257,6 +257,12 @@ class Data(fitsHandler):
         except AttributeError: pass
         if self.background != None:
             self.background.ignore(channels)
+    
+    def untransmit(self):
+        try:
+            del(self.otransmission)
+            del(self.transmission)
+        except AttributeError: pass
 
     def transmit(self,table):
         try:

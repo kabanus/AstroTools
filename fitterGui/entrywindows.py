@@ -117,9 +117,9 @@ class ignoreReader(entryWindow):
         if self.parent.fitter.ptype == 2: return ('%.2f'%list(self.parent.fitter.resp.wl    (((start,0),)))[0][0])+end
    
 class Save(entryWindow):
-    def __init__(self,parent,saver = Iplot.export, title = 'Save (extensions determines type)', default_ext = 'ps'):
+    def __init__(self,parent,saver = Iplot.export, title = 'Save (extension determines type)', default_ext = 'ps'):
         try:
-                if saver == Iplot.export: parent.fitter.data
+                if saver == Iplot.export: pass
                 elif saver == parent.saveParams and parent.fitter.current == None:
                     messagebox.showerror('Nothing to save!','Please load model')
                     return
@@ -133,15 +133,16 @@ class Save(entryWindow):
             messagebox.showerror('Nothing to save!','Please load data')
             return
 
-        try: entryWindow.__init__(self,parent,'data',"saver",title,30)
+        try: entryWindow.__init__(self,parent,'',"saver",title,30)
         except AttributeError: return
         self.saver = saver
         self.default_ext = default_ext
 
     def parse(self, event):
-        try:
-            name,ext = self.entry.get().split('.')
-        except ValueError:
+        entry = self.entry.get().split('.')
+        name  = ".".join(entry[:-1])
+        ext   = entry[-1]
+        if not name:
             name = self.entry.get()
             ext  = self.default_ext
         try: self.saver(name,ext)
@@ -157,7 +158,9 @@ class paramReader(entryWindow):
         self.do = function
     def parse(self, event):
         try:
-            index, param = self.entry.get().split(":")
+            params = self.entry.get().split(":")
+            index  = params[0]
+            param  = ":".join(params[1:])
         except ValueError:
             messagebox.showerror('Bad format!',"Must be <index>:<parameter>")
             return

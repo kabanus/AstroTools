@@ -10,7 +10,7 @@ class Gui(object):
         self.menuCommands()
         for  title,cmd, labels in (
                 ('Load'  , self.load   , ('Data','Response','Background',
-                                          'Transmission','Session')),
+                                          'Transmission','Remove Transmission','Session')),
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
                 ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
                                           'Rest frame axis Z','Remove rest frame axis',
@@ -40,6 +40,7 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp)), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadBack)), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
+                        self.parent.untransmit,
                         self.parent.loadSession)
         self.ignore  = (lambda: ignoreReader(self.parent), lambda: self.parent.doAndPlot(self.parent.resetIgnore))
         self.plot    = (lambda: zoomReader(self.parent), 
@@ -53,7 +54,7 @@ class Gui(object):
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),
                         lambda: Save(self.parent), 
                         lambda: Save(self.parent,lambda name,ext: self.parent.fitter.plot('.'.join((name,ext))),"Save plot data",'dat'),
-                        lambda: Save(self.parent,self.parent.saveSession),"Save session",'fsess')
+                        lambda: Save(self.parent,self.parent.saveSession,"Save session",'fsess'))
         self.calc    = (lambda: self.parent.doAndPlot(self.parent.calc),
                         lambda: paramReader(self.parent,self.parent.getError,'errorer','Find error on parameter'))
     def bindCommands(self):
