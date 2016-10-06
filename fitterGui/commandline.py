@@ -85,6 +85,7 @@ class commandLine(object):
             res = event.split(',')
             
         needReset = False
+        toadd = ''
         for cmdstr in res:
             cmd = cmdstr.replace(' ','')
             try: 
@@ -103,7 +104,7 @@ class commandLine(object):
                 if e.message[:len(passDoubleFreeze)] != passDoubleFreeze:
                     messagebox.showerror('Failed to parse!',self.param+' is not a model parameter, missing index?')
                     break
-            self.cmdHist.append(cmd.replace('thaw','thaw ').replace('freeze','freeze '))
+            toadd += cmd.replace('thaw','thaw ').replace('freeze','freeze ') + ','
             try:
                 event.widget.delete(0,len(cmdstr))
                 if res[-1] != cmdstr: event.widget.delete(0,1)
@@ -111,6 +112,8 @@ class commandLine(object):
         if needReset:
             self.parent.params.resetErrors()
         self.parent.doAndPlot(self.parent.calc)
+        if toadd:
+            self.cmdHist.append(toadd[:-1])
         self.currentCmd = len(self.cmdHist)
 
     def resizeCmd(self,event):
