@@ -11,8 +11,13 @@ class parameterFrame(object):
         self.parent.root.bind('<Control-f>',lambda event: paramReader(self.parent,self.find,"finder","Find parameter"))
 
     def find(self,index,param):
-        try: place = sorted(self.parent.paramLabels).index((index,param))
-        except ValueError:
+        place = 0
+        for (i,p),_ in self.parent.fitter.getParams():
+            if i == index and len(param) <= len(p) and p[:len(param)] == param:
+                param = p
+                break
+            place += 1
+        if place == len(self.parent.paramLabels):
             messagebox.showerror("No such parameter","Please make sure "+str(index)+":"+param+" exists")
             return
         placement = place / (len(self.parent.paramLabels)+1.0)
@@ -62,7 +67,7 @@ class parameterFrame(object):
         self.parent.errors = {}
 
     def relabel(self):
-        for iparam,value in self.parent.fitter.current.getParams():
+        for iparam,value in self.parent.fitter.getParams():
             entry = self.parent.paramLabels[iparam][1]
             entry.delete(0,END)
             entry.insert(0,str(value))
@@ -80,7 +85,7 @@ class parameterFrame(object):
         count = 1
         if self.parent.fitter.current == None: return
         self.parent.thawedDict = {}
-        for (index,param),value in sorted(self.parent.fitter.current.getParams()):
+        for (index,param),value in self.parent.fitter.getParams():
             l1 = Label(self.frame, text=str(index)+":"+param,width=12,justify = LEFT, font = ('courier',12),bg='aliceblue',anchor=N+W)
             l1.grid(sticky=ALL,row=count, column=0),
             l2 = Entry(self.frame,justify = LEFT, font = ('courier',12),bg='aliceblue',width=7)

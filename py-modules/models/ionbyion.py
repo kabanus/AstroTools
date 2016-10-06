@@ -38,7 +38,7 @@ class ibifit(_singleModel):
     description = 'Ion by ion absorption'
     def __init__(self, lines = deflinepath, fcut = 10**-3):
         super(ibifit,self).__init__()
-        self.params = {'kT':0.1,'redshift':0,'vturb':0}
+        self.params = {'~kT':0.1,'~redshift':0,'~vturb':0}
         self.ions   = {}
         if os.path.isfile(lines):
             raise Exception('ibi from file not implemented')
@@ -159,8 +159,8 @@ class ibifit(_singleModel):
         return cs
 
     def generator(self):
-        kT       = self.params['kT']
-        vturb    = self.params['vturb']
+        kT       = self.params['~kT']
+        vturb    = self.params['~vturb']
         for ion in self.ions.keys():
             exec('self.ions[ion].t = lambda wl: self.taumodel(wl,"'+
                                                     str(ion)+'",'+
@@ -176,18 +176,18 @@ class ibifit(_singleModel):
     def _calculate(self,atrange, units = 10**18):
         Nions = []
         gen = False
-        gparams = ['kT','vturb']
+        gparams = ['~kT','~vturb']
         for param in self.changed:
             if param in gparams:
                 if not gen:
                     self.generator()
                     gen = True
                     break
-            elif param != 'redshift': Nions.append(param)
+            elif param != '~redshift': Nions.append(param)
 
         for wl in atrange:
             wl = 0.001*evAfac/wl
-            wl /= (1+self.params['redshift'])
+            wl /= (1+self.params['~redshift'])
             if wl in self.wlhash: 
                 for ion in Nions:
                     if ion not in self.wlhash[wl]: self.wlhash[wl][ion] = self.ions[ion].t(wl)
@@ -200,7 +200,7 @@ class ibifit(_singleModel):
 
     def setp(self, pDict):
         _singleModel.setp(self, pDict)
-        gparams = ['kT','redshift','vturb']
+        gparams = ['~kT','~redshift','~vturb']
         self.nzeroions = []
         for param in self.params:
             if param not in gparams:

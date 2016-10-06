@@ -125,7 +125,7 @@ if True or __name__ == "__main__":
 
         def dumpParams(self):
             cmd = ""
-            for (index,param),value in sorted(self.fitter.current.getParams()):
+            for (index,param),value in self.fitter.getParams():
                 cmd += str(index)+':'+param+" = "+str(value)+','
             for (index,param) in sorted(self.thawedDict):
                 if self.thawedDict[(index,param)][0].get():

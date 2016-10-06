@@ -1,3 +1,5 @@
+import re
+
 class Fitter(object):
     from _plotdefs import CHANNEL,ENERGY,WAVE
     
@@ -32,13 +34,19 @@ class Fitter(object):
     from _error    import error
     from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift,initplot,plotModel
 
+    #utility
+    @staticmethod
+    def alphanum(x):
+        i,p = x[0] 
+        return (i,[int(c) if c.isdigit() else c for c in re.split('(\d+)',p)])
+    
     #Model wrappers
     def thaw(self, *params):
         self.current.thaw(*params)
     def getThawed(self):
         return self.current.getThawed()
     def getParams(self):
-        return list(self.current.getParams())
+        return sorted(self.current.getParams(),key = Fitter.alphanum)
     def initArgs(self):
         return self.current.initArgs()
     def freeze(self, *params):
