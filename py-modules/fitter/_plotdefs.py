@@ -70,7 +70,10 @@ def _labelaxes(self, model):
         Iplot.x.label('$\AA$')
         Iplot.y.label('ph s$^{-1}$ $\AA^{-1}$')
 
-def plotModel(self,start,stop,delta):
+def plotModel(self,start = None,stop = None,delta = None):
+    if start == None: start = self.plotmodel[0][0]
+    if stop  == None: stop  = self.plotmodel[-1][0]
+    if delta == None: delta = self.plotmodel[1][0]-self.plotmodel[0][0]
     energies = array(
         [start+i*delta for i in range(1+int((stop-start)/delta))])
     model = self.current.tofit(energies)
@@ -95,6 +98,7 @@ def plot(self, save = None, user = True):
     model = None
     if not user and self.plotmodel:
         model = self.plotmodel
+    else: self.plotmodel = False
 
     if model == None:
         self.plotmodel = None

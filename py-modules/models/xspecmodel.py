@@ -5,13 +5,15 @@ try:
     from collections import OrderedDict
     from model import _singleModel,modelExport
     from numpy import array_equal,array
+
     
     @modelExport
     class Xspec(_singleModel):
+        modelCounter = ''
         description = "Any Xspec model(Same syntax)"
         def __init__(self, modelString):
             _singleModel.__init__(self)
-            self.model    = xspec.Model(modelString)
+            self.model    = xspec.Model(modelString,str(Xspec.modelCounter))
             self.plot     = xspec.plot.Plot
             self.params   = OrderedDict(((str(i)+':'+self.model(i).name,self.model(i).values[0]) 
                                     for i in range(1,self.model.nParameters+1)))
@@ -20,9 +22,13 @@ try:
             self.plot('model')
             self.plot.xAxis='keV'
             self.string = modelString
+            self.counter = Xspec.modelCounter
+            if Xspec.modelCounter == '': 
+                Xspec.modelCounter = 0
+            Xspec.modelCounter += 1
 
         def update(self):
-            self.plot()
+            self.plot("model " + str(self.counter))
             self.ehash = array(self.plot.model())
 
         def reload(self,atrange):

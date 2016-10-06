@@ -14,7 +14,7 @@ class Gui(object):
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
                 ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
                                           'Rest frame axis Z','Remove rest frame axis',
-                                          'Shift data Z','Remove data Z','Model')),
+                                          'Shift data Z','Remove data Z','Model','Data')),
                 ('Ignore', self.ignore,  ('Ignore','Reset')),
                 ('Model' , parent.loadModel, None),
                 ('Fit'   , parent.runFit, None),
@@ -50,7 +50,8 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(False)),
                         lambda: zReader(self.parent,True),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(True)),
-                        lambda: rangeReader(self.parent))
+                        lambda: rangeReader(self.parent),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.plot()))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),
                         lambda: Save(self.parent), 
                         lambda: Save(self.parent,lambda name,ext: self.parent.fitter.plot('.'.join((name,ext))),"Save plot data",'dat'),

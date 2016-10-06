@@ -52,7 +52,7 @@ class parameterFrame(object):
             event.widget.insert(0,self.lastEntry)
         elif current != self.lastEntry:
             try:
-                self.parent.fitter.current.setp({(index,param):float(current)})
+                self.parent.fitter.setp({(index,param):float(current)})
                 self.resetErrors()
             except ValueError: 
                 event.widget.delete(0,END)

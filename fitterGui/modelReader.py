@@ -116,6 +116,9 @@ class modelReader(object):
         self.width  = parent.width
         self.height = parent.height
         self.parent = parent
+        
+        for package in self.parent.xspec_packages:
+            models.Xspec.lmod(*package)
 
         if not gui: return
         self.root   = Toplevel(self.parent.root)
@@ -124,9 +127,6 @@ class modelReader(object):
         self.root.wm_title("Build Model")
         self.root.resizable(0,0) 
         self.make_frames()
-
-        for package in self.parent.xspec_packages:
-            models.Xspec.lmod(*package)
 
         Button( self.main, text = 'Parse', command = self.parse).grid( column = 2, row = 3, rowspan = 2, sticky = ALL)
         Button( self.main, text = 'Cancel', command = self.root.destroy).grid( column = 2, row = 1, rowspan = 2, sticky = ALL)

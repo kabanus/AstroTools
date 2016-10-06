@@ -102,7 +102,7 @@ if True or __name__ == "__main__":
             self.root.mainloop()
 
         def refreshPlot(self):
-            try: self.fitter.plot()
+            try: self.fitter.plot(user = False)
             except AttributeError: pass
             self.canvas.show()
             self.canvas.get_tk_widget().pack( side = TOP, fill = BOTH, expand = 1) 
@@ -154,13 +154,19 @@ if True or __name__ == "__main__":
             try: self.load(self.fitter.transmit,init['tran'])
             except KeyError: pass
             try: self.fitter.setplot(int(init['ptype']))
+            except (KeyError,AttributeError): pass
+            try:
+                pkgs = init['xspecpackages'].split(',')
+                for i in range(0,len(pkgs),2):
+                    if [pkgs[i],pkgs[i+1]] not in self.xspec_packages:
+                        self.xspec_packages.append([pkgs[i],pkgs[i+1]])
             except KeyError: pass
             
             try:
                 ignored = init['Ignored']
                 ig = ignoreReader(self,False)
                 ig.parse(ignored)
-            except KeyError: pass
+            except (KeyError,AttributeError): pass
         
             try: 
                 model     = modelReader(self,False)
@@ -169,7 +175,7 @@ if True or __name__ == "__main__":
                 e = init['errors'].split(',')
                 self.ranfit = True
                 l = 4
-                for index,param,mine,maxe in ([e[n] for n in range(i,i+l) ] for i in range(0,len(e),l)):
+                for index,param,mine,maxe in ([e[n] for n in range(i,i+l)] for i in range(0,len(e),l)):
                     iparam = (int(index),param)
                     self.errors[iparam] = (float(mine),float(maxe))
                     error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
@@ -198,6 +204,8 @@ if True or __name__ == "__main__":
             except AttributeError: pass
             if self.errors:
                 writeline('errors:'+str(self.errors).translate(None,"(){} '").replace(':',','))
+            if self.xspec_packages:
+                writeline('xspecpackages:'+str(self.xspec_packages).translate(None,"[] '"))
            
             fd.close()
 
@@ -263,6 +271,7 @@ if True or __name__ == "__main__":
             except AttributeError: pass
             try:  self.datafile.set('Data: ' + self.fitter.data_file.split('/')[-1]) 
             except AttributeError: pass
+            self.fitter.plot()
 
         def getError(self, index, param):
             if not self.ranfit:
@@ -307,8 +316,10 @@ if True or __name__ == "__main__":
         def calc(self):
             m = runMsg(self)
             try:
-                self.fitter.checkLoaded()
-                self.fitter.calc()              
+                if not self.fitter.plotmodel:
+                    self.fitter.checkLoaded()
+                    self.fitter.calc()
+                else: self.fitter.plotModel()
                 self.refreshPlot()
             except (AttributeError,self.fitter.dataResponseMismatch): pass
             finally:
