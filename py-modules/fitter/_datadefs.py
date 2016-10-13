@@ -54,9 +54,9 @@ def ignore(self, minX, maxX):
             if self.ptype == self.CHANNEL: 
                 channels = range(minX,maxX+1)
             if self.ptype == self.ENERGY : 
-                channels = self.resp.energy_to_channels(minX, maxX)
+                channels = self.resp.energy_to_channel(minX, maxX)
             if self.ptype == self.WAVE: 
-                channels    = self.resp.wl_to_channels(minX, maxX)
+                channels    = self.resp.wl_to_channel(minX, maxX)
             fitshandler.ignore(channels)
         self.plot(user = False)
     except AttributeError:

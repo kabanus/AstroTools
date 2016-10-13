@@ -87,7 +87,8 @@ class ignoreReader(entryWindow):
             messagebox.showerror('Failed to resize!', 'All values must be integers: '+str(e))
             return
         for start,stop in channels:
-            self.parent.doAndPlot(lambda: self.parent.fitter.ignore(start,stop))
+            self.parent.fitter.ignore(start,stop)
+        self.parent.refreshPlot()
 
         ignored = ''
         deleted = sorted(self.parent.fitter.data.deleted)

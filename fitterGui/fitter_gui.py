@@ -151,9 +151,11 @@ if True or __name__ == "__main__":
             try: 
                 if self.fitter.resp == None: self.load(self.fitter.loadResp,init['resp'])
             except KeyError: pass
-            try: self.load(self.fitter.transmit,init['tran'])
+            try: 
+                self.load(self.fitter.transmit,init['tran'])
             except KeyError: pass
-            try: self.fitter.setplot(int(init['ptype']))
+            try: 
+                self.fitter.setplot(int(init['ptype']))
             except (KeyError,AttributeError): pass
             try:
                 pkgs = init['xspecpackages'].split(',')
@@ -167,6 +169,10 @@ if True or __name__ == "__main__":
                 ig = ignoreReader(self,False)
                 ig.parse(ignored)
             except (KeyError,AttributeError): pass
+            except Exception as e:
+                messagebox.showerror("Failed to load session!",'Got ignore channels, but no data')
+                if self.debug: raise
+                return
         
             try: 
                 model     = modelReader(self,False)

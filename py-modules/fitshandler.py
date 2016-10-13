@@ -63,6 +63,7 @@ class Response(fitsHandler):
         return dot(self.matrix,vector*self.ebins)
 
     def _to_channel(self, minX, maxX, to = lambda x: x):
+        eps = 0.00001
         for channel in range(len(self.omatrix)):
             e0,e1  = self.ebounds[channel]
             if not e0 or not e1:
@@ -72,17 +73,17 @@ class Response(fitsHandler):
             x0 = min(to(e0),to(e1))
             x1 = max(to(e0),to(e1))
             if minX == maxX:
-                if x0 <= minX and x1 >= minX:
+                if x0 <= minX+eps and x1 >= minX-eps:
                     yield channel + 1
             else:
-                if x0 >= minX and x1 <= maxX:
+                if x0 <= maxX+eps and x1 >= minX-eps:
                     yield channel + 1
     
     keVAfac = 12.39842
     def wl_to_channel(self,minX,maxX):
-        return _to_channel(minX,maxX,lambda x: self.keVAfac/x)
+        return self._to_channel(minX,maxX,lambda x: self.keVAfac/x)
     def energy_to_channel(self,minX,maxX):
-        return _to_channel(minX,maxX)
+        return self._to_channel(minX,maxX)
 
     def energy(self,table = None, xonly = False):
         for row in table:
