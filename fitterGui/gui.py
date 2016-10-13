@@ -14,11 +14,11 @@ class Gui(object):
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
                 ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
                                           'Rest frame axis Z','Remove rest frame axis',
-                                          'Shift data Z','Remove data Z','Model','Data')),
+                                          'Shift data Z','Remove data Z','Model','Divide','Data')),
                 ('Ignore', self.ignore,  ('Ignore','Reset')),
                 ('Model' , parent.loadModel, None),
                 ('Fit'   , parent.runFit, None),
-                ('Run'   , self.calc, ('Model','Error')),
+                ('Calculate', self.calc, ('Model','Error','Group')),
                 ('Save'  , self.save, ('Params','Image','Plot','Session')),
                 ('Help'  , lambda: Help(parent), None),
                 ('Quit'  , parent._quit, None)):
@@ -51,13 +51,15 @@ class Gui(object):
                         lambda: zReader(self.parent,True),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(True)),
                         lambda: rangeReader(self.parent),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.plotDiv,user = False)),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.plot()))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),
                         lambda: Save(self.parent), 
                         lambda: Save(self.parent,lambda name,ext: self.parent.fitter.plot('.'.join((name,ext))),"Save plot data",'dat'),
                         lambda: Save(self.parent,self.parent.saveSession,"Save session",'fsess'))
         self.calc    = (lambda: self.parent.doAndPlot(self.parent.calc),
-                        lambda: paramReader(self.parent,self.parent.getError,'errorer','Find error on parameter'))
+                        lambda: paramReader(self.parent,self.parent.getError,'errorer','Find error on parameter'),
+                        lambda: rebinReader(self.parent))
     def bindCommands(self):
         self.parent.root.bind("<Return>",lambda event: self.parent.canvas.get_tk_widget().focus_set())
         self.parent.canvas.get_tk_widget().bind("<C>",lambda event: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(0)))

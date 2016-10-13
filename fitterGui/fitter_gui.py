@@ -242,7 +242,7 @@ if True or __name__ == "__main__":
                 paramFile.write(p.encode('utf-8')+'\n')
             paramFile.close
     
-        def load(self, what, res = None):
+        def load(self, what, res = None, user = True):
             if res == None: res = getfile('ds','dat','RMF','RSP')
             if not res: return 
             m = runMsg(self,"Loading data")
@@ -271,7 +271,7 @@ if True or __name__ == "__main__":
             except AttributeError: pass
             try:  self.datafile.set('Data: ' + self.fitter.data_file.split('/')[-1]) 
             except AttributeError: pass
-            self.fitter.plot()
+            self.fitter.plot(user=user)
 
         def getError(self, index, param):
             if not self.ranfit:

@@ -29,10 +29,10 @@ class Fitter(object):
     from _plotdefs import badPlotType, badZoomRange
 
     #Methods
-    from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset, untransmit 
+    from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset, untransmit, div, group
     from _modeling import chisq,reduced_chisq,append,delete,activate,nameModel,energies,tofit,fit
     from _error    import error
-    from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift,initplot,plotModel
+    from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift,initplot,plotModel, plotDiv
 
     #utility
     @staticmethod
@@ -56,5 +56,5 @@ class Fitter(object):
     def calc(self,pDict = {}):
         self.setp(pDict)
         self.result = self.tofit(self.energies())
-        self.plot(user = False)
+        self.plot()
 

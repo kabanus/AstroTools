@@ -62,58 +62,67 @@ class Response(fitsHandler):
     def convolve_channels(self,vector):
         return dot(self.matrix,vector*self.ebins)
 
+    def _to_channel(self, minX, maxX, to = lambda x: x):
+        for channel in range(len(self.omatrix)):
+            e0,e1  = self.ebounds[channel]
+            if not e0 or not e1:
+                yield 0
+                continue
+            energy = (e0+e1)/2.0
+            x0 = min(to(e0),to(e1))
+            x1 = max(to(e0),to(e1))
+            if minX == maxX:
+                if x0 <= minX and x1 >= minX:
+                    yield channel + 1
+            else:
+                if x0 >= minX and x1 <= maxX:
+                    yield channel + 1
+    
     keVAfac = 12.39842
-    def energy(self,table = None, forwl = False, ignore = []):
-        if ignore:
-            for channel in range(len(self.omatrix)):
-                e0,e1  = self.ebounds[channel]
-                if not e0 or not e1:
-                    yield 0
-                    continue
-                energy = (e0+e1)/2.0
-                w0 = self.keVAfac/e1
-                w1 = self.keVAfac/e0
-                wl = self.keVAfac/energy
-                if ignore[0] == ignore[1]:
-                    if ((not forwl and e0 <= ignore[0] and e1 >= ignore[0]) or
-                        (forwl and w0 <= ignore[0] and w1 >= ignore[0])):
-                        yield channel + 1
-                else:
-                    if ((not forwl and energy >= ignore[0] and energy <= ignore[1]) or
-                        (forwl and wl >= ignore[0] and wl <= ignore[1])):
-                        yield channel + 1
-        else:
-            for row in table:
-                if len(row) == 2:
-                    channel,count = row
-                else:
-                    channel,count,error = row
-                channel = int(channel - 1)
-                energy = (self.ebounds[channel][1]+self.ebounds[channel][0])/2.0
-                eerror = (self.ebounds[channel][1]-self.ebounds[channel][0])
-                cts    = count/eerror
-                if len(row) > 2: 
-                    error  = error/eerror
-                    yield [energy,eerror,cts,error]
-                else:
-                    if forwl:
-                        yield [energy,eerror,cts]
-                    else:
-                        yield [energy,cts]
+    def wl_to_channel(self,minX,maxX):
+        return _to_channel(minX,maxX,lambda x: self.keVAfac/x)
+    def energy_to_channel(self,minX,maxX):
+        return _to_channel(minX,maxX)
 
-    def wl(self, table):
-        for row in self.energy(table, True):
+    def energy(self,table = None, xonly = False):
+        for row in table:
+            if len(row) == 2:
+                channel,count = row
+            else:
+                channel,count,error = row
+            channel = int(channel - 1)
+            energy = (self.ebounds[channel][1]+self.ebounds[channel][0])/2.0
+            eerror = (self.ebounds[channel][1]-self.ebounds[channel][0])
+            if xonly:
+                if len(row) > 2: 
+                    yield [energy,eerror,count,error]
+                else: yield [energy,count]
+                continue
+            cts    = count/eerror
+            if len(row) > 2: 
+                error  = error/eerror
+                yield [energy,eerror,cts,error]
+            else:
+                yield [energy,cts]
+
+    def wl(self, table, xonly = False):
+        for row in self.energy(table, xonly):
+            row = list(row)
             E  = row[0]
-            dE = row[1]
-            dl = self.keVAfac*dE/E**2
-            row[0] = self.keVAfac/row[0]
-            if len(row) > 3:
-                row[1] = dl
-                row[2] = row[2]*dE/dl
-                row[3] = row[3]*dE/dl
+            dltodE = self.keVAfac/E**2
+            row[0] = self.keVAfac/E
+            if xonly:
+                if len(row) == 4:
+                    row[1] = dltodE*row[1] #dl
+                yield row
+                continue
+            if len(row) == 4:
+                row[1] = dltodE*row[1] #dl
+                row[2] = row[2]/dltodE
+                row[3] = row[3]/dltodE
                 yield row
             else:
-                yield (row[0],row[2]*dE/dl)
+                yield [row[0],row[1]/dltodE]
 
 class Data(fitsHandler):
     class lengthMismatch(Exception): pass
@@ -219,15 +228,18 @@ class Data(fitsHandler):
         me    = list( self.rebin(self.grouping,include_bad=True))
         div   = []
         err   = []
+        table = []
         for i in range(len(you)):
+            row = [i+1]
             if you[i][1]:
                 you[i][1] = float(you[i][1])
-                div.append(me[i][1]/you[i][1])
-                err.append( ((me[i][2]/you[i][1])**2+(me[i][1]*you[i][2]/you[i][1]**2)**2)**0.5 )
+                row.append(me[i][1]/you[i][1])
+                row.append( ((me[i][2]/you[i][1])**2+(me[i][1]*you[i][2]/you[i][1]**2)**2)**0.5 )
             else:
-                div.append(0)
-                err.append(0)
-        return div,err
+                row.append(0)
+                row.append(0)
+            table.append(row)
+        return table
 
     def reset(self):
         self.deleted  = set()

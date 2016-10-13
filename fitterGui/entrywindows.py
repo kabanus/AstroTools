@@ -36,9 +36,10 @@ class zReader(entryWindow):
         self.root.destroy()
 
 class rebinReader(entryWindow):
-    def __init__(self, parent):
+    def __init__(self, parent, group = False):
         try: entryWindow.__init__(self,parent,'data',"rebinner","Rebin")
         except AttributeError: return
+        self.group = group
     
     def parse(self, event):
         try: 
@@ -47,7 +48,10 @@ class rebinReader(entryWindow):
         except ValueError:
             messagebox.showerror('Bad rebin!', 'Only positive (>=1) integer please')
             return 
-        self.parent.doAndPlot(lambda: self.parent.fitter.rebin(res) )
+        if not self.group:
+            self.parent.doAndPlot(lambda: self.parent.fitter.rebin(res))
+        else:
+            self.parent.doAndPlot(lambda: self.parent.fitter.group(res))
         self.root.destroy()
 
 class ignoreReader(entryWindow):

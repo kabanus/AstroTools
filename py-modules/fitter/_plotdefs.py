@@ -57,18 +57,20 @@ def _shiftlist(l,z,ptype):
     return ([shift(x[0])]+x[1:] if shift(x[0]) != '' else x for x in l)
 
 def _labelaxes(self, model):
+    add = ''
+    if model: add = ' cm$^{-2}$'
     if self.ptype == self.CHANNEL:
         Iplot.x.label('Channel')
-        Iplot.y.label('ph s$^{-1}$ channel$^{-1}$')
+        if not model or len(model[0]) == 2:
+            Iplot.y.label('ph s$^{-1}$ channel$^{-1}$')
     if self.ptype == self.ENERGY:
         Iplot.x.label('keV')
-        if model != None:
-            Iplot.y.label('ph s$^{-1}$ keV$^{-1}$ cm$^{-2}$')
-        else:
-            Iplot.y.label('ph s$^{-1}$ keV$^{-1}$')
+        if not model or len(model[0]) == 2:
+            Iplot.y.label('ph s$^{-1}$ keV$^{-1}$'+add)
     if self.ptype == self.WAVE:
         Iplot.x.label('$\AA$')
-        Iplot.y.label('ph s$^{-1}$ $\AA^{-1}$')
+        if not model or len(model[0]) == 2:
+            Iplot.y.label('ph s$^{-1}$ $\AA^{-1}$'+add)
 
 def plotModel(self,start = None,stop = None,delta = None):
     if start == None: start = self.plotmodel[0][0]
@@ -78,6 +80,11 @@ def plotModel(self,start = None,stop = None,delta = None):
         [start+i*delta for i in range(1+int((stop-start)/delta))])
     model = self.current.tofit(energies)
     self.plotmodel = zip(energies,model)
+    self.plot(user = False)
+
+def plotDiv(self, other = None):
+    if other != None: self.div(other)
+    self.plotmodel = self.division
     self.plot(user = False)
 
 _writePlot = lambda self,table: "\n".join((" ".join((str(x) for x in line)) for line in table))
@@ -101,7 +108,6 @@ def plot(self, save = None, user = True):
     else: self.plotmodel = False
 
     if model == None:
-        self.plotmodel = None
         plots = [self.data.rebin(self.binfactor)]
         if len(self.result) == len(self.data.channels):
             plots.append(self.data.rebin(self.binfactor,self.result))
@@ -117,7 +123,11 @@ def plot(self, save = None, user = True):
         else:
             _plotOrSave(save,(),list(plots[1]),'scatter',list(plots[0]))
     else:
-        self.ptype = self.ENERGY
+        if len(model[0]) > 2:
+            if self.ptype == self.WAVE:   model = list(self.resp.wl(model,True))
+            if self.ptype == self.ENERGY: model = list(self.resp.energy(model,True))
+        else:
+            self.ptype = self.ENERGY
         _plotOrSave(save,(),model)
     if save != None: return
 
