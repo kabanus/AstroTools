@@ -77,7 +77,7 @@ if True or __name__ == "__main__":
             self.errors      = {}
             
             make_frames(self)
-            self.params = parameterFrame(self,self.canvasDataFrame)
+            self.params = parameterFrame(self,self.canvasDataFrame,self.data_frame)
             self.params.draw()
 
             self.root.bind("<Key-Escape>",self._quit)
@@ -87,6 +87,8 @@ if True or __name__ == "__main__":
             #Only load figure after manager has been set
             self.fitter.initplot()
             nav = NavigationToolbar2TkAgg(self.canvas,self.main)
+            for child in nav.winfo_children():
+                child.configure(takefocus=False)
             Label(nav,textvar= self.datafile,padx=self.border).pack(side=LEFT)
             Label(nav,textvar= self.respfile,padx=self.border).pack(side=LEFT)
             Label(nav,textvar=self.backfile,padx=self.border).pack(side=LEFT)

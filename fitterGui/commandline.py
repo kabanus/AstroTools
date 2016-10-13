@@ -2,6 +2,7 @@ from Tkinter import Entry,END,LEFT
 import tkMessageBox as messagebox
 
 class commandLine(object):
+    class noModelWithParam(KeyError): pass
     def __init__(self, parent, frame):
         self.parent = parent
         self.currentCmd = -1
@@ -15,45 +16,42 @@ class commandLine(object):
 
     def parseParam(self):
         params = self.param.split(':')
-        self.index = int(params[0])
-        self.param = ":".join(params[1:]).strip()
+        try: self.index = int(params[0])
+        except ValueError:
+            if params[0] == '*': self.index = params[0]
+            else: raise
+        if (len(params) == 1 and self.index == "*") or params[1] =='*':
+            self.param = '*'
+        else:
+            self.param = ":".join(params[1:]).strip()
 
-    def parseThaw(self, cmd):
-        self.param = cmd[4:]
+    def parseToggleThaw(self,cmd,title,check):
+        self.param = cmd[title:]
         self.parseParam()
-        if self.param != '*':
-            if self.param == '*':
-                for self.param in self.parent.thawedDict:
-                    if self.param[0] != self.index: continue
-                    self.parent.thawedDict[self.param][0].set(1)
-                    self.parent.toggleParam(*self.param)
-            else:
-                self.parent.thawedDict[(self.index,self.param)][0].set(1)
-                self.parent.toggleParam(self.index,self.param)
+        if self.index != '*' and self.param != '*':
+            self.parent.thawedDict[(self.index,self.param)][0].set(check)
+            self.parent.toggleParam(self.index,self.param)
         else:
-            for self.param in self.parent.thawedDict: 
-                self.parent.thawedDict[self.param][0].set(1)
-                self.parent.toggleParam(*self.param)
-
-    def parseFreeze(self, cmd):
-        self.param = cmd[6:]
-        if self.param != '*':
-            self.parseParam()
-            if self.param == '*':
-                for self.param in self.parent.thawedDict:
-                    if self.param[0] != self.index: continue
-                    self.parent.thawedDict[self.param][0].set(0)
-                    self.parent.toggleParam(*self.param)
-            else:
-                self.parent.thawedDict[(self.index,self.param)][0].set(0)
-                self.parent.toggleParam(self.index,self.param)
-        else:
-            for self.param in self.parent.thawedDict: 
-                self.parent.thawedDict[self.param][0].set(0)
+            p = self.param
+            toggled = False
+            for self.param in self.parent.thawedDict:
+                if self.index != '*' and self.param[0] != self.index: continue
+                if p != '*' and p != self.param[1]: continue
+                toggled = True
+                self.parent.thawedDict[self.param][0].set(check)
                 try: self.parent.toggleParam(*self.param)
                 except ValueError as e:
                     passDoubleFreeze = "list.remove"
                     if e.message[:len(passDoubleFreeze)] != passDoubleFreeze: raise
+            if not toggled: 
+                self.param = str(self.param[1])
+                raise self.noModelWithParam(self.param)
+
+    def parseThaw(self, cmd):
+        self.parseToggleThaw(cmd,4,1)
+
+    def parseFreeze(self, cmd):
+        self.parseToggleThaw(cmd,6,0)
 
     def parseSet(self, cmd):
         try:
@@ -96,6 +94,9 @@ class commandLine(object):
                 else:
                     if not self.parseSet(cmd): break
                     needReset = True
+            except self.noModelWithParam:
+                messagebox.showerror('Failed to parse!',self.param+' is not a parameter of any component')
+                break
             except (KeyError,IndexError):
                 messagebox.showerror('Failed to parse!',str(self.index)+':'+self.param+' is not a model parameter')
                 break
@@ -111,6 +112,8 @@ class commandLine(object):
             except AttributeError: pass
         if needReset:
             self.parent.params.resetErrors()
+        self.parent.params.togglehide()
+        self.parent.params.togglehide()
         self.parent.doAndPlot(self.parent.calc)
         if toadd:
             self.cmdHist.append(toadd[:-1])

@@ -38,7 +38,7 @@ class ibifit(_singleModel):
     description = 'Ion by ion absorption'
     def __init__(self, lines = deflinepath, fcut = 10**-3):
         super(ibifit,self).__init__()
-        self.params = {'~kT':0.1,'~redshift':0,'~vturb':0}
+        self.params = {'~kT':0.1,'~redshift':0,'~vturb':0,'~C':1}
         self.ions   = {}
         if os.path.isfile(lines):
             raise Exception('ibi from file not implemented')
@@ -183,7 +183,7 @@ class ibifit(_singleModel):
                     self.generator()
                     gen = True
                     break
-            elif param != '~redshift': Nions.append(param)
+            elif param != '~redshift' and param != '~C': Nions.append(param)
 
         for wl in atrange:
             wl = 0.001*evAfac/wl
@@ -196,11 +196,12 @@ class ibifit(_singleModel):
                 for ion in self.nzeroions:
                     self.wlhash[wl][ion] = self.ions[ion].t(wl)
            
-            yield exp(sum( (-self.params[ion]*units*self.wlhash[wl][ion] for ion in self.wlhash[wl]) ))
+            yield self.params['~C']*exp(sum( (-self.params[ion]*units*self.wlhash[wl][ion] 
+                                                for ion in self.wlhash[wl]) ))
 
     def setp(self, pDict):
         _singleModel.setp(self, pDict)
-        gparams = ['~kT','~redshift','~vturb']
+        gparams = ['~kT','~redshift','~vturb','~C']
         self.nzeroions = []
         for param in self.params:
             if param not in gparams:

@@ -26,7 +26,7 @@ class Gui(object):
             self.border = parent.border
             if not col%2: self.border = 0
             if labels == None:
-                Button(parent.gui, text=title , command=cmd).grid(row=0,column = col, sticky=ALL, padx= self.border)
+                Button(parent.gui, text=title , command=cmd, takefocus = False).grid(row=0,column = col, sticky=ALL, padx= self.border)
             else:
                 self.makeMenu(col, title, labels, cmd)
         self.bindCommands()
