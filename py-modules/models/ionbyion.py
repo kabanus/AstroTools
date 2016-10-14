@@ -196,8 +196,8 @@ class ibifit(_singleModel):
                 for ion in self.nzeroions:
                     self.wlhash[wl][ion] = self.ions[ion].t(wl)
            
-            yield self.params['~C']*exp(sum( (-self.params[ion]*units*self.wlhash[wl][ion] 
-                                                for ion in self.wlhash[wl]) ))
+            yield 1-self.params['~C']*(1-exp(sum( (-self.params[ion]*units*self.wlhash[wl][ion] 
+                                                                    for ion in self.wlhash[wl]) )))
 
     def setp(self, pDict):
         _singleModel.setp(self, pDict)
@@ -208,4 +208,8 @@ class ibifit(_singleModel):
                 if self.params[param] > 0:
                     self.nzeroions.append(param)
                 else: self.params[param] = 0
+        if self.params['~C'] > 1:
+            self.params['~C'] = 1
+        if self.params['~C'] < 0:
+            self.params['~C'] = 0
 
