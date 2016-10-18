@@ -100,7 +100,7 @@ class Tables(simple):
         except: pass
         res = OrderedDict(sorted(dic.items()))
         for p in res:
-            res[p] = _sortParams(res[p])
+            res[p] = self._sortParams(res[p])
         return res
 
     def pget(self, chash, *args):

@@ -73,7 +73,7 @@ def binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal):
             frontp = self.current[iparam]
         if ofrontp == frontp:
             limit -= 1
-        else: ofrontp == frontp
+        else: ofrontp = frontp
         if not limit:
             self.setp({iparam:frontp})
             return 

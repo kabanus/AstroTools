@@ -43,14 +43,18 @@ class Fitter(object):
     #Model wrappers
     def thaw(self, *params):
         self.current.thaw(*params)
+    def freeze(self, *params):
+        self.current.freeze(*params)
     def getThawed(self):
         return self.current.getThawed()
     def getParams(self):
         return sorted(self.current.getParams(),key = Fitter.alphanum)
     def initArgs(self):
         return self.current.initArgs()
-    def freeze(self, *params):
-        self.current.freeze(*params)
+    def tie(self,what,to):
+        self.current.tie(what,to)
+    def is_tied(self,index,param):
+        return self.current.is_tied(index,param)
     def setp(self,pDict):
         self.current.setp(pDict)
     def calc(self,pDict = {}):

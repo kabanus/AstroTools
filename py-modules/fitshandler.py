@@ -5,7 +5,7 @@ from numpy             import int as ndint
 from numpy             import max as ndmax
 from numpy             import array,dot,inf,delete,sort,zeros,unravel_index,argmax
 from itertools         import izip
-from matplotlib.pyplot import imshow,show,figure
+from matplotlib.pyplot import show,figure
 
 class fitsHandler(object): pass
 
@@ -227,8 +227,6 @@ class Data(fitsHandler):
     def __div__(self,other):
         you   = list(other.rebin(self.grouping,include_bad=True))
         me    = list( self.rebin(self.grouping,include_bad=True))
-        div   = []
-        err   = []
         table = []
         for i in range(len(you)):
             row = [i+1]

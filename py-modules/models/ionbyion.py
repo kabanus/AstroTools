@@ -161,7 +161,7 @@ class ibifit(_singleModel):
     def generator(self):
         kT       = self.params['~kT']
         vturb    = self.params['~vturb']
-        for ion in self.ions.keys():
+        for ion in self.ions:
             exec('self.ions[ion].t = lambda wl: self.taumodel(wl,"'+
                                                     str(ion)+'",'+
                                                     str(kT) +','+

@@ -173,7 +173,6 @@ if True or __name__ == "__main__":
             except (KeyError,AttributeError): pass
             except Exception as e:
                 messagebox.showerror("Failed to load session!",'Got ignore channels, but no data')
-                if self.debug: raise
                 return
         
             try: 
@@ -288,7 +287,6 @@ if True or __name__ == "__main__":
                 return
             
             iparam = (index,param)
-
             #Message construct used so beep is heard before message, and save return on each one.
             try:
                 m = runMsg(self)
@@ -360,16 +358,19 @@ if True or __name__ == "__main__":
                 self.ranfit = True
             except AttributeError: 
                 messagebox.showerror('Failed fit!',"No fitting method!")
+                if self.debug: raise
             except RuntimeError:
                 messagebox.showerror('Failed fit!',"Can't converge, too many free parameters?")
+                if self.debug: raise
             except Exception as e:
                 messagebox.showerror('Failed fit!',e)
                 raise
             finally:
-                self.params.relabel()
-                self.params.resetErrors()
-                self.ring()
-                m.destroy()
+                if not self.debug:
+                    self.params.relabel()
+                    self.params.resetErrors()
+                    self.ring()
+                    m.destroy()
             try:
                 for index,param in thawed:
                     self.thawedDict[(index,param)][1].set('(%.2E)'%self.fitter.stderr[(index,param)])

@@ -73,9 +73,14 @@ class parameterFrame(object):
             event.widget.insert(0,self.lastEntry)
         elif current != self.lastEntry:
             try:
-                self.parent.fitter.setp({(index,param):float(current)})
+                try:
+                    self.parent.fitter.setp({(index,param):float(current)})
+                except ValueError:
+                    to_index,to_param = current.split(":")
+                    to_param          = to_param.split("=")[0]
+                    self.parent.fitter.tie((index,param),(int(to_index),to_param))
                 self.resetErrors()
-            except ValueError: 
+            except (KeyError,ValueError):
                 event.widget.delete(0,END)
                 event.widget.insert(0,self.lastEntry)
         event.widget.configure(background='aliceblue')
@@ -91,7 +96,11 @@ class parameterFrame(object):
         for iparam,value in self.parent.fitter.getParams():
             entry = self.parent.paramLabels[iparam][1]
             entry.delete(0,END)
-            entry.insert(0,str(value))
+            tied = self.parent.fitter.is_tied(*iparam)
+            if not tied: tied =''
+            else:
+                tied = str(tied[0])+":"+tied[1]+"="
+            entry.insert(0,tied+str(value))
         self.parent.dataCanvas.update_idletasks()
         try: 
             self.parent.statistic.set(u"Reduced \u03C7\u00B2: " + str(self.parent.fitter.reduced_chisq()))

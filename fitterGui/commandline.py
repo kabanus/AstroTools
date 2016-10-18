@@ -25,27 +25,30 @@ class commandLine(object):
         else:
             self.param = ":".join(params[1:]).strip()
 
+    def iterIndex(self,index):
+        if index == '*':
+            for index in range(1,len(self.parent.fitter.current.__params__)+1): yield index
+            return
+        else: yield index
+        
+    def iterParam(self,index,param):
+        if param == '*':
+            for param in self.parent.fitter.current.__params__[index-1]: yield param
+            return
+        else: yield param
+                
+
     def parseToggleThaw(self,cmd,title,check):
         self.param = cmd[title:]
         self.parseParam()
-        if self.index != '*' and self.param != '*':
-            self.parent.thawedDict[(self.index,self.param)][0].set(check)
-            self.parent.toggleParam(self.index,self.param)
-        else:
-            p = self.param
-            toggled = False
-            for self.param in self.parent.thawedDict:
-                if self.index != '*' and self.param[0] != self.index: continue
-                if p != '*' and p != self.param[1]: continue
-                toggled = True
-                self.parent.thawedDict[self.param][0].set(check)
-                try: self.parent.toggleParam(*self.param)
-                except ValueError as e:
-                    passDoubleFreeze = "list.remove"
-                    if e.message[:len(passDoubleFreeze)] != passDoubleFreeze: raise
-            if not toggled: 
-                self.param = str(self.param[1])
-                raise self.noModelWithParam(self.param)
+        self.oparam = self.param
+        for index in self.iterIndex(self.index):
+            self.param = self.oparam
+            for param in self.iterParam(index, self.param):
+                self.index = index
+                self.param = param   
+                self.parent.thawedDict[(index,param)][0].set(check)
+                self.parent.toggleParam(index,param)
 
     def parseThaw(self, cmd):
         self.parseToggleThaw(cmd,4,1)
@@ -59,16 +62,19 @@ class commandLine(object):
             self.parseParam()
         except ValueError:
             messagebox.showerror('Failed to parse!','Command must be either freeze <index:param>, thaw <index:param>, or <index:param>=<value>')
+            if self.parent.debug: raise
             return False 
-            
-        self.parent.fitter.current[(self.index,self.param)]
+
         try: 
-            self.parent.fitter.current.setp({(self.index,self.param):float(value)})
+            if self.index == self.param == '*':
+                self.parent.fitter.current.setp({'*':float(value)})
+            else:
+                self.parent.fitter.current.setp({(self.index,self.param):float(value)})
             self.parent.ranfit = False
-            self.parent.paramLabels[(self.index,self.param)][1].delete(0,END)
-            self.parent.paramLabels[(self.index,self.param)][1].insert(0,value)
+            self.parent.params.relabel()
         except ValueError: 
             messagebox.showerror('Failed to parse!','Value for '+str(self.index)+':'+self.param+' is not a float')
+            if self.parent.debug: raise
             return False
         return True
 
@@ -96,14 +102,17 @@ class commandLine(object):
                     needReset = True
             except self.noModelWithParam:
                 messagebox.showerror('Failed to parse!',self.param+' is not a parameter of any component')
+                if self.parent.debug: raise
                 break
             except (KeyError,IndexError):
                 messagebox.showerror('Failed to parse!',str(self.index)+':'+self.param+' is not a model parameter')
+                if self.parent.debug: raise
                 break
             except ValueError as e:
                 passDoubleFreeze = "list.remove"
                 if e.message[:len(passDoubleFreeze)] != passDoubleFreeze:
                     messagebox.showerror('Failed to parse!',self.param+' is not a model parameter, missing index?')
+                    if self.parent.debug: raise
                     break
             toadd += cmd.replace('thaw','thaw ').replace('freeze','freeze ') + ','
             try:
