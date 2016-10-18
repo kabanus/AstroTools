@@ -19,14 +19,15 @@ def oneSidedError(self, index, param, direction, epsilon,v0):
     needfit = self.current.getThawed()
     #90% confidence interval
     goal = 2.76
-
-    run_away(self,initial,needfit,bestchi,thawed,iparam,save,direction,v0)
-    binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal)
-    slide_away(self,iparam,needfit,bestchi,direction,epsilon,goal,save,thawed,v0)
-
-    result = self.current[iparam]
-    self.calc(save)
-    if thawed: self.thaw(iparam)
+    
+    try:
+        run_away(self,initial,needfit,bestchi,thawed,iparam,save,direction,v0)
+        binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal)
+        slide_away(self,iparam,needfit,bestchi,direction,epsilon,goal,save,thawed,v0)
+    finally:
+        result = self.current[iparam]
+        self.calc(save)
+        if thawed: self.thaw(iparam)
     return result - self.current[iparam]
 
 def slide_away(self,iparam,needfit,bestchi,direction,epsilon,goal,save,thawed,v0):
@@ -88,7 +89,9 @@ def run_away(self,initial,needfit,bestchi,thawed,iparam,save,direction,v0):
     while abs(oldchi-bestchi) < 2.76:
         if not insert_and_continue(self,iparam,self.current[iparam]+v0*t): break
         self.calc()
+
         if needfit: self.fit()
+
         tmp = self.chisq()
         if tmp < bestchi:
             if thawed: self.thaw(iparam)

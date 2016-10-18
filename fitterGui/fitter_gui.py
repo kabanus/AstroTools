@@ -296,7 +296,7 @@ if True or __name__ == "__main__":
                 title, err = ('No such parameter!','Check yourself')
             except KeyboardInterrupt: 
                 title, err = ('Halt',"Caught Keyboard - thawed parameters may have changed.")
-            except self.fitter.errorNotConverging:
+            except (self.fitter.errorNotConverging,RuntimeError):
                 title, err = ('Error not converging!',"Statistic insensitive to parameter")
             except self.fitter.newBestFitFound:
                 title, err = ('Error not converging!',"Found new best fit! Space not convex.")
