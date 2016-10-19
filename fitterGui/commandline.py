@@ -65,17 +65,21 @@ class commandLine(object):
             if self.parent.debug: raise
             return False 
 
-        try: 
+        try:
             if self.index == self.param == '*':
                 self.parent.fitter.current.setp({'*':float(value)})
             else:
                 self.parent.fitter.current.setp({(self.index,self.param):float(value)})
-            self.parent.ranfit = False
-            self.parent.params.relabel()
-        except ValueError: 
-            messagebox.showerror('Failed to parse!','Value for '+str(self.index)+':'+self.param+' is not a float')
-            if self.parent.debug: raise
-            return False
+        except ValueError:
+            try:
+                toind,topar = value.split(":")
+                self.parent.fitter.current.tie((self.index,self.param),(int(toind),topar))      
+            except KeyError:
+                messagebox.showerror('Failed to parse!','Value (' +str(value)+') for '+str(self.index)+':'+self.param+' is not a float')
+                if self.parent.debug: raise
+                return False
+        self.parent.ranfit = False
+        self.parent.params.relabel()
         return True
 
     def parseCmd(self, event):
