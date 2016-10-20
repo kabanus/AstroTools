@@ -14,7 +14,7 @@ class Gui(object):
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
                 ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
                                           'Rest frame axis Z','Remove rest frame axis',
-                                          'Shift data Z','Remove data Z','Model','Divide','Data')),
+                                          'Shift data Z','Remove data Z','Model','Divide','Toggle effective area','Data')),
                 ('Ignore', self.ignore,  ('Ignore','Reset')),
                 ('Model' , parent.loadModel, None),
                 ('Fit'   , parent.runFit, None),
@@ -52,6 +52,7 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(True)),
                         lambda: rangeReader(self.parent),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.plotDiv,user = False)),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.toggle_area()),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.plot()))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),
                         lambda: Save(self.parent), 

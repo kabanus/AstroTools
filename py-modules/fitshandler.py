@@ -47,6 +47,7 @@ class Response(fitsHandler):
                 channel += 1
                 energies[-1].append(0)
         self.omatrix  = array(energies).transpose()
+        self.oeff    = ndmax(self.omatrix,axis=1)
         self.reset() 
         self.ebins    = array(self.ebins)
         self.ebinAvg  = array(self.ebinAvg)
@@ -54,10 +55,12 @@ class Response(fitsHandler):
     def ignore(self, channels):
         self.deleted.update([c-1 for c in channels if c > 0 and c <= len(self.omatrix)])
         self.matrix = delete(self.omatrix,list(self.deleted), axis = 0)
+        self.eff    = delete(self.oeff,list(self.deleted))
 
     def reset(self):
         self.deleted = set()
         self.matrix  = array(self.omatrix,copy=True)
+        self.eff     = array(self.oeff,copy=True)
 
     def convolve_channels(self,vector):
         return dot(self.matrix,vector*self.ebins)
@@ -292,7 +295,8 @@ class Data(fitsHandler):
         return result,error
 
     #Plotter
-    def rebin(self,binfactor = None, model = None, errors = None, counts = False, include_bad = False):
+    def rebin(self,binfactor = None, model = None, errors = None, 
+                   counts = False, include_bad = False, eff = array(())):
         if binfactor == None:
             binfactor = self.grouping
         cts = self.counts
@@ -307,7 +311,7 @@ class Data(fitsHandler):
             if model != None and errors == None:
                 sums = [0,0]
 
-            scale = count = trans = 0
+            scale = count = trans = area = 0
             if self.background != None:
                 bcount  = bscale = bsscale = bbscale = 0
             while count < binfactor and ind < len(self.channels) and (not sums[0] or self.channels[ind]-self.channels[ind-1] == 1):
@@ -324,8 +328,11 @@ class Data(fitsHandler):
                     sums[2] += errors[ind]
                 try: trans += self.transmission[ind]
                 except AttributeError: pass
+                if eff.any(): 
+                    area += eff[ind]
                 ind += 1
             
+            area    /= float(count)
             sums[0] /= float(count)
             if model == None:
                 if self.background != None:
@@ -347,11 +354,17 @@ class Data(fitsHandler):
                         scale *= trans
                         if self.background != None:
                             bscale *= trans
+
+                    if area:
+                        scale *= area
+                        if self.background!= None:
+                            bscale *= area
                 sums[1],sums[2] = Data.scaleCounts(sums[1],scale,bcount,bscale)
             else:
-                sums[1] /= float(count)
+                if not area: area = 1
+                sums[1] /= float(count)*area
                 if errors != None:
-                    sums[2] /= float(count)
+                    sums[2] /= float(count)/area
             yield sums
 
 class Events(fitsHandler):

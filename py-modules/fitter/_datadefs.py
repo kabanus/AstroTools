@@ -58,6 +58,8 @@ def ignore(self, minX, maxX):
             if self.ptype == self.WAVE: 
                 channels    = self.resp.wl_to_channel(minX, maxX)
             fitshandler.ignore(channels)
+        if self.area.any():
+            self.area = self.resp.eff
         self.plot(user = False)
     except AttributeError:
         raise self.noIgnoreBeforeLoad()
@@ -73,6 +75,7 @@ def reset(self, zoom = True, ignore = True):
             try:
                 fitshandler.reset()
             except AttributeError: pass
-            self.plot(user = False)
+        if self.area.any():
+            self.area = self.resp.eff
     self.plot(user = False)
 

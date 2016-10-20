@@ -1,4 +1,5 @@
 import re
+from numpy import array
 
 class Fitter(object):
     from _plotdefs import CHANNEL,ENERGY,WAVE
@@ -16,6 +17,7 @@ class Fitter(object):
         self.ystart    = None
         self.ystop     = None
         self.plotmodel = False
+        self.area      = array(())
         self.initplot() 
         if data is not None:
             self.loadData(data)
@@ -32,7 +34,7 @@ class Fitter(object):
     from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset, untransmit, div, group
     from _modeling import chisq,reduced_chisq,append,delete,activate,nameModel,energies,tofit,fit
     from _error    import error
-    from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift,initplot,plotModel, plotDiv
+    from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift,initplot,plotModel, plotDiv, toggle_area
 
     #utility
     @staticmethod

@@ -1,5 +1,6 @@
 from plotInt import Iplot
 from numpy   import array
+from itertools import izip
 
 CHANNEL = 0
 ENERGY  = 1
@@ -52,17 +53,23 @@ def removeShift(self,data = False):
         self.dataz = None
     self.plot(user = False)
 
+def toggle_area(self):
+    if self.area.any():
+            self.area = array(())
+    else: self.area = self.resp.eff
+    self.plot(user = False)
+
 def _shiftlist(l,z,ptype):
     shift = _embedz(z,ptype)
     return ([shift(x[0])]+x[1:] if shift(x[0]) != '' else x for x in l)
 
 def _labelaxes(self, model):
     add = ''
-    if model: add = ' cm$^{-2}$'
+    if model or self.area.any(): add += ' cm$^{-2}$'
     if self.ptype == self.CHANNEL:
         Iplot.x.label('Channel')
         if not model or len(model[0]) == 2:
-            Iplot.y.label('ph s$^{-1}$ channel$^{-1}$')
+            Iplot.y.label('ph s$^{-1}$ channel$^{-1}$'+add)
     if self.ptype == self.ENERGY:
         Iplot.x.label('keV')
         if not model or len(model[0]) == 2:
@@ -108,9 +115,10 @@ def plot(self, save = None, user = True):
     else: self.plotmodel = False
 
     if model == None:
-        plots = [self.data.rebin(self.binfactor)]
+        plots = []
+        plots = [self.data.rebin(self.binfactor,eff=self.area)]
         if len(self.result) == len(self.data.channels):
-            plots.append(self.data.rebin(self.binfactor,self.result))
+            plots.append(self.data.rebin(self.binfactor,self.result,eff=self.area))
         for i in range(len(plots)):
             if self.ptype == self.ENERGY:
                 plots[i] = self.resp.energy(plots[i])
@@ -130,7 +138,6 @@ def plot(self, save = None, user = True):
             self.ptype = self.ENERGY
         _plotOrSave(save,(),model)
     if save != None: return
-
     _labelaxes(self,model)
 
     if self.axisz != None:
