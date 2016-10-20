@@ -82,8 +82,10 @@ class Model(object):
 
     def _setp(self, index, key, val):
         if self.__params__[index-1][key] != val:
-                self.__params__[index-1][key] = val
-                self._changed[index-1].add(key)
+                self.__params__[index-1][key] = val  
+                self.__params__[index-1].hook(index,key)
+                if self.__params__[index-1][key] != val:
+                    self._changed[index-1].add(key)
 
     def setp(self, pDict):
         if pDict.keys() == ['*']:
@@ -127,8 +129,11 @@ class _singleModel(Model):
         self.changed   = set()          #For easy use in models
         self._changed  = [self.changed] #Actually used
         self._params   = Parameters(()) #For easy use in models(self.params)
+        self._params.hook=self.sethook
         self.__params__  = [self._params] #Actually used
         self.wlhash   = {} #User's responsibility.
+        
+    def sethook(self, index, key): pass 
 
     @property
     def params(self):
@@ -136,6 +141,7 @@ class _singleModel(Model):
     @params.setter
     def params(self, dict_init):
         self._params.update(Parameters(dict_init))
+        self._params.hook = lambda index,key,s=self: s.sethook(index,key)
         return self.params 
     
     def calculate(self,xlist):
@@ -150,12 +156,10 @@ class _singleModel(Model):
 
 class _composite(Model):
     def __init__(self,model1,model2,relation):
-        try: self.first    = deepcopy(model1)
-        except copyError: self.first = model1  #Needed for XSPEC models
-        try: self.second   = deepcopy(model2)
-        except copyError: self.second = model2
+        self.first = model1
+        self.second = model2
         self.relation = relation
-        
+
         self.__params__  = self.first.__params__ + self.second.__params__
         self.thawed      = self.first.thawed     + self.second.thawed
         self._changed    = self.first._changed   + self.second._changed        

@@ -198,9 +198,8 @@ class ibifit(_singleModel):
            
             yield 1-self.params['~C']*(1-exp(sum( (-self.params[ion]*units*self.wlhash[wl][ion] 
                                                                     for ion in self.wlhash[wl]) )))
-
-    def setp(self, pDict):
-        _singleModel.setp(self, pDict)
+    
+    def sethook(self, index, key):
         gparams = ['~kT','~redshift','~vturb','~C']
         self.nzeroions = []
         for param in self.params:

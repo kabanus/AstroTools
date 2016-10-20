@@ -55,8 +55,7 @@ try:
                 self.update()
             return self.ehash
 
-        def setp(self, pDict):
-            _singleModel.setp(self,pDict)
+        def sethook(self, index, key):
             self.model.setPars(*self.params.values())
     
         def __str__(self):
