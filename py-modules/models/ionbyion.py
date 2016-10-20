@@ -62,7 +62,7 @@ class ibifit(_singleModel):
                     self.params[ion] = 0
         else:
             raise Exception("Can't understand how to init lines!")
-        self.nzeroions = []
+        self.nzeroions = set()
         self.generator()
     
     @staticmethod
@@ -184,7 +184,7 @@ class ibifit(_singleModel):
                     gen = True
                     break
             elif param != '~redshift' and param != '~C': Nions.append(param)
-
+        
         for wl in atrange:
             wl = 0.001*evAfac/wl
             wl /= (1+self.params['~redshift'])
@@ -201,14 +201,15 @@ class ibifit(_singleModel):
     
     def sethook(self, index, key):
         gparams = ['~kT','~redshift','~vturb','~C']
-        self.nzeroions = []
-        for param in self.params:
-            if param not in gparams:
-                if self.params[param] > 0:
-                    self.nzeroions.append(param)
-                else: self.params[param] = 0
-        if self.params['~C'] > 1:
-            self.params['~C'] = 1
-        if self.params['~C'] < 0:
-            self.params['~C'] = 0
+        if key not in gparams:
+            if self.params[key] > 0:
+                self.nzeroions.add(key)
+            else: 
+                self.params[key] = 0
+                self.nzeroions.discard(key)
+        elif key == '~C':
+            if self.params['~C'] > 1:
+                self.params['~C'] = 1
+            if self.params['~C'] < 0:
+                self.params['~C'] = 0
 

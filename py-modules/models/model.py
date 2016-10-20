@@ -82,12 +82,12 @@ class Model(object):
 
     def _setp(self, index, key, val):
         if self.__params__[index-1][key] != val:
-                self.__params__[index-1][key] = val  
+                self.__params__[index-1][key] = val
                 self.__params__[index-1].hook(index,key)
-                if self.__params__[index-1][key] != val:
+                if self.__params__[index-1][key] == val:
                     self._changed[index-1].add(key)
 
-    def setp(self, pDict):
+    def setp(self, pDict = {}, **kwargs):
         if pDict.keys() == ['*']:
             for index in range(1,len(self.__params__)+1):
                 for p in self.__params__[index-1]:
@@ -95,6 +95,8 @@ class Model(object):
             return
         for index,key,pIndex,pKey in self.iterArgs(pDict):
             self._setp(index,key,pDict[(pIndex,pKey)])
+        for key in kwargs:
+            self._setp(1,key,kwargs[key])
     
     def paramString(self):
         for index,params in enumerate(self.__params__,1):
