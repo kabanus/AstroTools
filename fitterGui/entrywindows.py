@@ -164,13 +164,11 @@ class paramReader(entryWindow):
     def parse(self, event):
         try:
             params = self.entry.get().split(":")
-            index  = params[0]
-            param  = ":".join(params[1:])
-        except ValueError:
+            index  = int(params[0])
+            param  = ":".join(params[1:]).strip()
+        except (IndexError,ValueError):
             messagebox.showerror('Bad format!',"Must be <index>:<parameter>")
             return
-        index = int(index)
-        param = param.strip()
         self.do(index,param)
         self.root.destroy()
 
