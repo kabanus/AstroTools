@@ -4,8 +4,13 @@ class errorNotConverging(Exception): pass
 class newBestFitFound(Exception): pass
 
 def error(self, index, param, epsilon = 0.05, v0 = 0.3):
+    self.errorlog = []
     return (oneSidedError(self,index,param,-1,epsilon,v0),
             oneSidedError(self,index,param, 1,epsilon,v0))
+
+def append_stage(self,iparam,count = 0):
+    self.errorlog.append(' : '.join(("%3d"%count,"%10s"%str(iparam), "%.3e"%self.current[iparam],
+                                     "%.3e"%self.chisq(),"%.3e"%self.reduced_chisq())))
 
 #epsilon is allowed deviation from '1' when comparing chisq
 def oneSidedError(self, index, param, direction, epsilon,v0):
@@ -21,38 +26,17 @@ def oneSidedError(self, index, param, direction, epsilon,v0):
     goal = 2.76
     
     try:
+        self.errorlog.append('Sliding from best fit:')
         run_away(self,initial,needfit,bestchi,thawed,iparam,save,direction,v0)
+        append_stage(self,iparam)
+        self.errorlog.append('Finding edge:') 
         binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal)
-        slide_away(self,iparam,needfit,bestchi,direction,epsilon,goal,save,thawed,v0)
     finally:
         result = self.current[iparam]
         self.calc(save)
         if thawed: self.thaw(iparam)
+    self.errorlog.append('Completed normally') 
     return result - self.current[iparam]
-
-def slide_away(self,iparam,needfit,bestchi,direction,epsilon,goal,save,thawed,v0):
-    t       = 1 
-    #Run slower
-    v0     *= direction*self.current[iparam]*0.1
-    limit   = 10
-
-    #Do
-    while True:
-        prev    = self.current[iparam]
-        if not insert_and_continue(self,iparam,self.current[iparam]+v0*t): break
-        self.calc()
-        if needfit: self.fit()
-        current = self.chisq()
-
-        if not limit: 
-            if thawed: self.thaw(iparam)
-            self.calc(save)
-            raise self.errorNotConverging()
-        limit -= 1
-    #While
-        if abs(abs(current-bestchi)-goal) >= epsilon: break
-
-    self.setp({iparam:prev})
 
 def binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal):
     current = self.chisq()
@@ -65,6 +49,7 @@ def binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal):
         self.calc()
         if needfit: self.fit()
         current = self.chisq()
+        append_stage(self,iparam, limit)
         if current < bestchi:
             if thawed: self.thaw(iparam)
             raise self.newBestFitFound()

@@ -1,4 +1,5 @@
 from Tkinter import Label, Entry, LEFT, W, N, S, E, IntVar, Checkbutton,StringVar,Button,END,Menu
+from simplewindows import errorLog
 from entrywindows import paramReader
 import tkMessageBox as messagebox
 ALL = W+N+S+E
@@ -13,6 +14,7 @@ class parameterFrame(object):
         self.showfrozen = True
         self.menu = Menu(self.frame,tearoff=0)
         self.menu.add_command(label='Toggle show frozen',command = self.togglehide)
+        self.menu.add_command(label='Show error log',command = lambda: errorLog(self.parent))
         root_frame.bind("<Button-3>",self.showMenu)
         for child in root_frame.winfo_children():
             child.bind("<Button-3>",self.showMenu)

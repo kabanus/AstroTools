@@ -32,29 +32,34 @@ class simpleWindow(object):
     def eventDestroy(self,event):
         self.root.destroy()
 
-class Help(simpleWindow):
+class ScrollingCanvas(simpleWindow):
     def updateFrame(self, event):
         updateFrame(event)
         event.widget.configure(height=max(self.root.winfo_height(),self.canvasFrame.winfo_height()),
                                width=self.canvasFrame.winfo_width())
 
-    def __init__(self, parent):
-        simpleWindow.__init__(self,parent,"",'helper',"Howto")
-        root = self.parent.root
-        self.root.maxsize(99999,root.winfo_height())
-        self.root.wm_geometry("+%d+%d" %(root.winfo_rootx()+root.winfo_width()/7,root.winfo_rooty()))
-       
-        self.wrap = 90
+    def __init__(self,parent,field,title):
+        simpleWindow.__init__(self,parent,"",field,title)
         frame = Frame(self.root,background = 'lightblue')
         frame.pack(side=TOP)
         frame.rowconfigure(0,weight=1)
-
-        canvas = Canvas(frame)
+        
+        canvas = Canvas(frame,background='lightblue')
         self.canvasFrame,scrollbar = genScrollCanvas(self.root,frame,canvas)
         canvas.grid(row=0,column=0,sticky=N+S)
         scrollbar.grid(row=0,column=1,rowspan=2,sticky=N+S)
         canvas.bind("<Configure>", self.updateFrame) 
+        root = self.parent.root
+        self.root.maxsize(99999,root.winfo_height())
+        self.root.wm_geometry("+%d+%d" %(root.winfo_rootx()+root.winfo_width()/7,root.winfo_rooty()))
+        self.wrap = 90
+
+        Button(frame, text = 'OK', command = self.root.destroy).grid(row=1,column=0,columnspan=2,sticky=N+S)
+        self.root.bind("<Key-Escape>",lambda event: self.root.destroy())
         
+class Help(ScrollingCanvas):
+    def __init__(self, parent):
+        ScrollingCanvas.__init__(self,parent,'helper',"Howto")
         self.helplabel("Modelling gui, Uria Peretz, 2016\n")
         self.helplabel("Most of it is self explanatory:","",16)
         self.helplabel("Load         : Load session or data/response fits file, XMM/Chandra format for now.")
@@ -99,9 +104,6 @@ class Help(simpleWindow):
         self.helplabel("c      : Switch to commandline.", "")
         self.helplabel("H      : You're looking at it.","")
 
-        Button(frame, text = 'OK', command = self.root.destroy).grid(row=1,column=0,columnspan=2,sticky=N+S)
-        self.root.bind("<Key-Escape>",lambda event: self.root.destroy())
-
     def rpad(self,substring):
         if substring[-1] == " ": 
             substring = substring[:-1]
@@ -134,6 +136,20 @@ class Help(simpleWindow):
             substring = self.lpad(self.rpad(substring))
             Label( self.canvasFrame, text = substring, justify = LEFT, background = color, 
                    anchor = W, font = ('courier',title)).pack( side = TOP, fill = BOTH )
+
+class errorLog(ScrollingCanvas): 
+    def __init__(self, parent):
+        ScrollingCanvas.__init__(self,parent,'helper',"Howto")
+
+        try: 
+            log = self.parent.fitter.errorlog
+            self.root.maxsize(99999,420)
+        except AttributeError: log = []
+        if not log: 
+            log =["No error calculation done!"]
+            self.root.maxsize(99999,70)
+        Label(self.canvasFrame, text = "\n".join(log), justify = LEFT, background = 'lightblue', 
+              anchor = W, font =('courier',12),width=70).pack(side = TOP, fill = BOTH)
 
 class runMsg(simpleWindow):
     def __init__(self,parent,msg = "Running calculation"):
