@@ -97,8 +97,8 @@ def closest(lst,value):
         if value >= lst[mid]:
             start = mid
         else: end = mid
-    return (start,end,(value-lst[start])/(lst[end]-lst[start]),
-                      (lst[end]-value)/(lst[end]-lst[start]))
+    return (start,end,(lst[end]-value)/(lst[end]-lst[start]),
+                      (value-lst[start])/(lst[end]-lst[start]))
 
 def pairwise(iterable):
     a, b = tee(iterable)

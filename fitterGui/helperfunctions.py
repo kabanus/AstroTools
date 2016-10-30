@@ -12,12 +12,14 @@ def make_frames(self):
     cmdFrame.grid(row=2,column=0,sticky=ALL)
     self.commandline = commandLine(self, cmdFrame)
     cmdFrame.bind('<Configure>',self.commandline.resizeCmd)
+    self.cmdFrame = cmdFrame
 
     self.gui = Frame(self.root, bg = 'navyblue', relief = 'sunken')
     self.gui.grid( row = 2, column = 1,sticky = ALL)
     self.gui.rowconfigure(0,weight=1)
    
-    Button( self.root, text='Dump command', command=self.dumpParamCmd).grid(row=2, column=2, sticky=ALL, padx=self.border)
+    self.dump = Button( self.root, text='Dump command', command=self.dumpParamCmd)
+    self.dump.grid(row=2, column=2, sticky=ALL, padx=self.border)
     
     self.info_frame = Frame(self.root)
     self.info_frame.grid(row=1,column=2,sticky=ALL)

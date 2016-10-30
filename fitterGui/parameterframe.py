@@ -15,12 +15,32 @@ class parameterFrame(object):
         self.menu = Menu(self.frame,tearoff=0)
         self.menu.add_command(label='Toggle show frozen',command = self.togglehide)
         self.menu.add_command(label='Show error log',command = lambda: errorLog(self.parent))
+        self.menu.add_command(label='Hide Parameters',command = self.hide)
         root_frame.bind("<Button-3>",self.showMenu)
         for child in root_frame.winfo_children():
             child.bind("<Button-3>",self.showMenu)
         self.frame.bind("<Button-3>",self.showMenu)
         for child in self.frame.winfo_children():
             child.bind("<Button-3>",self.showMenu)
+
+    def hide(self):
+        row = self.parent.cmdFrame.grid_info()['row']
+        col = self.parent.cmdFrame.grid_info()['column']
+        self.parent.data_frame.grid_remove()
+        self.parent.dump.grid_remove()
+        self.parent.info_frame.grid_remove()
+        self.parent.cmdFrame.grid_remove()
+        self.unhider = Button(text='Restore parameter frame',command = self.unhide)
+        self.unhider.grid(row=row,column=col, sticky=ALL)
+       
+    def unhide(self):
+        row = self.unhider.grid_info()['row']
+        col = self.unhider.grid_info()['column']
+        self.unhider.destroy()
+        self.parent.data_frame.grid()
+        self.parent.dump.grid()
+        self.parent.info_frame.grid()
+        self.parent.cmdFrame.grid()
 
     def showMenu(self, event):
         self.menu.tk_popup(event.x_root,event.y_root)
