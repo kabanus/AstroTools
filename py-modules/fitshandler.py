@@ -228,11 +228,12 @@ class Data(fitsHandler):
         return self.channels[i],self.counts[i],self.errors[i]*self.exposure*self.scales[i]
 
     def __div__(self,other):
-        you   = list(other.rebin(self.grouping,include_bad=True))
-        me    = list( self.rebin(self.grouping,include_bad=True))
+        other.group(self.grouping)
+        you   = list(other.rebin(include_bad=True))
+        me    = list( self.rebin(include_bad=True))
         table = []
         for i in range(len(you)):
-            row = [i+1]
+            row = [you[i][0]]
             if you[i][1]:
                 you[i][1] = float(you[i][1])
                 row.append(me[i][1]/you[i][1])
@@ -295,10 +296,9 @@ class Data(fitsHandler):
         return result,error
 
     #Plotter
-    def rebin(self,binfactor = None, model = None, errors = None, 
+    def rebin(self,binfactor = 1, model = None, errors = None, 
                    counts = False, include_bad = False, eff = array(())):
-        if binfactor == None:
-            binfactor = self.grouping
+        binfactor *= self.grouping
         cts = self.counts
         if model != None:
             cts = model

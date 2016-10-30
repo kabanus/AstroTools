@@ -60,7 +60,7 @@ class Gui(object):
                         lambda: Save(self.parent,self.parent.saveSession,"Save session",'fsess'))
         self.calc    = (lambda: self.parent.doAndPlot(self.parent.calc),
                         lambda: paramReader(self.parent,self.parent.getError,'errorer','Find error on parameter'),
-                        lambda: rebinReader(self.parent))
+                        lambda: rebinReader(self.parent,True))
     def bindCommands(self):
         self.parent.root.bind("<Return>",lambda event: self.parent.canvas.get_tk_widget().focus_set())
         self.parent.canvas.get_tk_widget().bind("<C>",lambda event: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(0)))

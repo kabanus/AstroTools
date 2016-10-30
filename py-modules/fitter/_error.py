@@ -24,17 +24,22 @@ def oneSidedError(self, index, param, direction, epsilon,v0):
     needfit = self.current.getThawed()
     #90% confidence interval
     goal = 2.76
-    
+   
+    restore = True
     try:
         self.errorlog.append('Sliding from best fit:')
         run_away(self,initial,needfit,bestchi,thawed,iparam,save,direction,v0)
         append_stage(self,iparam)
         self.errorlog.append('Finding edge:') 
         binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal)
+    except newBestFitFound:
+        restore = False
+        raise
     finally:
-        result = self.current[iparam]
-        self.calc(save)
-        if thawed: self.thaw(iparam)
+        if restore:
+            result = self.current[iparam]
+            self.calc(save)
+            if thawed: self.thaw(iparam)
     self.errorlog.append('Completed normally') 
     return result - self.current[iparam]
 
