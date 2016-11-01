@@ -11,11 +11,12 @@ class parameterFrame(object):
         frame.columnconfigure(2,weight=1)
         self.parent.root.bind('<Control-f>',lambda event: paramReader(self.parent,self.find,"finder","Find parameter"))
 
-        self.showfrozen = True
         self.menu = Menu(self.frame,tearoff=0)
-        self.menu.add_command(label='Toggle show frozen',command = self.togglehide)
+        self.menu.add_command(label='Hide frozen',command = self.hide)
+        self.menu.add_command(label='Show all',command = self.show)
+        self.menu.add_command(label='Show thawed',command = self.showthawed)
         self.menu.add_command(label='Show error log',command = lambda: errorLog(self.parent))
-        self.menu.add_command(label='Hide Parameters',command = self.hide)
+        self.menu.add_command(label='Hide Parameters',command = self.hideall)
         root_frame.bind("<Button-3>",self.showMenu)
         for child in root_frame.winfo_children():
             child.bind("<Button-3>",self.showMenu)
@@ -23,7 +24,7 @@ class parameterFrame(object):
         for child in self.frame.winfo_children():
             child.bind("<Button-3>",self.showMenu)
 
-    def hide(self):
+    def hideall(self):
         row = self.parent.cmdFrame.grid_info()['row']
         col = self.parent.cmdFrame.grid_info()['column']
         self.parent.data_frame.grid_remove()
@@ -45,12 +46,18 @@ class parameterFrame(object):
     def showMenu(self, event):
         self.menu.tk_popup(event.x_root,event.y_root)
 
-    def togglehide(self):
-        self.showfrozen = 1-self.showfrozen
+    def show(self):
         for iparam,labels in  self.parent.paramLabels.items():
-            if self.showfrozen or self.parent.thawedDict[iparam][0].get():
+            for label in labels: label.grid()
+    
+    def showthawed(self):
+        for iparam,labels in self.parent.paramLabels.items():
+            if self.parent.thawedDict[iparam][0].get(): 
                 for label in labels: label.grid()
-            else:
+
+    def hide(self):
+        for iparam,labels in  self.parent.paramLabels.items():
+            if not self.parent.thawedDict[iparam][0].get():
                 for label in labels: label.grid_remove()
 
     def find(self,index,param):

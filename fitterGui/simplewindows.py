@@ -64,10 +64,11 @@ class Help(ScrollingCanvas):
         self.helplabel("Most of it is self explanatory:","",16)
         self.helplabel("Load         : Load session or data/response fits file, XMM/Chandra format for now.")
         self.helplabel("Save         : Save session, plot, plot data or parameters (with errors).")
-        self.helplabel("Plot         : Plot options that do not affect fit such as persistent zoom, rebin and second Z axis or data shift.")
+        self.helplabel("Plot         : Plot options that do not affect fit such as persistent zoom, rebin and second Z axis or data shift. "+
+                       "In addition can plot data divided by other data, or divide out effective area.")
         self.helplabel("Ignore       : Ignore channels in fitting and plotting, or reset to all.")
         self.helplabel("Axis         : Plot counts as function of energy,wavelength or channel.")
-        self.helplabel("Run          : Calculate and plot model with given parameters, and errors on parameters.")
+        self.helplabel("Calculate    : Calculate and plot model with given parameters, and errors on parameters. Grouping here bins the data so the fit and division by other data is affected.")
         self.helplabel("Fit          : Go ahead and guess.")
         self.helplabel("Model        : Model selection - see syntax inside.")
         self.helplabel("Dump command : Effective way of saving current model. Dumps state to parser (bottom left) to be copied or re-used.\n\n")
@@ -79,6 +80,8 @@ class Help(ScrollingCanvas):
         self.helplabel("2. index:parameter, then current value, then the error (see later), and finally" +
                            " wether it is thawed or not.","   ")
         self.helplabel(u"3. The current \u03C7\u00B2/d.o.f and ignored channels in the current axis' units.\n\n","   ")
+        self.helplabel("Right clicking gives some options such as hiding/showing frozen parameters and hiding the window all together. Ctrl-F"+
+                       "allows jumping to parameters if list is long, format is index:param.")
 
         self.helplabel("Errors","",16)
         self.helplabel("Errors will be appear once a fit is perfomed - initial values, marked in a redish tint, "+
@@ -103,6 +106,7 @@ class Help(ScrollingCanvas):
         self.helplabel("L,S:   : Load/Save fitting session.", "")
         self.helplabel("c      : Switch to commandline.", "")
         self.helplabel("H      : You're looking at it.","")
+        self.helplabel("Ctrl-F : Find parameter.","")
 
     def rpad(self,substring):
         if substring[-1] == " ": 

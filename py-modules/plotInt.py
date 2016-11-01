@@ -1,5 +1,4 @@
 #Make an even simpler plotting interface
-
 import matplotlib.pyplot as plt
 plt.ion()
 class Iplot(object):
@@ -85,7 +84,8 @@ class Iplot(object):
         
     @staticmethod
     def clearPlots():
-        Iplot.axes.clear()
+        try: Iplot.axes.clear()
+        except AttributeError: return
         Iplot.axes.minorticks_on()
         if plt.isinteractive():
             plt.show(block=False)
@@ -99,6 +99,8 @@ class Iplot(object):
         My = Mx = float("-Inf")
         index = col = 0
         cols = 1.0/len(args)
+        try: plotter = Iplot.axes.plot
+        except AttributeError: Iplot.init()
         plotter = Iplot.axes.plot
         autosize = True
         for c in args:
@@ -122,7 +124,7 @@ class Iplot(object):
                 plotter(*xv[:2],c=[col,0,1-col],**dict(kwargsl,**kwargs))
             except IndexError:
                 if plotter == Iplot.axes.scatter:
-                    plotter(*xv[:2],s=2,c=[col,0,1-col],**kwargs)
+                    plotter(*xv[:2],s=32,edgecolor=None,c=[col,0,1-col],**kwargs)
                 else: 
                     plotter(*xv[:2],c=[col,0,1-col],**kwargs)
             if len(tmp) > 2: 
@@ -154,7 +156,12 @@ class Iplot(object):
     @staticmethod
     def annotate(labels,data,**kwargs):
         for i in range(len(labels)):
-            Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset points',
+            try:
+                Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset points',
+                         xytext=(-15,10),**kwargs)
+            except AttributeError: 
+                Iplot.init()
+                Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset points',
                          xytext=(-15,10),**kwargs)
 
     @staticmethod
