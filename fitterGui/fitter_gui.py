@@ -285,38 +285,39 @@ if True or __name__ == "__main__":
             except AttributeError: pass
             self.fitter.plot(user=user)
 
-        def getError(self, index, param):
+        def getError(self, *args):
             if not self.ranfit:
                 messagebox.showerror('Why would you want to?!','Run fit before calculating errors')
                 if self.debug: raise
                 return
-            
-            iparam = (index,param)
-            #Message construct used so beep is heard before message, and save return on each one.
-            try:
-                m = runMsg(self)
-                err = ''
-                self.errors[iparam] = self.fitter.error(index,param)
-            except (ValueError,KeyError):
-                title, err = ('No such parameter!','Check yourself')
-            except KeyboardInterrupt: 
-                title, err = ('Halt',"Caught Keyboard - thawed parameters may have changed.")
-            except (self.fitter.errorNotConverging,RuntimeError):
-                title, err = ('Error not converging!',"Statistic insensitive to parameter")
-            except self.fitter.newBestFitFound:
-                title, err = ('Error not converging!',"Found new best fit! Space not convex.")
-                self.params.resetErrors()
-                self.ranfit = False
-                self.params.relabel()
-            finally:
-                m.destroy()
-                self.ring()
-                if err:
-                    messagebox.showerror(title,err)
-                    return
-            error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
-            self.thawedDict[(index,param)][1].set('(%.2E)'%error)
-            self.paramLabels[(index,param)][2].configure(relief='flat',state='disabled')
+           
+            for iparam in args:
+                index,param = iparam
+                #Message construct used so beep is heard before message, and save return on each one.
+                try:
+                    m = runMsg(self)
+                    err = ''
+                    self.errors[iparam] = self.fitter.error(index,param)
+                except (ValueError,KeyError):
+                    title, err = ('No such parameter!','Check yourself')
+                except KeyboardInterrupt: 
+                    title, err = ('Halt',"Caught Keyboard - thawed parameters may have changed.")
+                except (self.fitter.errorNotConverging,RuntimeError):
+                    title, err = ('Error not converging!',"Statistic insensitive to parameter")
+                except self.fitter.newBestFitFound:
+                    title, err = ('Error not converging!',"Found new best fit! Space not convex.")
+                    self.params.resetErrors()
+                    self.ranfit = False
+                    self.params.relabel()
+                finally:
+                    m.destroy()
+                    self.ring()
+                    if err:
+                        messagebox.showerror(title,err)
+                        return
+                error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
+                self.thawedDict[(index,param)][1].set('(%.2E)'%error)
+                self.paramLabels[(index,param)][2].configure(relief='flat',state='disabled')
 
         def ring(self):
             #Windows

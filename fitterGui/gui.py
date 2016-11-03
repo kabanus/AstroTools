@@ -59,7 +59,7 @@ class Gui(object):
                         lambda: Save(self.parent,lambda name,ext: self.parent.fitter.plot('.'.join((name,ext))),"Save plot data",'dat'),
                         lambda: Save(self.parent,self.parent.saveSession,"Save session",'fsess'))
         self.calc    = (lambda: self.parent.doAndPlot(self.parent.calc),
-                        lambda: paramReader(self.parent,self.parent.getError,'errorer','Find error on parameter'),
+                        lambda: paramReader(self.parent,self.parent.getError,'errorer','Find error on parameter',multiple = True),
                         lambda: rebinReader(self.parent,True))
     def bindCommands(self):
         self.parent.root.bind("<Return>",lambda event: self.parent.canvas.get_tk_widget().focus_set())

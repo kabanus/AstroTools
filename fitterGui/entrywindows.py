@@ -157,19 +157,24 @@ class Save(entryWindow):
         self.root.destroy()
 
 class paramReader(entryWindow):
-    def __init__(self, parent, function, parent_field,title):
+    def __init__(self, parent, function, parent_field,title,multiple = False):
         try: entryWindow.__init__(self,parent,'model',parent_field,title)
         except AttributeError: return
         self.do = function
+        self.multiple = multiple
     def parse(self, event):
+        args = []
         try:
-            params = self.entry.get().split(":")
-            index  = int(params[0])
-            param  = ":".join(params[1:]).strip()
+            for iparam in self.entry.get().split():
+                iparam = iparam.split(':')
+                index  = int(iparam[0])
+                param  = ":".join(iparam[1:]).strip()
+                args.append((index,param))
+                if not self.multiple: break
         except (IndexError,ValueError):
-            messagebox.showerror('Bad format!',"Must be <index>:<parameter>")
+            messagebox.showerror('Bad format!',"Must be list of <index>:<parameter>")
             return
-        self.do(index,param)
+        self.do(*args)
         self.root.destroy()
 
 class rangeReader(simpleWindow):

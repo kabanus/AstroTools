@@ -95,9 +95,11 @@ def plotDiv(self, other = None):
     self.plot(user = False)
 
 _writePlot = lambda self,table: "\n".join((" ".join((str(x) for x in line)) for line in table))
-def _plotOrSave(save,*args):
+def _plotOrSave(save,*args,**kwargs):
     if save == None:
-        Iplot.plotCurves(*args)
+        if 'scatter' in kwargs: kwargs['s'] = 1
+        kwargs['stepx'] = 0
+        Iplot.plotCurves(*args,**kwargs)
     else:
         fd = open(save,'w')
         fd.write('#Data\n')
@@ -127,16 +129,17 @@ def plot(self, save = None, user = True):
             if self.dataz != None:
                 plots[i] = _shiftlist(plots[i],self.dataz,self.ptype)
         if len(plots) == 1:
-            _plotOrSave(save,(),'scatter',list(plots[0]))
+            _plotOrSave(save,list(plots[0]),scatter=True)
         else:
-            _plotOrSave(save,(),list(plots[1]),'scatter',list(plots[0]))
+            _plotOrSave(save,list(plots[0]),scatter=True)
+            _plotOrSave(save,list(plots[1]),chain=True)
     else:
         if len(model[0]) > 2:
             if self.ptype == self.WAVE:   model = list(self.resp.wl(model,True))
             if self.ptype == self.ENERGY: model = list(self.resp.energy(model,True))
         else:
             self.ptype = self.ENERGY
-        _plotOrSave(save,(),model)
+        _plotOrSave(save,model)
     if save != None: return
     _labelaxes(self,model)
 

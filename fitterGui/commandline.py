@@ -125,7 +125,7 @@ class commandLine(object):
             except AttributeError: pass
         if needReset:
             self.parent.params.resetErrors()
-        self.parent.doAndPlot(self.parent.calc)
+            self.parent.doAndPlot(self.parent.calc)
         if toadd:
             self.cmdHist.append(toadd[:-1])
         self.currentCmd = len(self.cmdHist)

@@ -71,6 +71,7 @@ class Iplot(object):
         Iplot.axes.minorticks_on()
         Iplot.x = Iplot.axis('x') 
         Iplot.y = Iplot.axis('y')
+        Iplot.col = 0
    
     @staticmethod
     def secondAxis(function,axis='x'):
@@ -94,16 +95,25 @@ class Iplot(object):
     #scatter makes scatter plots.
     @staticmethod
     def plotCurves(*args,**kwargs):
+        if not args: return
+
         try: scatter = kwargs.pop('scatter')
         except KeyError: scatter = False
         try: autosize = kwargs.pop('autosize')
         except KeyError: autosize = True
-        if not args: return
+        try: chain = kwargs.pop('chain')
+        except KeyError: chain = False
+        try: stepx = kwargs.pop('stepx')
+        except KeyError: stepx = None
+        try: stepy = kwargs.pop('stepy')
+        except KeyError: stepy = None
 
         my = mx = float("Inf")
         My = Mx = float("-Inf")
-        col = 0
+        
         cols = 1.0/len(args)
+        if not chain: Iplot.col = 0
+
         try: plotter = Iplot.axes.plot
         except AttributeError: Iplot.init()
         plotter = Iplot.axes.plot
@@ -111,6 +121,7 @@ class Iplot(object):
             plotter = Iplot.axes.scatter
 
         for c in args:
+            color = [Iplot.col,0,1-Iplot.col]
             try: xv = c.vector
             except AttributeError: xv = c
             tmp = zip(*xv)
@@ -120,31 +131,27 @@ class Iplot(object):
                 xv = tmp
             else: raise Exception("Data has more than 4 columns!")
             try:
-                plotter(*xv[:2],c=[col,0,1-col],**dict(**kwargs))
+                plotter(*xv[:2],c=color,**dict(**kwargs))
             except IndexError:
                 if plotter == Iplot.axes.scatter:
-                    plotter(*xv[:2],s=2,edgecolor=None,c=[col,0,1-col],**kwargs)
+                    plotter(*xv[:2],s=2,edgecolor=None,c=color,**kwargs)
                 else: 
-                    plotter(*xv[:2],c=[col,0,1-col],**kwargs)
+                    plotter(*xv[:2],c=color,**kwargs)
             if len(tmp) > 2: 
                 Iplot.axes.errorbar(*xv,linestyle="None",capsize = 0)
-            if autosize:
+            if not chain and autosize:
                 if min(xv[0]) < mx or max(xv[0]) > Mx or\
                    min(xv[1]) < my or max(xv[1]) > My:
-                    stepx = abs(xv[0][1] - xv[0][0]) 
-                    stepy = abs(xv[1][1] - xv[1][0])
-                    if not stepx:
-                        stepx = abs(stepx)
-                        if not stepx: stepx = 1
-                    if not stepy:
-                        stepy = abs(stepy)
-                        if not stepy: stepy = 1
+                    if stepx == None: 
+                        stepx = min(abs(max(xv[0])),abs(min(xv[0])))*0.5 if scatter else 0
+                    if stepy == None:
+                        stepy = stepy = min(abs(max(xv[1])),abs(min(xv[1])))*0.5 if scatter else 0
                     if min(xv[0]) < mx: mx = min(xv[0])
                     if max(xv[0]) > Mx: Mx = max(xv[0])
                     if min(xv[1]) < my: my = min(xv[1])
                     if max(xv[1]) > My: My = max(xv[1])
-            col += cols
-        if autosize:
+            Iplot.col += cols
+        if not chain and autosize:
             Iplot.axes.set_xlim(mx-stepx,Mx+stepx)
             Iplot.axes.set_ylim(my-stepy,My+stepy)
         if plt.isinteractive():

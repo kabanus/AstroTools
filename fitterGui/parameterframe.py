@@ -60,7 +60,8 @@ class parameterFrame(object):
             if not self.parent.thawedDict[iparam][0].get():
                 for label in labels: label.grid_remove()
 
-    def find(self,index,param):
+    def find(self,iparam):
+        index,param = iparam
         place = 0
         for (i,p),_ in self.parent.fitter.getParams():
             if i == index and len(param) <= len(p) and p[:len(param)] == param:
