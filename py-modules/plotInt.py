@@ -91,25 +91,26 @@ class Iplot(object):
             plt.show(block=False)
 
     #Can send this a curve, ccf table or any list. If args contain
-    #scatter all plots after will be scatter plots.
+    #scatter makes scatter plots.
     @staticmethod
-    def plotCurves(kwargsList=(),*args,**kwargs):
+    def plotCurves(*args,**kwargs):
+        try: scatter = kwargs.pop('scatter')
+        except KeyError: scatter = False
+        try: autosize = kwargs.pop('autosize')
+        except KeyError: autosize = True
         if not args: return
+
         my = mx = float("Inf")
         My = Mx = float("-Inf")
-        index = col = 0
+        col = 0
         cols = 1.0/len(args)
         try: plotter = Iplot.axes.plot
         except AttributeError: Iplot.init()
         plotter = Iplot.axes.plot
-        autosize = True
+        if scatter: 
+            plotter = Iplot.axes.scatter
+
         for c in args:
-            if c == 'nosize':
-                autosize = False
-                continue
-            if c == 'scatter': 
-                plotter = Iplot.axes.scatter
-                continue
             try: xv = c.vector
             except AttributeError: xv = c
             tmp = zip(*xv)
@@ -119,12 +120,10 @@ class Iplot(object):
                 xv = tmp
             else: raise Exception("Data has more than 4 columns!")
             try:
-                kwargsl = kwargsList[index]
-                index+=1
-                plotter(*xv[:2],c=[col,0,1-col],**dict(kwargsl,**kwargs))
+                plotter(*xv[:2],c=[col,0,1-col],**dict(**kwargs))
             except IndexError:
                 if plotter == Iplot.axes.scatter:
-                    plotter(*xv[:2],s=32,edgecolor=None,c=[col,0,1-col],**kwargs)
+                    plotter(*xv[:2],s=2,edgecolor=None,c=[col,0,1-col],**kwargs)
                 else: 
                     plotter(*xv[:2],c=[col,0,1-col],**kwargs)
             if len(tmp) > 2: 
