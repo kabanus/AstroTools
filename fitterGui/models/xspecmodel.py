@@ -56,7 +56,7 @@ try:
             return self.ehash
 
         def sethook(self, index, key):
-            self.model.setPars(*self.params.values())
+            self.model.setPars(*[self.params[k] for k in self.params])
     
         def __str__(self):
             return 'Xspec("'+self.string+'")'
