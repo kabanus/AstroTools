@@ -33,16 +33,16 @@ if True or __name__ == "__main__":
 
     import tkMessageBox as messagebox
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-    from Tkinter         import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
-    from tkMessageBox    import askquestion 
-    from fitter          import Fitter
-    from plotInt         import Iplot,plt
-    from modelReader     import modelReader
-    from simplewindows   import runMsg
-    from entrywindows    import ignoreReader
-    from parameterframe  import parameterFrame
-    from helperfunctions import make_frames, getfile
-    from gui             import Gui
+    from Tkinter             import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
+    from tkMessageBox        import askquestion 
+    from fitter              import Fitter
+    from plotInt             import Iplot,plt
+    from gui.modelReader     import modelReader
+    from gui.simplewindows   import runMsg
+    from gui.entrywindows    import ignoreReader
+    from gui.parameterframe  import parameterFrame
+    from gui.helperfunctions import make_frames, getfile
+    from gui.gui             import Gui
     ALL = N+S+W+E
     Iplot.quiet()
     

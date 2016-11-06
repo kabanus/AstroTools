@@ -1,4 +1,5 @@
 from fitshandler import Response,Data
+from os.path     import dirname,join
 
 class dataResponseMismatch(Exception): pass
 class noIgnoreBeforeLoad(Exception): pass
@@ -16,7 +17,9 @@ def loadResp(self,resp):
 def loadData(self,data):
     self.data  = Data(data)
     if self.data.resp != None:
-        self.loadResp(self.data.resp)
+        try: self.loadResp(self.data.resp)
+        except IOError: 
+            self.loadResp(join(dirname(data),self.data.resp))
     self.checkLoaded()
     self.plot(user = False)
     self.data_file = data

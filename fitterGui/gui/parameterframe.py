@@ -157,8 +157,8 @@ class parameterFrame(object):
             exec('l2.bind("<Return>",lambda event: self.entryOut(event,'+str(index)+',"'+param+'"))') in locals(), globals()
             i = StringVar()
             i.set("")
-            exec("l3 = Button(self.frame,textvariable=i,justify = LEFT, command = lambda: self.parent.getError("+str(index)+",'"+param+
-                             "'),"+"font = ('courier',12),bg='aliceblue',anchor=W,width=10,height=1,"+
+            exec("l3 = Button(self.frame,textvariable=i,justify = LEFT, command = lambda: self.parent.getError(("+str(index)+",'"+param+
+                             "')),"+"font = ('courier',12),bg='aliceblue',anchor=W,width=10,height=1,"+
                              "padx=0,disabledforeground='black',foreground='purple',takefocus = False)") in locals(), globals()
             l3.grid(sticky=ALL,row=count,column=2)
             v = IntVar()
