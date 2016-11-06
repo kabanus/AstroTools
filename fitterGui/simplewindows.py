@@ -80,13 +80,13 @@ class Help(ScrollingCanvas):
         self.helplabel("2. index:parameter, then current value, then the error (see later), and finally" +
                            " wether it is thawed or not.","   ")
         self.helplabel(u"3. The current \u03C7\u00B2/d.o.f and ignored channels in the current axis' units.\n\n","   ")
-        self.helplabel("Right clicking gives some options such as hiding/showing frozen parameters and hiding the window all together. Ctrl-F"+
-                       "allows jumping to parameters if list is long, format is index:param.")
+        self.helplabel("Right clicking gives some options such as hiding/showing frozen parameters and hiding the "+
+                       "window all together. Ctrl-F allows jumping to parameters if list is long, format is index:param.","")
 
         self.helplabel("Errors","",16)
         self.helplabel("Errors will be appear once a fit is perfomed - initial values, marked in a redish tint, "+
                        "and appearing on a raised button are the standard error, and shouldn't be quoted in anything." + 
-                       u"Once a fit is performed you can press this buttons on thawed parameters to compute the \u03C7\u00B2 "+
+                       u"Once a fit is performed you can press these buttons on thawed parameters to compute the \u03C7\u00B2 "+
                        "based proper errors, though this may take a while depending on the amount of thawed parameters."+
                        " Once this is done the errors will be black and the button flattened (until you change "+
                        "somthing/fit). Note if a new best fit is found this will reflect in the parameter window.\n\n","")
@@ -96,7 +96,9 @@ class Help(ScrollingCanvas):
                         "for parameter. Syntax is '<command>,<command>,<command>' and so forth. <command> is one of " +
                         "'thaw <index:param>' 'freeze <index:param>' or '<index:param>=<value>'. This will be parsed " +
                         "command by command and stop if one of the commands fails (leaving the rest of the command line " +
-                        " intact for a quick fix.)\n\n","")
+                        "intact for a quick fix). Syntax such as *:param and param:* is accepted. Note thawing a parameter "+
+                        "while frozen are hidden will not make it appear, and freezing won't make a parameter disappear, "
+                        "use the show thawed/hide frozen right clicks to refresh this.\n\n","")
         
         self.helplabel("Useful shortcuts (middle click plot area to get keyboard focus):", "",16)
         self.helplabel("C,W,A  : Channel, wavelength, energy on axes.", "")
