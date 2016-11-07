@@ -1,5 +1,8 @@
 #Make an even simpler plotting interface
 import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings('ignore')
+
 plt.ion()
 class Iplot(object):
     block=False
@@ -72,6 +75,7 @@ class Iplot(object):
         Iplot.x = Iplot.axis('x') 
         Iplot.y = Iplot.axis('y')
         Iplot.col = 0
+        Iplot.plots = list()
    
     @staticmethod
     def secondAxis(function,axis='x'):
@@ -87,9 +91,19 @@ class Iplot(object):
     def clearPlots():
         try: Iplot.axes.clear()
         except AttributeError: return
+        Iplot.plots = list()
         Iplot.axes.minorticks_on()
         if plt.isinteractive():
             plt.show(block=False)
+
+    @staticmethod 
+    def legend(*labels,**legend_kwrags):
+        label = None
+        for plot,label in zip(Iplot.plots,labels):
+            plot.set_label(label)
+        if label is None: return 
+        Iplot.axes.legend(**legend_kwrags)
+        plt.show(block=Iplot.block)
 
     #Can send this a curve, ccf table or any list. If args contain
     #scatter makes scatter plots.
@@ -131,12 +145,13 @@ class Iplot(object):
                 xv = tmp
             else: raise Exception("Data has more than 4 columns!")
             try:
-                plotter(*xv[:2],c=color,**dict(**kwargs))
+                Iplot.plots.append(plotter(*xv[:2],c=color,**dict(**kwargs)))
             except IndexError:
                 if plotter == Iplot.axes.scatter:
-                    plotter(*xv[:2],s=2,edgecolor=None,c=color,**kwargs)
+                    Iplot.plots.append(
+                        plotter(*xv[:2],s=2,edgecolor=None,c=color,**kwargs))
                 else: 
-                    plotter(*xv[:2],c=color,**kwargs)
+                    Iplot.plots.append(plotter(*xv[:2],c=color,**kwargs))
             if len(tmp) > 2: 
                 Iplot.axes.errorbar(*xv,linestyle="None",capsize = 0)
             if not chain and autosize:
@@ -158,6 +173,8 @@ class Iplot(object):
             plt.show(block=Iplot.block)
         if Iplot.x.transform != None: Iplot.x.resize()
         if Iplot.y.transform != None: Iplot.y.resize()
+
+    @staticmethod 
 
     @staticmethod
     def annotate(labels,data,**kwargs):
