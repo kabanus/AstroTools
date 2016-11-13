@@ -33,7 +33,7 @@ class function(Function):
     def __init__(self,expression,params):
         Function.__init__(self,expression,params)
     def __str__(self):
-        return 'function('+self.expression+','+str(self.params)+')'
+        return 'function("'+self.expression+'",'+str(self.params)+')'
 
 @modelExport
 class powerlaw(Function):

@@ -42,13 +42,18 @@ class commandLine(object):
         self.param = cmd[title:]
         self.parseParam()
         self.oparam = self.param
+        self.oindex = self.index
         for index in self.iterIndex(self.index):
             self.param = self.oparam
             for param in self.iterParam(index, self.param):
                 self.index = index
-                self.param = param   
-                self.parent.thawedDict[(index,param)][0].set(check)
-                self.parent.toggleParam(index,param)
+                self.param = param
+                try:
+                    self.parent.thawedDict[(index,param)][0].set(check)
+                    self.parent.toggleParam(index,param)
+                except KeyError:
+                    if self.oindex == '*': continue
+                    raise
 
     def parseThaw(self, cmd):
         self.parseToggleThaw(cmd,4,1)

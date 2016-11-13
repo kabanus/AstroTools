@@ -94,19 +94,23 @@ def plotDiv(self, other = None):
     self.plotmodel = self.division
     self.plot(user = False)
 
-_writePlot = lambda self,table: "\n".join((" ".join((str(x) for x in line)) for line in table))
-def _plotOrSave(save,*args,**kwargs):
-    if save == None:
-        if 'scatter' in kwargs: kwargs['s'] = 1
-        kwargs['stepx'] = 0
-        Iplot.plotCurves(*args,**kwargs)
+_writePlot = lambda table: "\n".join((" ".join((str(x) for x in line)) for line in table))
+def _plotOrSave(save = None,model = None, data = None):
+    if save is None:
+        if data is not None:
+            Iplot.plotCurves(data,stepx = 0,scatter = True,s=1)
+        if model is not None:
+            Iplot.plotCurves(model,chain=True)
     else:
         fd = open(save,'w')
-        fd.write('#Data\n')
-        fd.write(_writePlot(args[-1]))
-        if len(args) > 3:
-            fd.write('\n#Model\n')
-            fd.write(_writePlot(args[1]))
+        table = []
+        if data is not None: 
+            if model is not None:
+                fd.write(_writePlot((d+m[1:] for d,m in zip(data,model))))
+            else:
+                fd.write(_writePlot(data))
+        if model is not None: 
+                fd.write(_writePlot(model))
         fd.close()
 
 def plot(self, save = None, user = True):
@@ -116,7 +120,7 @@ def plot(self, save = None, user = True):
         model = self.plotmodel
     else: self.plotmodel = False
 
-    if model == None:
+    if model is None:
         plots = []
         plots = [self.data.rebin(self.binfactor,eff=self.area)]
         if len(self.result) == len(self.data.channels):
@@ -129,18 +133,18 @@ def plot(self, save = None, user = True):
             if self.dataz != None:
                 plots[i] = _shiftlist(plots[i],self.dataz,self.ptype)
         if len(plots) == 1:
-            _plotOrSave(save,list(plots[0]),scatter=True)
+            _plotOrSave(save,data=plots[0])
         else:
-            _plotOrSave(save,list(plots[0]),scatter=True)
-            _plotOrSave(save,list(plots[1]),chain=True)
+            _plotOrSave(save,data=plots[0],model=plots[1])
     else:
         if len(model[0]) > 2:
             if self.ptype == self.WAVE:   model = list(self.resp.wl(model,True))
             if self.ptype == self.ENERGY: model = list(self.resp.energy(model,True))
         else:
             self.ptype = self.ENERGY
-        _plotOrSave(save,model)
-    if save != None: return
+        _plotOrSave(save,model=model)
+    if save is not None: return
+
     _labelaxes(self,model)
 
     if self.axisz != None:
