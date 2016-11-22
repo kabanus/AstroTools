@@ -1,6 +1,8 @@
 #Make an even simpler plotting interface
 import matplotlib.pyplot as plt
+import matplotlib
 import warnings
+from numpy import array
 warnings.filterwarnings('ignore')
 
 plt.ion()
@@ -76,6 +78,8 @@ class Iplot(object):
         Iplot.y = Iplot.axis('y')
         Iplot.col = 0
         Iplot.plots = list()
+        Iplot.boxes = list()
+        Iplot.clearPlots()
    
     @staticmethod
     def secondAxis(function,axis='x'):
@@ -89,8 +93,11 @@ class Iplot(object):
         
     @staticmethod
     def clearPlots():
-        try: Iplot.axes.clear()
+        try: 
+            Iplot.axes.clear()
         except AttributeError: return
+        try: Iplot.axes.legend().remove()
+        except AttributeError: pass
         Iplot.plots = list()
         Iplot.axes.minorticks_on()
         if plt.isinteractive():
@@ -125,8 +132,19 @@ class Iplot(object):
         my = mx = float("Inf")
         My = Mx = float("-Inf")
         
-        cols = 1.0/len(args)
-        if not chain: Iplot.col = 0
+        Iplot.col = 0
+        col_step = 1.0/len(args)
+        if chain:
+            children = []
+            for child in Iplot.axes.get_children():
+                if (type(child) is not matplotlib.collections.PathCollection and
+                    type(child) is not matplotlib.lines.Line2D):
+                    continue
+                children.append(child)
+            col_step = 1.0/(len(children)+len(args))
+            for child in children:
+                child.set_color([Iplot.col,0,1-Iplot.col])
+                Iplot.col += col_step
 
         try: plotter = Iplot.axes.plot
         except AttributeError: Iplot.init()
@@ -165,7 +183,7 @@ class Iplot(object):
                     if max(xv[0]) > Mx: Mx = max(xv[0])
                     if min(xv[1]) < my: my = min(xv[1])
                     if max(xv[1]) > My: My = max(xv[1])
-            Iplot.col += cols
+            Iplot.col += col_step
         if not chain and autosize:
             Iplot.axes.set_xlim(mx-stepx,Mx+stepx)
             Iplot.axes.set_ylim(my-stepy,My+stepy)
@@ -174,18 +192,59 @@ class Iplot(object):
         if Iplot.x.transform != None: Iplot.x.resize()
         if Iplot.y.transform != None: Iplot.y.resize()
 
-    @staticmethod 
-
     @staticmethod
     def annotate(labels,data,**kwargs):
+        #slide should be relevant edge of bbox - e.g. (0,0) for left, (0,1) for bottom...
+        try: slide = kwargs.pop("slide")
+        except KeyError: slide = None
+        try: 
+            xytexts = kwargs.pop("xytexts")
+            xytext  = xytexts
+        except KeyError: 
+            xytext = (0,2)
+            xytexts = None
+        pixel_diff = 1
+
         for i in range(len(labels)):
+            try: 
+                len(xytexts[i])
+                xytext = xytexts[i]
+            except TypeError: pass
+                
             try:
-                Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset points',
-                         xytext=(-15,10),**kwargs)
+                a = Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset pixels',
+                                        xytext=xytext,**kwargs)
             except AttributeError: 
                 Iplot.init()
-                Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset points',
-                         xytext=(-15,10),**kwargs)
+                a = Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset pixels',
+                                        xytext=xytext,**kwargs)
+            
+            plt.draw()
+            cbox = a.get_window_extent()
+            if slide is not None:
+                direct  = int((slide[0] - 0.5)*2)
+                current = -direct*float("inf")
+                arrow = False
+                while True:
+                    overlaps = False
+                    count = 0
+                    for box in Iplot.boxes:
+                        if cbox.overlaps(box):
+                            if direct*box.get_points()[slide] > direct*current:
+                                overlaps = True
+                                current =  box.get_points()[slide] 
+                                shift   = direct*(current - cbox.get_points()[1-slide[0],slide[1]])
+                    if not overlaps: break
+                    arrow = True
+                    position = array(a.get_position())
+                    position[slide[1]] += shift * direct * pixel_diff
+                    a.set_position(position)
+                    cbox = a.get_window_extent()
+                    x,y = Iplot.axes.transData.inverted().transform(cbox)[0]
+                if arrow:
+                    Iplot.axes.arrow(x,y,data[i][0]-x,data[i][1]-y,head_length=0,head_width=0)
+            Iplot.boxes.append(cbox)
+            plt.draw()
 
     @staticmethod
     def quiet():
