@@ -36,6 +36,9 @@ class Iplot(object):
             self.transform = function
             self.resize()
 
+        def scale(self,stype):
+            exec("Iplot.axes.set_"+self.axis+"scale('"+stype+"')")
+    
         def resize(self,start = None,stop = None):
             if stop == None:
                 stop = Iplot.axes.axis()[self.ind*2+1]
@@ -43,7 +46,7 @@ class Iplot(object):
                 start = Iplot.axes.axis()[self.ind*2]
             if start >= stop: raise Exception("Bad range! stop must be greater then start: "+str(start)+">="+str(stop))
             self.sizer(start,stop)
-            Iplot.axes.redraw_in_frame()
+            plt.draw()
             if self.sizer2 != None:
                 self.sizer2(start,stop)
                 #Can't comprehend to support empty labels
@@ -62,23 +65,28 @@ class Iplot(object):
                             newlabels.append(self.transform(label))
                     else: newlabels.append(label.get_text())
                 self.labelr2(newlabels)
-            Iplot.axes.redraw_in_frame()
+            plt.draw()
         def get_bounds(self):
             return Iplot.axes.axis()[self.ind*2:self.ind*2+2]
         def label(self,title):
             self.labelr(title)
             plt.draw()
-    
+
     @staticmethod
-    def xlog():
-        if not Iplot.x.get_bounds()[0] < 0: Iplot.x.resize(start=1)
-        Iplot.axes.set_xscale('log')
+    def _log(axis,off):
+        if axis.get_bounds()[0] <= 0: 
+            axis.resize(start=1)
+        if off:
+            axis.scale('linear')
+        else:
+            axis.scale('log')
         plt.draw()
     @staticmethod
-    def ylog():
-        if Iplot.y.get_bounds()[0] < 0: Iplot.y.resize(start=1)
-        Iplot.axes.set_yscale('log')
-        plt.draw()
+    def xlog(off=False):
+        Iplot._log(Iplot.x,off)
+    @staticmethod
+    def ylog(off=False):
+        Iplot._log(Iplot.y,off)
 
     @staticmethod
     def init():
@@ -96,11 +104,13 @@ class Iplot(object):
     def secondAxis(function,axis='x'):
         exec('axis=Iplot.'+axis)
         axis.twin(function)
+        plt.draw()
     @staticmethod
     def hideSecondAxis(axis='x'):
         exec('axis=Iplot.'+axis)
         if axis.transform != None:
             axis.twin(lambda x: '')
+        plt.draw()
         
     @staticmethod
     def clearPlots():
@@ -196,6 +206,7 @@ class Iplot(object):
         if not chain and autosize:
             Iplot.axes.set_xlim(mx-stepx,Mx+stepx)
             Iplot.axes.set_ylim(my-stepy,My+stepy)
+        plt.draw()
         if Iplot.x.transform != None: Iplot.x.resize()
         if Iplot.y.transform != None: Iplot.y.resize()
 
