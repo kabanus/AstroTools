@@ -280,11 +280,13 @@ class Data(fitsHandler):
         except AttributeError: pass
 
     def transmit(self,table):
+        name = str(table)
         try:
             transmission = array([float(x) for x in open(table)])
-        except: transmission = array(list(table))
+        except IOError: 
+            transmission = array(list(table))
         if len(transmission) != len(self.cts):
-            raise Data.lengthMismatch("Got "+str(transmission)+" with length "+str(len(transmission))+".")
+            raise Data.lengthMismatch("Got "+name+" with length "+str(len(transmission)))
         self.otransmission = transmission
         self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
         self.cts /= self.transmission

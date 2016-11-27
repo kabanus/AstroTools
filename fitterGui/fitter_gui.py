@@ -36,6 +36,7 @@ if True or __name__ == "__main__":
     from Tkinter             import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
     from tkMessageBox        import askquestion 
     from fitter              import Fitter
+    from fitshandler         import Data
     from plotInt             import Iplot,plt
     from gui.modelReader     import modelReader
     from gui.simplewindows   import runMsg
@@ -55,7 +56,7 @@ if True or __name__ == "__main__":
             self.border      = b
             self.width       = 800
             self.height      = 500
-            self.fitter      = Fitter()
+            self.fitter      = Fitter(noinit=True)
             self.thawedDict  = {}
             self.statistic   = StringVar()
             self.statistic.set("No fit run")
@@ -84,9 +85,9 @@ if True or __name__ == "__main__":
             self.root.protocol('WM_DELETE_WINDOW',self._quit) 
 
             self.canvas = FigureCanvasTkAgg(plt.get_current_fig_manager().canvas.figure, master = self.main)
+            nav = NavigationToolbar2TkAgg(self.canvas,self.main)
             #Only load figure after manager has been set
             self.fitter.initplot()
-            nav = NavigationToolbar2TkAgg(self.canvas,self.main)
             for child in nav.winfo_children():
                 child.configure(takefocus=False)
             Label(nav,textvar= self.datafile,padx=self.border).pack(side=LEFT)
@@ -263,6 +264,10 @@ if True or __name__ == "__main__":
                 messagebox.showerror('Bad file!','Please check file is correct format:\n'+str(e))
                 if self.debug: raise
                 return
+            except Data.lengthMismatch as e:
+                messagebox.showerror('Mismatch!','Please file and data match:\n'+str(e))
+                if self.debug: raise
+                return
             except Exception as e: 
                 if str(e).find('ndarray') > -1:
                     messagebox.showerror('Bad file!','Tranmission and data have a different amount of channels!')
@@ -395,7 +400,6 @@ if True or __name__ == "__main__":
             except Exception as e:
                 messagebox.showerror('Failed',e)
                 raise
-
             self.refreshPlot()
             #In case we changed axes, change ignore values to fit
             try: ignoreReader(self,False).parse("")

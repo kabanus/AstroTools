@@ -7,7 +7,6 @@ warnings.filterwarnings('ignore')
 
 plt.ion()
 class Iplot(object):
-    block=False
     second = None
     class axis(object):
         class noSuchAxis(Exception): pass
@@ -44,7 +43,7 @@ class Iplot(object):
                 start = Iplot.axes.axis()[self.ind*2]
             if start >= stop: raise Exception("Bad range! stop must be greater then start: "+str(start)+">="+str(stop))
             self.sizer(start,stop)
-            plt.draw()
+            Iplot.axes.redraw_in_frame()
             if self.sizer2 != None:
                 self.sizer2(start,stop)
                 #Can't comprehend to support empty labels
@@ -63,11 +62,23 @@ class Iplot(object):
                             newlabels.append(self.transform(label))
                     else: newlabels.append(label.get_text())
                 self.labelr2(newlabels)
-            plt.draw()
+            Iplot.axes.redraw_in_frame()
         def get_bounds(self):
             return Iplot.axes.axis()[self.ind*2:self.ind*2+2]
         def label(self,title):
             self.labelr(title)
+            plt.draw()
+    
+    @staticmethod
+    def xlog():
+        if not Iplot.x.get_bounds()[0] < 0: Iplot.x.resize(start=1)
+        Iplot.axes.set_xscale('log')
+        plt.draw()
+    @staticmethod
+    def ylog():
+        if Iplot.y.get_bounds()[0] < 0: Iplot.y.resize(start=1)
+        Iplot.axes.set_yscale('log')
+        plt.draw()
 
     @staticmethod
     def init():
@@ -100,8 +111,7 @@ class Iplot(object):
         except AttributeError: pass
         Iplot.plots = list()
         Iplot.axes.minorticks_on()
-        if plt.isinteractive():
-            plt.show(block=False)
+        plt.draw()
 
     @staticmethod 
     def legend(*labels,**legend_kwrags):
@@ -110,7 +120,7 @@ class Iplot(object):
             plot.set_label(label)
         if label is None: return 
         Iplot.axes.legend(**legend_kwrags)
-        plt.show(block=Iplot.block)
+        plt.draw()
 
     #Can send this a curve, ccf table or any list. If args contain
     #scatter makes scatter plots.
@@ -151,7 +161,6 @@ class Iplot(object):
         plotter = Iplot.axes.plot
         if scatter: 
             plotter = Iplot.axes.scatter
-
         for c in args:
             color = [Iplot.col,0,1-Iplot.col]
             try: xv = c.vector
@@ -187,10 +196,13 @@ class Iplot(object):
         if not chain and autosize:
             Iplot.axes.set_xlim(mx-stepx,Mx+stepx)
             Iplot.axes.set_ylim(my-stepy,My+stepy)
-        if plt.isinteractive():
-            plt.show(block=Iplot.block)
         if Iplot.x.transform != None: Iplot.x.resize()
         if Iplot.y.transform != None: Iplot.y.resize()
+
+    @staticmethod
+    def title(title,**kwargs):
+        Iplot.axes.set_title(title,**kwargs)
+        plt.draw()
 
     @staticmethod
     def annotate(labels,data,**kwargs):
@@ -219,7 +231,7 @@ class Iplot(object):
                 a = Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset pixels',
                                         xytext=xytext,**kwargs)
             
-            plt.draw()
+            Iplot.axes.redraw_in_frame()
             cbox = a.get_window_extent()
             if slide is not None:
                 direct  = int((slide[0] - 0.5)*2)
@@ -244,7 +256,7 @@ class Iplot(object):
                 if arrow:
                     Iplot.axes.arrow(x,y,data[i][0]-x,data[i][1]-y,head_length=0,head_width=0)
             Iplot.boxes.append(cbox)
-            plt.draw()
+            Iplot.axes.redraw_in_frame()
 
     @staticmethod
     def quiet():

@@ -4,7 +4,7 @@ from numpy import array
 class Fitter(object):
     from _plotdefs import CHANNEL,ENERGY,WAVE
     
-    def __init__(self, data = None, resp = None):
+    def __init__(self, data = None, resp = None, noinit = False):
         self.axisz     = None
         self.dataz     = None
         self.ptype     = self.CHANNEL
@@ -18,12 +18,12 @@ class Fitter(object):
         self.ystop     = None
         self.plotmodel = False
         self.area      = array(())
-        self.initplot() 
+        if not noinit: self.initplot()
         if data is not None:
             self.loadData(data)
         if resp is not None:
             self.loadResp(resp)
-    
+
     #Exceptions
     from _datadefs import dataResponseMismatch, noIgnoreBeforeLoad
     from _modeling import NotAModel
