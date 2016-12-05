@@ -1,5 +1,5 @@
 from time import clock
-from itertools import tee
+from itertools import tee,izip
 
 def lookin(module,string):
     for x in dir(module):
@@ -100,8 +100,12 @@ def closest(lst,value):
     return (start,end,(lst[end]-value)/(lst[end]-lst[start]),
                       (value-lst[start])/(lst[end]-lst[start]))
 
-def pairwise(iterable):
-    a, b = tee(iterable)
-    next(b, None)
-    return zip(a, b)
+def nwise(iterable, n = 2, overlap = True):
+    if overlap:
+        iterators = tee(iterable, n)
+        for i in range(len(iterators)):
+            for j in range(i):
+                next(iterators[i], None)
+        return izip(*iterators)
+    return izip(*[iter(iterable)]*n)
 

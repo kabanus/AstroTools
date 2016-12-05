@@ -182,13 +182,16 @@ class Iplot(object):
                 xv = tmp
             else: raise Exception("Data has more than 4 columns!")
             try:
-                Iplot.plots.append(plotter(*xv[:2],c=color,**dict(**kwargs)))
+                addtolist = Iplot.plots.extend
+                if plotter == Iplot.axes.scatter:
+                    addtolist = Iplot.plots.append
+                addtolist(plotter(*xv[:2],c=color,**dict(**kwargs)))
             except IndexError:
                 if plotter == Iplot.axes.scatter:
                     Iplot.plots.append(
                         plotter(*xv[:2],s=2,edgecolor=None,c=color,**kwargs))
                 else: 
-                    Iplot.plots.append(plotter(*xv[:2],c=color,**kwargs))
+                    Iplot.plots.extend(plotter(*xv[:2],c=color,**kwargs))
             if len(tmp) > 2: 
                 Iplot.axes.errorbar(*xv,linestyle="None",capsize = 0)
             if not chain and autosize:
