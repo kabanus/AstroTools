@@ -3,7 +3,7 @@ from astropy.io        import fits
 from astropy.table     import Table
 from numpy             import int as ndint
 from numpy             import max as ndmax
-from numpy             import array,dot,inf,delete,sort,zeros,unravel_index,argmax
+from numpy             import array,dot,inf,delete,sort,zeros,unravel_index,argmax,isnan
 from itertools         import izip
 from matplotlib.pyplot import show,figure
 
@@ -130,7 +130,6 @@ class Response(fitsHandler):
 
 class Data(fitsHandler):
     class lengthMismatch(Exception): pass
-
     def __init__(self, data, background = None):
         fitsio          = fits.open(data)
         data            = fitsio[1].data
@@ -147,24 +146,20 @@ class Data(fitsHandler):
                 background = h['BACKFILE']
         except KeyError: pass
         self.ochannels  = []
-        self.octs       = []
         self.ocounts    = []
         self.oscales    = []
         self.obscales   = []
-        self.oerrors    = []
         self.grouping   = 1
 
-        #CHANNEL = "CHANNEL"
+        CHANNEL = "CHANNEL"
         COUNTS  = "COUNTS"
         QUALITY = "QUALITY"
         AREASCAL= "AREASCAL"
         BACKSCAL= "BACKSCAL"
        
-        row = 1
         for record in data:
             counts  = record[COUNTS]
-            self.ochannels.append(row)
-            row += 1
+            self.ochannels.append(record[CHANNEL])
             try:
                 q = record[QUALITY] > 0
             except KeyError:
@@ -174,8 +169,6 @@ class Data(fitsHandler):
                 self.ocounts.append(0)
                 self.oscales.append(0)
                 self.obscales.append(0)
-                self.octs.append(0)
-                self.oerrors.append(inf)
             else:
                 bscale = scale = 1.0
                 try:
@@ -185,19 +178,48 @@ class Data(fitsHandler):
                 self.ocounts.append(counts)
                 self.oscales.append(scale)
                 self.obscales.append(bscale)
-                self.octs.append(counts/self.exposure/scale)
-                self.oerrors.append(counts**0.5/self.exposure/scale)
 
         self.ochannels  = array(self.ochannels)
-        self.octs       = array(self.octs)
         self.ocounts    = array(self.ocounts)
         self.oscales    = array(self.oscales)
         self.obscales   = array(self.obscales)
-        self.oerrors    = array(self.oerrors)
         self.reset()
 
         if background != None:
             self.loadback(background)
+
+    def cts(self):
+        if self.background is None:
+            cts = self.counts/self.scale()
+        else:
+            back = self.background
+            cts = (self.counts/self.scale() -
+                   back.counts/self.bscale())
+        cts[isnan(cts)] = 0
+        return cts
+
+    def errors(self):
+        if self.background is None:
+            error = self.counts**0.5/self.scale()
+        else:
+            back = self.background
+            error = (self.counts/self.scale()**2+
+                     back.counts/self.bscale()**2)**0.5
+        error[isnan(error)] = inf
+        return error
+
+    def scale(self):
+        try:
+            return self.scales*self.exposure*self.transmission
+        except AttributeError:
+            return self.scales*self.exposure
+
+    def bscale(self):
+        back = self.background
+        try:
+            return (back.bscale/self.bscale)*back.scale*back.exposure*self.transmission
+        except AttributeError:
+            return (back.bscale/self.bscale)*back.scale*back.exposure
 
     def loadback(self,background):
         back = Data(background)
@@ -224,9 +246,6 @@ class Data(fitsHandler):
     def __len__(self):
         return len(self.channels)
 
-    def __getitem__(self,i):
-        return self.channels[i],self.counts[i],self.errors[i]*self.exposure*self.scales[i]
-
     def __div__(self,other):
         other.group(self.grouping)
         you   = list(other.rebin(include_bad=True))
@@ -247,11 +266,9 @@ class Data(fitsHandler):
     def reset(self):
         self.deleted  = set()
         self.channels = array(self.ochannels ,copy=True)
-        self.cts      = array(self.octs      ,copy=True)
         self.counts   = array(self.ocounts   ,copy=True)
         self.scales   = array(self.oscales   ,copy=True)
         self.bscales  = array(self.obscales  ,copy=True)
-        self.errors   = array(self.oerrors   ,copy=True)
         try:
             self.transmission = array(self.otransmission,copy=True)
         except AttributeError: pass
@@ -261,14 +278,10 @@ class Data(fitsHandler):
     def ignore(self,channels):
         self.deleted.update([c-1 for c in channels if c >= self.ochannels[0] and c <= self.ochannels[-1]])
         self.channels  = delete(self.ochannels ,list(self.deleted),axis = 0)
-        self.cts       = delete(self.octs      ,list(self.deleted),axis = 0)
         self.counts    = delete(self.ocounts   ,list(self.deleted),axis = 0)
         self.scales    = delete(self.oscales   ,list(self.deleted),axis = 0)
-        self.errors    = delete(self.oerrors   ,list(self.deleted),axis = 0)
         try:
             self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
-            self.cts    /= self.transmission
-            self.errors /= self.transmission
         except AttributeError: pass
         if self.background != None:
             self.background.ignore(channels)
@@ -285,11 +298,10 @@ class Data(fitsHandler):
             transmission = array([float(x) for x in open(table)])
         except IOError: 
             transmission = array(list(table))
-        if len(transmission) != len(self.cts):
+        if len(transmission) != len(self.counts):
             raise Data.lengthMismatch("Got "+name+" with length "+str(len(transmission)))
         self.otransmission = transmission
         self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
-        self.cts /= self.transmission
 
     @staticmethod
     def scaleCounts(data,scale,back = 0.0,bscale = 1.0):

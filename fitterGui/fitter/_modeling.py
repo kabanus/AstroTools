@@ -5,7 +5,10 @@ class NotAModel(Exception): pass
 
 
 def chisq(self):
-    return sum(((self.data.cts[i]-self.result[i])**2/self.data.errors[i]**2 for i in range(len(self.data.channels))))
+    try:
+        return sum((self.data.cts()-self.result)**2/self.data.errors()**2)
+    except ValueError:
+        return float('nan')
 
 def reduced_chisq(self):
     return self.chisq()/(len(self.data.channels)-len(self.getThawed()))
@@ -45,8 +48,8 @@ def fit(self):
     model = self.current
     args  = self.initArgs()
   
-    bestfit,self.errs = curve_fit(self.tofit,self.energies(),self.data.cts,
-                                  p0=args,sigma=self.data.errors)
+    bestfit,self.errs = curve_fit(self.tofit,self.energies(),self.data.cts(),
+                                  p0=args,sigma=self.data.errors())
 
     self.stderr  = dict(izip(model.getThawed(),
                     [self.errs[j][j]**0.5 for j in range(len(self.errs))]))
