@@ -1,4 +1,4 @@
-from fitshandler import Response,Data
+from fitshandler import Response,Data,FakeResponse
 from os.path     import dirname,join
 
 class dataResponseMismatch(Exception): pass
@@ -14,12 +14,14 @@ def loadResp(self,resp):
     self.checkLoaded()
     self.resp_file = resp
 
-def loadData(self,data):
-    self.data  = Data(data)
-    if self.data.resp != None:
+def loadData(self,data, text = None):
+    self.data  = Data(data, text=text)
+    if self.data.resp is not None:
         try: self.loadResp(self.data.resp)
         except IOError: 
             self.loadResp(join(dirname(data),self.data.resp))
+    elif text is not None:
+        self.resp  = FakeResponse(self.data.channels)
     self.checkLoaded()
     self.plot(user = False)
     self.data_file = data

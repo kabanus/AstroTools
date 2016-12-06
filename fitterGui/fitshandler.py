@@ -1,9 +1,10 @@
 
 from astropy.io        import fits
 from astropy.table     import Table
-from numpy             import int as ndint
-from numpy             import max as ndmax
-from numpy             import array,dot,inf,delete,sort,zeros,unravel_index,argmax,isnan
+from numpy             import int    as ndint
+from numpy             import max    as ndmax
+from numpy             import append as ndappend
+from numpy             import array,dot,inf,delete,sort,zeros,unravel_index,argmax,isnan,ones
 from itertools         import izip
 from matplotlib.pyplot import show,figure
 
@@ -128,15 +129,52 @@ class Response(fitsHandler):
             else:
                 yield [row[0],row[1]/dltodE]
 
+class FakeResponse(object):
+    def __init__(self,axis):
+        self.ebinAvg = array(axis)
+        self.eff     = ones(len(axis))
+    def energy(self,table = None, xonly = False):
+        return table        
+    def wl(self,table = None, xonly = False):
+        return table
+    def convolve_channels(self,vector):
+        return vector
+    def wl_to_channel(self,minX,maxX):
+        raise NotImplementedError("Can't ignore when using a text file as data.")
+    def energy_to_channel(self,minX,maxX):
+        raise NotImplementedError("Can't ignore when using a text file as data.")
+
 class Data(fitsHandler):
     class lengthMismatch(Exception): pass
-    def __init__(self, data, background = None):
+    def __init__(self, data, background = None, text = None):
+        self.ochannels  = []
+        self.ocounts    = []
+        self.oscales    = []
+        self.obscales   = []
+        self.grouping   = 1
+        self.resp       = None
+        self.background = None
+
+        if text is None:
+            self.loadFits(data)
+        else:   
+            self.loadText(data,text)
+
+        self.ochannels  = array(self.ochannels)
+        self.ocounts    = array(self.ocounts)
+        self.oscales    = array(self.oscales)
+        self.obscales   = array(self.obscales)
+        self.reset()
+
+        if background != None:
+            self.loadback(background,text)
+
+    def loadFits(self,data):
         fitsio          = fits.open(data)
         data            = fitsio[1].data
         h               = fitsio[1].header
         self.exposure   = h['EXPOSURE']
-        self.resp       = None
-        self.background = None
+        self.asciiflag  = False
         try:
             if h['RESPFILE'].lower() != 'none':
                 self.resp   = h['RESPFILE']
@@ -145,12 +183,6 @@ class Data(fitsHandler):
             if h['BACKFILE'].lower() != 'none':
                 background = h['BACKFILE']
         except KeyError: pass
-        self.ochannels  = []
-        self.ocounts    = []
-        self.oscales    = []
-        self.obscales   = []
-        self.grouping   = 1
-
         CHANNEL = "CHANNEL"
         COUNTS  = "COUNTS"
         QUALITY = "QUALITY"
@@ -179,50 +211,83 @@ class Data(fitsHandler):
                 self.oscales.append(scale)
                 self.obscales.append(bscale)
 
-        self.ochannels  = array(self.ochannels)
-        self.ocounts    = array(self.ocounts)
-        self.oscales    = array(self.oscales)
-        self.obscales   = array(self.obscales)
-        self.reset()
+    def loadText(self,fname,delimiter):
+        self.exposure    = 1
+        self.oerrorarray = []
+        with open(fname) as data:
+            for line in data:
+                self.oscales.append(1.0)
+                self.obscales.append(1.0)
+                line = line.split(delimiter)
+                self.ochannels.append(float(line[0]))
+                self.ocounts.append(float(line[1]))
+                self.oerrorarray.append(float(line[2]))
+        self.oerrorarray = array(self.oerrorarray)
+        self.errors = lambda: self.errorarray
 
-        if background != None:
-            self.loadback(background)
+    @staticmethod
+    def rebin(model,binfactor,scale = lambda: 1):
+        res = model/scale()
+        res[isnan(res)] = 0
+        res = Data.ndrebin(res,binfactor)
+        return res
 
-    def cts(self):
+    @staticmethod
+    def ndrebin(arr, rebin, sumit = False):
+        if rebin <= 1: return arr
+        start = arr[:(arr.shape[0]/rebin)*rebin].reshape(arr.shape[0]//rebin,-1)
+        final = arr[(arr.shape[0]/rebin)*rebin:]
+        if not sumit:
+            arr = start.mean(1)
+            if final.any():
+                arr = ndappend(arr,final.mean())
+        else:
+            arr = start.sum(1)
+            if final.any():
+                arr = ndappend(arr,final.sum())
+        return arr
+
+    def getPlot(self,rebin = 1, eff = 1):
+        return zip(self.channels,self.cts(rebin,eff),self.errors(rebin,eff))
+
+    def cts(self,rebin = 1,eff = 1):
         if self.background is None:
-            cts = self.counts/self.scale()
+            cts = self.counts/self.scale(eff)
         else:
             back = self.background
-            cts = (self.counts/self.scale() -
-                   back.counts/self.bscale())
+            cts = (self.counts/self.scale(eff) -
+                   back.counts/self.bscale(eff))
         cts[isnan(cts)] = 0
+        cts = Data.ndrebin(cts,rebin)
         return cts
 
-    def errors(self):
+    def errors(self,rebin = 1,eff = 1):
+        counts = Data.ndrebin(self.counts,rebin,sumit = True)
         if self.background is None:
-            error = self.counts**0.5/self.scale()
+            error = counts**0.5/Data.ndrebin(self.scale(eff),rebin,sumit = True)
         else:
-            back = self.background
-            error = (self.counts/self.scale()**2+
-                     back.counts/self.bscale()**2)**0.5
+            back    = self.background
+            bcounts = Data.ndrebin(back.counts,rebin, sumit = True)
+            error   = ( counts/Data.ndrebin(self. scale(eff),rebin,sumit=True)**2+
+                       bcounts/Data.ndrebin(self.bscale(eff),rebin,sumit=True)**2)**0.5
         error[isnan(error)] = inf
         return error
 
-    def scale(self):
+    def scale(self, eff = 1):
         try:
-            return self.scales*self.exposure*self.transmission
+            return self.scales*self.exposure*eff*self.transmission
         except AttributeError:
-            return self.scales*self.exposure
+            return self.scales*self.exposure*eff
 
-    def bscale(self):
+    def bscale(self, eff = 1):
         back = self.background
         try:
-            return (back.bscale/self.bscale)*back.scale*back.exposure*self.transmission
+            return (back.bscale/self.bscale)*back.scale*back.exposure*eff*self.transmission
         except AttributeError:
-            return (back.bscale/self.bscale)*back.scale*back.exposure
+            return (back.bscale/self.bscale)*back.scale*back.exposure*eff
 
-    def loadback(self,background):
-        back = Data(background)
+    def loadback(self,background,text = False):
+        back = Data(background,text)
         if self.deleted:
             back.ignore([c+1 for c in self.deleted])
         if len(back) != len(self):
@@ -246,22 +311,18 @@ class Data(fitsHandler):
     def __len__(self):
         return len(self.channels)
 
+    #Assume same amount of channels
     def __div__(self,other):
-        other.group(self.grouping)
-        you   = list(other.rebin(include_bad=True))
-        me    = list( self.rebin(include_bad=True))
-        table = []
-        for i in range(len(you)):
-            row = [you[i][0]]
-            if you[i][1]:
-                you[i][1] = float(you[i][1])
-                row.append(me[i][1]/you[i][1])
-                row.append( ((me[i][2]/you[i][1])**2+(me[i][1]*you[i][2]/you[i][1]**2)**2)**0.5 )
-            else:
-                row.append(0)
-                row.append(0)
-            table.append(row)
-        return table
+        you   = other.cts(rebin=self.grouping)
+        me    =  self.cts(rebin=self.grouping)
+        eyou  = other.errors(rebin=self.grouping)
+        eme   =  self.errors(rebin=self.grouping)
+        if len(you) != len(me):
+            raise Data.lengthMismatch("Dividing to data with different amount of channels!")
+
+        result  = me/you
+        eresult = ((eme/you)**2+(me*eyou/you**2)**2)**0.5
+        return zip(Data.ndrebin(self.channels,self.grouping),result,eresult)
 
     def reset(self):
         self.deleted  = set()
@@ -272,16 +333,24 @@ class Data(fitsHandler):
         try:
             self.transmission = array(self.otransmission,copy=True)
         except AttributeError: pass
+        try:
+            self.errorarray   = array(self.oerrorarray,copy=True)
+        except AttributeError: pass
         if self.background != None:
             self.background.reset()
 
     def ignore(self,channels):
+        if self.asciiflag:
+            raise NotImplementedError("Can't ignore when using a text file as data.")
         self.deleted.update([c-1 for c in channels if c >= self.ochannels[0] and c <= self.ochannels[-1]])
         self.channels  = delete(self.ochannels ,list(self.deleted),axis = 0)
         self.counts    = delete(self.ocounts   ,list(self.deleted),axis = 0)
         self.scales    = delete(self.oscales   ,list(self.deleted),axis = 0)
         try:
             self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
+        except AttributeError: pass
+        try:
+            self.errorarray    = delete(self.oerrorarray, list(self.deleted),axis = 0)
         except AttributeError: pass
         if self.background != None:
             self.background.ignore(channels)
@@ -302,84 +371,6 @@ class Data(fitsHandler):
             raise Data.lengthMismatch("Got "+name+" with length "+str(len(transmission)))
         self.otransmission = transmission
         self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
-
-    @staticmethod
-    def scaleCounts(data,scale,back = 0.0,bscale = 1.0):
-        result = data/scale-back/bscale
-        error  = ((1/scale)**2*data+(1/bscale)**2*back)**0.5
-        return result,error
-
-    #Plotter
-    def rebin(self,binfactor = 1, model = None, errors = None, 
-                   counts = False, include_bad = False, eff = array(())):
-        binfactor *= self.grouping
-        cts = self.counts
-        if model != None:
-            cts = model
-        
-        ind = 0
-        bscale = 1
-        bcount = 0
-        while ind < len(self.channels):
-            sums = [0,0,0]
-            if model != None and errors == None:
-                sums = [0,0]
-
-            scale = count = trans = area = 0
-            if self.background != None:
-                bcount  = bscale = bsscale = bbscale = 0
-            while count < binfactor and ind < len(self.channels) and (not sums[0] or self.channels[ind]-self.channels[ind-1] == 1):
-                scale   += self.scales[ind]
-                sums[0] += self.channels[ind]
-                sums[1] += cts[ind]
-                if self.background != None:
-                    bscale  += self.bscales[ind]
-                    bcount  += self.background.counts[ind]
-                    bsscale += self.background.scales[ind]
-                    bbscale += self.background.bscales[ind]
-                count   += 1
-                if errors != None:
-                    sums[2] += errors[ind]
-                try: trans += self.transmission[ind]
-                except AttributeError: pass
-                if eff.any(): 
-                    area += eff[ind]
-                ind += 1
-            
-            area    /= float(count)
-            sums[0] /= float(count)
-            if model == None:
-                if self.background != None:
-                    if bscale:
-                        bscale = (bbscale/bscale)*bsscale
-               
-                if not bscale or not scale:
-                    if not include_bad: continue
-                    sums[1] = bcount = 0
-                    scale   = bscale = 1
-                  
-                if not counts:
-                    scale *= self.exposure
-                    if self.background != None:
-                        bscale *= self.background.exposure
-
-                    if trans:
-                        trans /= float(count)
-                        scale *= trans
-                        if self.background != None:
-                            bscale *= trans
-
-                    if area:
-                        scale *= area
-                        if self.background!= None:
-                            bscale *= area
-                sums[1],sums[2] = Data.scaleCounts(sums[1],scale,bcount,bscale)
-            else:
-                if not area: area = 1
-                sums[1] /= float(count)*area
-                if errors != None:
-                    sums[2] /= float(count)/area
-            yield sums
 
 class Events(fitsHandler):
     def __init__(self, event_file):
