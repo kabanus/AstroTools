@@ -1,4 +1,4 @@
-from Tkinter import Toplevel,Frame,Button,TOP,Label,LEFT,BOTH,Canvas,N,S,W
+from Tkinter import Toplevel,Frame,Button,TOP,Label,LEFT,BOTH,Canvas,N,S,W,TclError
 import tkMessageBox as messagebox
 from helperfunctions import updateFrame,genScrollCanvas
 
@@ -13,13 +13,15 @@ class simpleWindow(object):
             raise
 
         try: 
-            exec('field=parent.'+field) in locals(),globals()
-            field.destroy()
-        except AttributeError: pass
-        field = self
+            exec('fld=parent.'+field) in locals(),globals()
+            fld.focus_set()
+            fld.lift()
+            return
+        except (AttributeError,TclError): pass
 
         self.parent = parent
         self.root = Toplevel(self.parent.root)
+        exec('parent.'+field+' = self.root') in locals(),globals()
         self.root.transient(self.parent.root)
         self.root.wm_geometry("+%d+%d" %(parent.root.winfo_rootx()+parent.root.winfo_width()/3.0, parent.root.winfo_rooty()+parent.root.winfo_height()/2.0))
         self.root.wm_title(title)

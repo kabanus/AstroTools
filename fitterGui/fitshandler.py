@@ -213,7 +213,7 @@ class Data(fitsHandler):
 
     def loadText(self,fname,delimiter):
         self.exposure    = 1
-        self.oerrorarray = []
+        self.errorarray = []
         with open(fname) as data:
             for line in data:
                 self.oscales.append(1.0)
@@ -221,9 +221,9 @@ class Data(fitsHandler):
                 line = line.split(delimiter)
                 self.ochannels.append(float(line[0]))
                 self.ocounts.append(float(line[1]))
-                self.oerrorarray.append(float(line[2]))
-        self.oerrorarray = array(self.oerrorarray)
-        self.errors = lambda: self.errorarray
+                self.errorarray.append(float(line[2]))
+        self.errorarray = array(self.errorarray)
+        self.errors = lambda rebin=1,_=1,x=self.errorarray: Data.ndrebin(x,rebin)
 
     @staticmethod
     def rebin(model,binfactor,scale = lambda: 1):
@@ -333,9 +333,6 @@ class Data(fitsHandler):
         try:
             self.transmission = array(self.otransmission,copy=True)
         except AttributeError: pass
-        try:
-            self.errorarray   = array(self.oerrorarray,copy=True)
-        except AttributeError: pass
         if self.background != None:
             self.background.reset()
 
@@ -348,9 +345,6 @@ class Data(fitsHandler):
         self.scales    = delete(self.oscales   ,list(self.deleted),axis = 0)
         try:
             self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
-        except AttributeError: pass
-        try:
-            self.errorarray    = delete(self.oerrorarray, list(self.deleted),axis = 0)
         except AttributeError: pass
         if self.background != None:
             self.background.ignore(channels)

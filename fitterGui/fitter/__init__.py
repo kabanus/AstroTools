@@ -18,6 +18,7 @@ class Fitter(object):
         self.ystop     = None
         self.plotmodel = False
         self.area      = array(())
+        self.axisOverride=[None,None]
         if not noinit: self.initplot()
         if data is not None:
             self.loadData(data,text)
@@ -28,7 +29,7 @@ class Fitter(object):
     from _datadefs import dataResponseMismatch, noIgnoreBeforeLoad
     from _modeling import NotAModel
     from _error    import errorNotConverging, newBestFitFound
-    from _plotdefs import badPlotType, badZoomRange
+    from _plotdefs import badPlotType, badZoomRange, labelAxis, unlabelAxis
 
     #Methods
     from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset, untransmit, div, group
@@ -51,6 +52,8 @@ class Fitter(object):
         return self.current.getThawed()
     def getParams(self):
         return sorted(self.current.getParams(),key = Fitter.alphanum)
+    def printParams(self):
+        self.current.printParams()
     def initArgs(self):
         return self.current.initArgs()
     def tie(self,what,to):

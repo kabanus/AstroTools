@@ -1,5 +1,5 @@
 from Tkinter import Button,Menubutton,N,S,W,E,Menu
-from entrywindows import zoomReader, rebinReader, ignoreReader, Save, paramReader, zReader, rangeReader
+from entrywindows import zoomReader, rebinReader, ignoreReader, Save, paramReader, zReader, rangeReader, strReader
 from simplewindows import Help
 ALL = N+S+E+W
 
@@ -9,12 +9,13 @@ class Gui(object):
         self.parent = parent
         self.menuCommands()
         for  title,cmd, labels in (
-                ('Load'  , self.load   , ('Data','Response','Background',
+                ('Load'  , self.load   , ('Data','Response','Background','ASCII',
                                           'Transmission','Remove Transmission','Session')),
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
                 ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
                                           'Rest frame axis Z','Remove rest frame axis',
-                                          'Shift data Z','Remove data Z','Model','Divide','Toggle effective area','Data')),
+                                          'Shift data Z','Remove data Z','Model','Divide',
+                                          'Label x','Label y','unLabel','Toggle effective area','Data')),
                 ('Ignore', self.ignore,  ('Ignore','Reset')),
                 ('Model' , parent.loadModel, None),
                 ('Fit'   , parent.runFit, None),
@@ -39,6 +40,8 @@ class Gui(object):
         self.load    = (lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadData)),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp)), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadBack)), 
+                        lambda: self.parent.doAndPlot(lambda: self.parent.load(
+                            lambda fname: self.parent.fitter.loadData(fname," "))),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
                         self.parent.untransmit,
                         self.parent.loadSession)
@@ -52,6 +55,11 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.removeShift(True)),
                         lambda: rangeReader(self.parent),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.plotDiv,user = False)),
+                        lambda: strReader(self.parent,'Tex math may be entered between $$',
+                                lambda s: self.parent.fitter.labelAxis('x',s)),
+                        lambda: strReader(self.parent,'Tex math may be entered between $$',
+                                lambda s: self.parent.fitter.labelAxis('y',s)),
+                        lambda: self.parent.doAndPlot(self.parent.fitter.unlabelAxis),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.toggle_area()),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.plot()))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),

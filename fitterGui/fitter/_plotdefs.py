@@ -24,6 +24,15 @@ def rebin(self, count):
     self.binfactor = count
     self.plot(user = False)
 
+def labelAxis(self,axis,label):
+    if axis == 'y':
+        self.axisOverride[1] = label
+    if axis == 'x':
+        self.axisOverride[0] = label
+
+def unlabelAxis(self):
+    self.axisOverride = [None,None]
+
 def setplot(self, plotType):
     if plotType not in [self.ENERGY, self.CHANNEL, self.WAVE]: 
         raise self.badPlotType(plotType)
@@ -149,7 +158,11 @@ def plot(self, save = None, user = True):
         _plotOrSave(save,model=model)
     if save is not None: return
 
-    _labelaxes(self,model)
+    if self.axisOverride.count(None) < 2:
+        Iplot.x.label(str(self.axisOverride[0]))
+        Iplot.y.label(str(self.axisOverride[1]))
+    else:
+        _labelaxes(self,model)
 
     if self.axisz != None:
         Iplot.secondAxis(_embedz(self.axisz,self.ptype))

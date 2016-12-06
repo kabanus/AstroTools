@@ -1,4 +1,3 @@
-
 from Tkinter import Entry,LEFT,Label
 import tkMessageBox as messagebox
 from plotInt import Iplot
@@ -13,12 +12,15 @@ class entryWindow(simpleWindow):
         self.entry.focus_set()
 
 class strReader(entryWindow):
-    def __init__(self, parent,title):
+    def __init__(self, parent,title, action = None):
         try: entryWindow.__init__(self,parent,'',"stringer",title)
         except AttributeError: return
+        self.action = action
 
     def parse(self,event):
-        return self.entry.get()
+        if self.action is None: return self.entry.get()
+        self.parent.doAndPlot(lambda: self.action(self.entry.get()))
+        self.root.destroy()
 
 class zReader(entryWindow):
     def __init__(self, parent,data):
