@@ -47,8 +47,8 @@ class Response(fitsHandler):
             for _ in range(channel,nchannels+1):
                 channel += 1
                 energies[-1].append(0)
-        self.omatrix  = array(energies).transpose()
-        self.oeff    = ndmax(self.omatrix,axis=1)
+        self.omatrix = array(energies).transpose()
+        self.oeff    = self.omatrix.sum(axis=1)
         self.reset() 
         self.ebins    = array(self.ebins)
         self.ebinAvg  = array(self.ebinAvg)

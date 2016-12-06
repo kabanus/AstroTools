@@ -126,11 +126,9 @@ def plot(self, save = None, user = True):
         area = 1
     if model is None:
         plots = []
-        #plots = [self.data.rebin(self.binfactor,eff=self.area)]
         plots.append(self.data.getPlot(self.binfactor,area))
         if len(self.result) == len(self.data.channels):
             plots.append(zip(self.data.channels,Data.rebin(self.result,self.binfactor,scale = lambda x=area:x)))
-            #plots.append(Data.rebin(self.binfactor,self.result,eff=self.area))
         for i in range(len(plots)):
             if self.ptype == self.ENERGY:
                 plots[i] = self.resp.energy(plots[i])
