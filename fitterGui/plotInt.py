@@ -1,13 +1,14 @@
 #Make an even simpler plotting interface
 import matplotlib.pyplot as plt
-import matplotlib
+from   matplotlib.ticker import ScalarFormatter, FuncFormatter, NullFormatter
+from   matplotlib import collections,lines
 import warnings
 from numpy import array
 warnings.filterwarnings('ignore')
 
+SF = ScalarFormatter()
 plt.ion()
 class Iplot(object):
-    second = None
     class axis(object):
         class noSuchAxis(Exception): pass
         def __init__(self,axis):
@@ -25,15 +26,22 @@ class Iplot(object):
             self.transform = None
         def twin(self,function):
             op = 'y'
-            if self.transform == None:
+            if self.sizer2 is None:
                 if self.ind: op = 'x'
                 exec(
                     'self.second    = Iplot.axes.twin'+op+'();'+
-                    'self.sizer2    = self.second.set_'+self.axis+'lim;'+
-                    'self.labelr2   = self.second.set_'+self.axis+'ticklabels;'
+                    'self.sizer2    = self.second.set_'+self.axis+'lim;'
                     )
-                self.second.minorticks_on()
+                plt.gcf().delaxes(Iplot.axes)
+                plt.gcf().add_axes(Iplot.axes)
             self.transform = function
+            if function is not None:
+                exec("self.second."+self.axis+
+                    "axis.set_major_formatter(FuncFormatter"+
+                    "(lambda c,p,t=self.transform: SF.format_data_short(t(c))))")
+            else:
+                exec("self.second."+self.axis+"axis.set_major_formatter(NullFormatter())")
+                self.second.minorticks_on()
             self.resize()
 
         def scale(self,stype):
@@ -47,24 +55,8 @@ class Iplot(object):
             if start >= stop: raise Exception("Bad range! stop must be greater then start: "+str(start)+">="+str(stop))
             self.sizer(start,stop)
             plt.draw()
-            if self.sizer2 != None:
+            if self.sizer2 is not None:
                 self.sizer2(start,stop)
-                #Can't comprehend to support empty labels
-                newlabels = []
-                exec('labels = Iplot.axes.get_'+self.axis+'majorticklabels()')
-                negative = u'\u2212'
-                for label in labels:
-                    if label.get_text():
-                        label = label.get_text()
-                        if label[0] == negative:
-                            label = '-' + label[1:] 
-                        label = float(label)
-                        try:
-                            newlabels.append("%.2f"%self.transform(label))
-                        except TypeError:
-                            newlabels.append(self.transform(label))
-                    else: newlabels.append(label.get_text())
-                self.labelr2(newlabels)
             plt.draw()
         def get_bounds(self):
             return Iplot.axes.axis()[self.ind*2:self.ind*2+2]
@@ -109,8 +101,8 @@ class Iplot(object):
     def hideSecondAxis(axis='x'):
         exec('axis=Iplot.'+axis)
         if axis.transform != None:
-            axis.twin(lambda x: '')
-        plt.draw()
+            axis.twin(None)
+            plt.draw()
         
     @staticmethod
     def clearPlots():
