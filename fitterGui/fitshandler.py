@@ -1,4 +1,3 @@
-
 from astropy.io        import fits
 from astropy.table     import Table
 from numpy             import int    as ndint
@@ -67,7 +66,7 @@ class Response(fitsHandler):
         return dot(self.matrix,vector*self.ebins)
 
     def _to_channel(self, minX, maxX, to = lambda x: x):
-        eps = 0.00001
+        eps = 1e-12
         for channel in range(len(self.omatrix)):
             e0,e1  = self.ebounds[channel]
             if not e0 or not e1:
@@ -248,7 +247,8 @@ class Data(fitsHandler):
         return arr
 
     def getPlot(self,rebin = 1, eff = 1):
-        return zip(self.channels,self.cts(rebin,eff),self.errors(rebin,eff))
+        return zip(Data.ndrebin(self.channels,rebin),
+                   self.cts(rebin,eff),self.errors(rebin,eff))
 
     def cts(self,rebin = 1,eff = 1):
         if self.background is None:

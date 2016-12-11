@@ -29,14 +29,14 @@ deflinepath = os.path.dirname(os.path.realpath(__file__))+'/../appdata/ionbyion/
 class Ion:
     def __init__(self ,mass):
         self.m = mass
-        self.e = ()
-        self.l = ()
+        self.e = [] 
+        self.l = [] 
         self.t = None
 
 @modelExport
 class ibifit(_singleModel):
     description = 'Ion by ion absorption'
-    def __init__(self, lines = deflinepath, fcut = 10**-3):
+    def __init__(self, lines = deflinepath, fcut = 10**-3, ncut = float('inf')):
         super(ibifit,self).__init__()
         self.params = {'~kT':0.1,'~redshift':0,'~vturb':0,'~C':1}
         self.ions   = {}
@@ -58,15 +58,16 @@ class ibifit(_singleModel):
                         linef = glob(ionf+'/lines*')[0]
                         edgef = glob(ionf+'/edge*')[0]
                         self.ions[ion].e = list(ibifit.getlines(edgef,edge = True))
-                    self.ions[ion].l = list(ibifit.getlines(linef,fcut))
+                    self.ions[ion].l = list(ibifit.getlines(linef,fcut,number = ncut))
                     self.params[ion] = 0
         else:
             raise Exception("Can't understand how to init lines!")
         self.nzeroions = set()
         self.generator()
-    
+   
+    blabla = 0
     @staticmethod
-    def getlines(linef,fcut = 10**-3,edge = False):
+    def getlines(linef,fcut = 10**-3,edge = False, number = float('inf')):
         #Indices:
         wl  = 4; AAa = 6; f = 8; en = 2; a2 = 5; title = 1;
         if edge:
@@ -75,15 +76,16 @@ class ibifit(_singleModel):
             title += 1
         else:
             ind = [wl,AAa,f]
-        count = 0
+        count = -1
         for line in open(linef):
+            count += 1
             if count < title:
-                count += 1
                 continue
             line = line.split()
             if not edge and float(line[f]) < fcut: continue
             yield [float(line[i]) for i in ind]
             if edge: break
+            if count-title+1 >= number: break
                 
     #X is frequency normaized by sigma, A is gamma normalized by sigma
     #unitless!!!! need to devide by sigma! normalized to 1 without the extra sg!!

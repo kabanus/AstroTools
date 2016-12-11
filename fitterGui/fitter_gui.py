@@ -88,6 +88,7 @@ if True or __name__ == "__main__":
             nav = NavigationToolbar2TkAgg(self.canvas,self.main)
             #Only load figure after manager has been set
             self.fitter.initplot()
+            self.canvas.mpl_connect('pick_event',lambda e,s=self: s.canvas.show())
             for child in nav.winfo_children():
                 child.configure(takefocus=False)
             Label(nav,textvar= self.datafile,padx=self.border).pack(side=LEFT)

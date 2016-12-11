@@ -3,7 +3,6 @@ from numpy import array
 
 class Fitter(object):
     from _plotdefs import CHANNEL,ENERGY,WAVE
-    
     def __init__(self, data = None, resp = None, noinit = False, text = None):
         self.axisz     = None
         self.dataz     = None
@@ -17,6 +16,7 @@ class Fitter(object):
         self.ystart    = None
         self.ystop     = None
         self.plotmodel = False
+        self.labelions = False
         self.area      = array(())
         self.axisOverride=[None,None]
         if not noinit: self.initplot()
@@ -29,7 +29,7 @@ class Fitter(object):
     from _datadefs import dataResponseMismatch, noIgnoreBeforeLoad
     from _modeling import NotAModel
     from _error    import errorNotConverging, newBestFitFound
-    from _plotdefs import badPlotType, badZoomRange, labelAxis, unlabelAxis
+    from _plotdefs import badPlotType, badZoomRange, labelAxis, unlabelAxis, toggleIonLabels
 
     #Methods
     from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset, untransmit, div, group

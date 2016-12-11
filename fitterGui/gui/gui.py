@@ -15,7 +15,8 @@ class Gui(object):
                 ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
                                           'Rest frame axis Z','Remove rest frame axis',
                                           'Shift data Z','Remove data Z','Model','Divide',
-                                          'Label x','Label y','unLabel','Toggle effective area','Data')),
+                                          'Label x','Label y','unLabel',
+                                          'Toggle Ion labels','Toggle effective area','Data')),
                 ('Ignore', self.ignore,  ('Ignore','Reset')),
                 ('Model' , parent.loadModel, None),
                 ('Fit'   , parent.runFit, None),
@@ -60,6 +61,7 @@ class Gui(object):
                         lambda: strReader(self.parent,'Tex math may be entered between $$',
                                 lambda s: self.parent.fitter.labelAxis('y',s)),
                         lambda: self.parent.doAndPlot(self.parent.fitter.unlabelAxis),
+                        lambda: self.parent.doAndPlot(self.parent.fitter.toggleIonLabels),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.toggle_area()),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.plot()))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),

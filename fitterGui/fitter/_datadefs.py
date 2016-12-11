@@ -10,9 +10,25 @@ def div(self,other):
         self.division = list(self.data/Data(other))
 
 def loadResp(self,resp):
-    self.resp = Response(resp)
+    self.resp      = Response(resp)
     self.checkLoaded()
     self.resp_file = resp
+    self.ionlabs   = []
+    ions           = iter(self.ionlocations)
+    ebounds        = self.resp.ebounds
+    channeliter    = iter(range(len(ebounds)))
+    try:
+        while True:
+            channel= channeliter.next()
+            ion    = ions.next()
+            energy = Response.keVAfac/ion[0]
+            while energy > ebounds[channel][1]:
+                ion    = ions.next()
+                energy = Response.keVAfac/ion[0]
+            while energy < ebounds[channel][0]:
+                channel= channeliter.next()
+            self.ionlabs.append((channel+1,energy,ion[0],ion[1]))
+    except StopIteration: pass
 
 def loadData(self,data, text = None):
     self.data  = Data(data, text=text)
@@ -65,7 +81,7 @@ def ignore(self, minX, maxX):
             fitshandler.ignore(channels)
         if self.area.any():
             self.area = self.resp.eff
-        self.plot(user = False)
+        self.plot(user = False,keepannotations = True)
     except AttributeError:
         raise self.noIgnoreBeforeLoad()
 
@@ -82,5 +98,5 @@ def reset(self, zoom = True, ignore = True):
             except AttributeError: pass
         if self.area.any():
             self.area = self.resp.eff
-    self.plot(user = False)
+    self.plot(user = False,keepannotations = True)
 

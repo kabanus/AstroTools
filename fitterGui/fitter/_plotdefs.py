@@ -2,27 +2,41 @@ from plotInt     import Iplot
 from numpy       import array
 from itertools   import izip
 from fitshandler import Data
+from models      import ibifit #For labeling
 
 CHANNEL = 0
 ENERGY  = 1
 WAVE    = 2
+keVAfac = 12.39842
 
 class badPlotType(Exception): pass
 class badZoomRange(Exception): pass
 
+def toggleIonLabels(self,mode = None):
+    if mode is None:
+        self.labelions = 1 if not self.labelions else 0
+    else: self.labelions = mode
+    self.plot(user = False)
+
 def initplot(self):
     Iplot.init()
+    loadIonPositions(self)
+
+def loadIonPositions(self):
+    ions = ibifit(ncut=1).ions
+    self.ionlocations = sorted(sum([[[t[0],ion] for t in ions[ion].l + ions[ion].e] for ion in ions],[]))
 
 def zoomto(self, xstart = None, xstop = None, ystart = None, ystop = None):
     self.xstart = xstart
     self.xstop  = xstop
     self.ystart = ystart
     self.ystop  = ystop
-    self.plot(user = False)
+    Iplot.x.resize(self.xstart,self.xstop)
+    Iplot.y.resize(self.ystart,self.ystop)
 
 def rebin(self, count):
     self.binfactor = count
-    self.plot(user = False)
+    self.plot(user = False, keepannotations = True)
 
 def labelAxis(self,axis,label):
     if axis == 'y':
@@ -37,6 +51,7 @@ def setplot(self, plotType):
     if plotType not in [self.ENERGY, self.CHANNEL, self.WAVE]: 
         raise self.badPlotType(plotType)
     self.ptype = plotType
+    self.ionlabs.sort(key = lambda x: x[plotType])
     self.plot(user = False)
 
 def _embedz(z,ptype):
@@ -45,7 +60,7 @@ def _embedz(z,ptype):
     elif ptype == ENERGY:
         exec('shift = lambda x: x*(1.0+'+str(z)+')')
     else:
-        shift = lambda x: ''
+        shift = None
     return shift
 
 def shift(self,z,data = False):
@@ -123,8 +138,8 @@ def _plotOrSave(save = None,model = None, data = None):
                 fd.write(_writePlot(model))
         fd.close()
 
-def plot(self, save = None, user = True):
-    Iplot.clearPlots()
+def plot(self, save = None, user = True, keepannotations = False):
+    Iplot.clearPlots(keepannotations=keepannotations)
     model = None
     if not user and self.plotmodel:
         model = self.plotmodel
@@ -134,10 +149,9 @@ def plot(self, save = None, user = True):
     if not self.area.any():
         area = 1
     if model is None:
-        plots = []
-        plots.append(self.data.getPlot(self.binfactor,area))
+        plots = [self.data.getPlot(self.binfactor,area)]
         if len(self.result) == len(self.data.channels):
-            plots.append(zip(self.data.channels,Data.rebin(self.result,self.binfactor,scale = lambda x=area:x)))
+            plots.append(zip(Data.ndrebin(self.data.channels,self.binfactor),Data.rebin(self.result,self.binfactor,scale = lambda x=area:x)))
         for i in range(len(plots)):
             if self.ptype == self.ENERGY:
                 plots[i] = self.resp.energy(plots[i])
@@ -145,6 +159,8 @@ def plot(self, save = None, user = True):
                 plots[i] = self.resp.wl(plots[i])
             if self.dataz != None:
                 plots[i] = _shiftlist(plots[i],self.dataz,self.ptype)
+        if self.labelions:
+            plots[0] = list(plots[0])
         if len(plots) == 1:
             _plotOrSave(save,data=plots[0])
         else:
@@ -171,4 +187,18 @@ def plot(self, save = None, user = True):
     if self.ystart == None: y = 0
     Iplot.x.resize(self.xstart,self.xstop)
     Iplot.y.resize(y,self.ystop)
-    
+    if not keepannotations and self.labelions > 0:
+        labels = []
+        posits = []
+        ymax   = Iplot.y.get_bounds()[1]
+        yindex = 1+(self.ptype!=self.CHANNEL)
+        start,stop = Iplot.x.get_bounds()
+        for label in self.ionlabs:
+            if label[self.ptype] > stop : break
+            if label[self.ptype] < start: continue
+            labels.append(label[-1])
+            xindex = (label[self.CHANNEL]-1)//self.binfactor
+            posits.append((label[self.ptype],min(plots[0][xindex][yindex]+plots[0][xindex][yindex+1],ymax)))
+        if labels:
+            Iplot.annotate(labels,posits,slide=(1,1))
+

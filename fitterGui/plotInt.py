@@ -1,7 +1,6 @@
 #Make an even simpler plotting interface
 import matplotlib.pyplot as plt
 from   matplotlib.ticker import ScalarFormatter, FuncFormatter, NullFormatter
-from   matplotlib import collections,lines
 import warnings
 from numpy import array
 warnings.filterwarnings('ignore')
@@ -81,6 +80,12 @@ class Iplot(object):
         Iplot._log(Iplot.y,off)
 
     @staticmethod
+    def onclick(event):
+        event.artist.arrow.remove()
+        event.artist.remove()
+        plt.draw()
+
+    @staticmethod
     def init():
         global Iplot
         Iplot.axes = plt.gca()
@@ -91,6 +96,7 @@ class Iplot(object):
         Iplot.plots = list()
         Iplot.boxes = list()
         Iplot.clearPlots()
+        plt.gcf().canvas.mpl_connect('pick_event',Iplot.onclick)
    
     @staticmethod
     def secondAxis(function,axis='x'):
@@ -105,9 +111,12 @@ class Iplot(object):
             plt.draw()
         
     @staticmethod
-    def clearPlots():
+    def clearPlots(keepannotations = False):
         try: 
+            if keepannotations: annotations = Iplot.axes.texts
             Iplot.axes.clear()
+            if keepannotations: Iplot.axes.texts = annotations
+
         except AttributeError: return
         try: Iplot.axes.legend().remove()
         except AttributeError: pass
@@ -148,10 +157,7 @@ class Iplot(object):
         col_step = 1.0/len(args)
         if chain:
             children = []
-            for child in Iplot.axes.get_children():
-                if (type(child) is not matplotlib.collections.PathCollection and
-                    type(child) is not matplotlib.lines.Line2D):
-                    continue
+            for child in Iplot.axes.collections+Iplot.axes.lines:
                 children.append(child)
             col_step = 1.0/(len(children)+len(args))
             for child in children:
@@ -223,6 +229,8 @@ class Iplot(object):
             xytexts = None
         pixel_diff = 1
 
+        newlabs = []
+        plt.draw()
         for i in range(len(labels)):
             try: 
                 len(xytexts[i])
@@ -231,13 +239,15 @@ class Iplot(object):
                 
             try:
                 a = Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset pixels',
-                                        xytext=xytext,**kwargs)
+                                        xytext=xytext,picker = True,**kwargs)
             except AttributeError: 
                 Iplot.init()
                 a = Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset pixels',
-                                        xytext=xytext,**kwargs)
-            
-            Iplot.axes.redraw_in_frame()
+                                        xytext=xytext,picker = True,**kwargs)
+            newlabs.append(a)
+        plt.draw()
+        for i in range(len(labels)):
+            a = newlabs[i]
             cbox = a.get_window_extent()
             if slide is not None:
                 direct  = int((slide[0] - 0.5)*2)
@@ -253,16 +263,16 @@ class Iplot(object):
                                 current =  box.get_points()[slide] 
                                 shift   = direct*(current - cbox.get_points()[1-slide[0],slide[1]])
                     if not overlaps: break
-                    arrow = True
                     position = array(a.get_position())
                     position[slide[1]] += shift * direct * pixel_diff
                     a.set_position(position)
                     cbox = a.get_window_extent()
-                    x,y = Iplot.axes.transData.inverted().transform(cbox)[0]
+                    arrow = True
                 if arrow:
-                    Iplot.axes.arrow(x,y,data[i][0]-x,data[i][1]-y,head_length=0,head_width=0)
+                    x,y = Iplot.axes.transData.inverted().transform(cbox)[0]
+                    a.arrow = Iplot.axes.arrow(x,y,data[i][0]-x,data[i][1]-y,head_length=0,head_width=0)
             Iplot.boxes.append(cbox)
-            Iplot.axes.redraw_in_frame()
+        plt.draw()
 
     @staticmethod
     def quiet():
