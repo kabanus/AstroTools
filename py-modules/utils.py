@@ -1,9 +1,15 @@
 from time import clock
 from itertools import tee,izip
+from inspect import getsourcelines
 
-def lookin(module,string):
-    for x in dir(module):
-        if string in x: print x
+def printfunc(func):
+    print ''.join(getsourcelines(func)[0])
+
+def lookin(module,string,nodir = False):
+    lst = dir(module)
+    if nodir: lst = module
+    for x in lst:
+        if string.lower() in x.lower(): print x
 
 def frange(stop,start=None,step=1):
     if start != None:

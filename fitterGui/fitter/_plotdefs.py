@@ -23,7 +23,7 @@ def initplot(self):
     loadIonPositions(self)
 
 def loadIonPositions(self):
-    ions = ibifit(ncut=1).ions
+    ions = ibifit(ncut=3).ions
     self.ionlocations = sorted(sum([[[t[0],ion] for t in ions[ion].l + ions[ion].e] for ion in ions],[]))
 
 def zoomto(self, xstart = None, xstop = None, ystart = None, ystop = None):
