@@ -83,7 +83,7 @@ class Iplot(object):
     def onclick(event):
         try: event.artist.arrow.remove()
         except AttributeError: pass
-        event.artist.set_visible(False)
+        event.artist.remove()
         plt.gcf().canvas.draw()
 
     @staticmethod
@@ -223,6 +223,8 @@ class Iplot(object):
         #slide should be relevant edge of bbox - e.g. (0,0) for left, (0,1) for bottom...
         try: slide = kwargs.pop("slide")
         except KeyError: slide = None
+        try: offset = kwargs.pop("offset")
+        except KeyError: offset = (0,0)
         try: 
             xytexts = kwargs.pop("xytexts")
             xytext  = xytexts
@@ -240,7 +242,8 @@ class Iplot(object):
             except TypeError: pass
                 
             try:
-                a = Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset pixels',
+                loc = [d+o for d,o in zip(data[i],offset)]
+                a = Iplot.axes.annotate(labels[i],xy=loc,textcoords='offset pixels',
                                         xytext=xytext,picker = True,**kwargs)
             except AttributeError: 
                 Iplot.init()
@@ -251,10 +254,10 @@ class Iplot(object):
         for i in range(len(labels)):
             a = newlabs[i]
             cbox = a.get_window_extent()
+            arrow = False
             if slide is not None:
                 direct  = int((slide[0] - 0.5)*2)
                 current = -direct*float("inf")
-                arrow = False
                 while True:
                     overlaps = False
                     count = 0
@@ -270,9 +273,9 @@ class Iplot(object):
                     a.set_position(position)
                     cbox = a.get_window_extent()
                     arrow = True
-                if arrow:
-                    x,y = Iplot.axes.transData.inverted().transform(cbox)[0]
-                    a.arrow = Iplot.axes.arrow(x,y,data[i][0]-x,data[i][1]-y,head_length=0,head_width=0)
+            if arrow or offset[0] or offset[1]:
+                x,y = Iplot.axes.transData.inverted().transform(cbox)[0]
+                a.arrow = Iplot.axes.arrow(x,y,data[i][0]-x,data[i][1]-y,head_length=0,head_width=0)
             Iplot.boxes.append(cbox)
         plt.draw()
 

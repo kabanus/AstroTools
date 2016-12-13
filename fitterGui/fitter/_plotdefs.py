@@ -197,14 +197,16 @@ def plot(self, save = None, user = True, keepannotations = False):
         ymax   = Iplot.y.get_bounds()[1]
         yindex = 1+(self.ptype!=self.CHANNEL)
         start,stop = Iplot.x.get_bounds()
+        totaloffset = (0,0)
         for label in self.ionlabs:
             if label[self.ptype] > stop : break
             if label[self.ptype] < start or label[3] < 0: continue
             xindex = label[3]//self.binfactor
             if plots[0][xindex][yindex+1]  == float('inf'): continue
             labels.append(label[-1])
-            yoffset = 5 * plots[0][xindex][yindex+1]
+            yoffset = plots[0][xindex][yindex+1]
+            if totaloffset[1] < yoffset*5: totaloffset = (0,5*yoffset)
             posits.append((label[self.ptype],min(plots[0][xindex][yindex]+yoffset,ymax)))
         if labels:
-            Iplot.annotate(labels,posits,slide=(1,1))
+            Iplot.annotate(labels,posits,slide=(1,1),offset=totaloffset)
 
