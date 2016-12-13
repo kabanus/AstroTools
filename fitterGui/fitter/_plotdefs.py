@@ -1,4 +1,4 @@
-from plotInt     import Iplot
+from plotInt     import Iplot,plt
 from numpy       import array
 from itertools   import izip
 from fitshandler import Data
@@ -23,8 +23,10 @@ def initplot(self):
     loadIonPositions(self)
 
 def loadIonPositions(self):
-    ions = ibifit(ncut=3).ions
-    self.ionlocations = sorted(sum([[[t[0],ion] for t in ions[ion].l + ions[ion].e] for ion in ions],[]))
+    ions = ibifit(ncut=1).ions
+    self.ionlocations = sorted(sum([[[t[0],ion+a] 
+        for a,t in zip(('$\\alpha$','$\\beta$','$\\gamma$'),ions[ion].l + ions[ion].e)]
+            for ion in ions],[]))
 
 def zoomto(self, xstart = None, xstop = None, ystart = None, ystop = None):
     self.xstart = xstart
@@ -33,6 +35,7 @@ def zoomto(self, xstart = None, xstop = None, ystart = None, ystop = None):
     self.ystop  = ystop
     Iplot.x.resize(self.xstart,self.xstop)
     Iplot.y.resize(self.ystart,self.ystop)
+    self.plot()
 
 def rebin(self, count):
     self.binfactor = count
@@ -187,6 +190,7 @@ def plot(self, save = None, user = True, keepannotations = False):
     if self.ystart == None: y = 0
     Iplot.x.resize(self.xstart,self.xstop)
     Iplot.y.resize(y,self.ystop)
+     
     if not keepannotations and self.labelions > 0:
         labels = []
         posits = []
@@ -195,10 +199,12 @@ def plot(self, save = None, user = True, keepannotations = False):
         start,stop = Iplot.x.get_bounds()
         for label in self.ionlabs:
             if label[self.ptype] > stop : break
-            if label[self.ptype] < start: continue
+            if label[self.ptype] < start or label[3] < 0: continue
+            xindex = label[3]//self.binfactor
+            if plots[0][xindex][yindex+1]  == float('inf'): continue
             labels.append(label[-1])
-            xindex = (label[self.CHANNEL]-1)//self.binfactor
-            posits.append((label[self.ptype],min(plots[0][xindex][yindex]+plots[0][xindex][yindex+1],ymax)))
+            yoffset = 5 * plots[0][xindex][yindex+1]
+            posits.append((label[self.ptype],min(plots[0][xindex][yindex]+yoffset,ymax)))
         if labels:
             Iplot.annotate(labels,posits,slide=(1,1))
 

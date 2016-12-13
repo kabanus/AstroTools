@@ -88,7 +88,6 @@ if True or __name__ == "__main__":
             nav = NavigationToolbar2TkAgg(self.canvas,self.main)
             #Only load figure after manager has been set
             self.fitter.initplot()
-            self.canvas.mpl_connect('pick_event',lambda e,s=self: s.canvas.show())
             for child in nav.winfo_children():
                 child.configure(takefocus=False)
             Label(nav,textvar= self.datafile,padx=self.border).pack(side=LEFT)
@@ -96,6 +95,7 @@ if True or __name__ == "__main__":
             Label(nav,textvar=self.backfile,padx=self.border).pack(side=LEFT)
             Label(nav,textvar=self.transfile,padx=self.border).pack(side=LEFT)
             Gui(self,self.gui)
+            self.canvas.get_tk_widget().pack( side = TOP, fill = BOTH, expand = 1) 
             
             self.refreshPlot()
 
@@ -106,10 +106,7 @@ if True or __name__ == "__main__":
             self.root.mainloop()
 
         def refreshPlot(self):
-            try: self.fitter.plot(user = False)
-            except AttributeError: pass
             self.canvas.show()
-            self.canvas.get_tk_widget().pack( side = TOP, fill = BOTH, expand = 1) 
 
         def loadModel(self):
             try: self.modelload.root.destroy()
@@ -260,7 +257,9 @@ if True or __name__ == "__main__":
             if res == None: res = getfile('ds','dat','RMF','RSP')
             if not res: return 
             m = runMsg(self,"Loading data")
-            try: what(res)
+            try: 
+                Iplot.clearPlots()
+                what(res)
             except (ValueError,IOError,KeyError) as e:
                 messagebox.showerror('Bad file!','Please check file is correct format:\n'+str(e))
                 if self.debug: raise
@@ -289,7 +288,6 @@ if True or __name__ == "__main__":
             except AttributeError: pass
             try:  self.datafile.set('Data: ' + self.fitter.data_file.split('/')[-1]) 
             except AttributeError: pass
-            self.fitter.plot(user=user)
 
         def getError(self, *args):
             if not self.ranfit:
@@ -390,7 +388,7 @@ if True or __name__ == "__main__":
                 pass
             self.params.relabel()
 
-        def doAndPlot(self, func):
+        def doAndPlot(self, func, calcIgnore = False):
             try: func()
             except AttributeError as e:
                 messagebox.showerror('Failed','No model/data/resp loaded\n\n'+str(e))
@@ -403,7 +401,8 @@ if True or __name__ == "__main__":
                 raise
             self.refreshPlot()
             #In case we changed axes, change ignore values to fit
-            try: ignoreReader(self,False).parse("")
+            try:
+                if calcIgnore: ignoreReader(self,False).parse("")
             except AttributeError: pass
 
         def resetIgnore(self):

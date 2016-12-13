@@ -89,8 +89,7 @@ class ignoreReader(entryWindow):
             messagebox.showerror('Failed to resize!', 'All values must be integers: '+str(e))
             return
         for start,stop in channels:
-            self.parent.fitter.ignore(start,stop)
-        self.parent.refreshPlot()
+            self.parent.fitter.ignore(start,stop,noplot = True)
 
         ignored = ''
         deleted = sorted(self.parent.fitter.data.deleted)
@@ -106,6 +105,8 @@ class ignoreReader(entryWindow):
         if len(deleted) == 1:
             ignored = ' ' + str(deleted[0]+1)
         self.parent.ignored.set("Ignored:"+ignored)
+        self.parent.fitter.plot(user=False)
+        self.parent.refreshPlot()
         try:
             self.root.destroy()
         except AttributeError: pass

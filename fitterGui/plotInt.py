@@ -81,9 +81,10 @@ class Iplot(object):
 
     @staticmethod
     def onclick(event):
-        event.artist.arrow.remove()
-        event.artist.remove()
-        plt.draw()
+        try: event.artist.arrow.remove()
+        except AttributeError: pass
+        event.artist.set_visible(False)
+        plt.gcf().canvas.draw()
 
     @staticmethod
     def init():
@@ -116,6 +117,7 @@ class Iplot(object):
             if keepannotations: annotations = Iplot.axes.texts
             Iplot.axes.clear()
             if keepannotations: Iplot.axes.texts = annotations
+            else: Iplot.boxes = []
 
         except AttributeError: return
         try: Iplot.axes.legend().remove()
@@ -228,7 +230,7 @@ class Iplot(object):
             xytext = (0,2)
             xytexts = None
         pixel_diff = 1
-
+        
         newlabs = []
         plt.draw()
         for i in range(len(labels)):

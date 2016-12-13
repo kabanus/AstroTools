@@ -27,7 +27,7 @@ def loadResp(self,resp):
                 energy = Response.keVAfac/ion[0]
             while energy < ebounds[channel][0]:
                 channel= channeliter.next()
-            self.ionlabs.append((channel+1,energy,ion[0],ion[1]))
+            self.ionlabs.append([channel+1,energy,ion[0],channel,ion[1]])
     except StopIteration: pass
 
 def loadData(self,data, text = None):
@@ -67,23 +67,34 @@ def group(self,g):
     self.data.group(g)
     self.plot(user = False)
 
-def ignore(self, minX, maxX):
+def ignore(self, minX, maxX, noplot = False):
     try:
         self.checkLoaded()
+        if self.ptype == self.CHANNEL: 
+            channels = list(range(minX,maxX+1))
+        if self.ptype == self.ENERGY : 
+            channels = list(self.resp.energy_to_channel(minX, maxX))
+        if self.ptype == self.WAVE: 
+            channels    = list(self.resp.wl_to_channel(minX, maxX))
         for fitshandler in (self.data,self.resp):
             #Need to reset generator
-            if self.ptype == self.CHANNEL: 
-                channels = range(minX,maxX+1)
-            if self.ptype == self.ENERGY : 
-                channels = self.resp.energy_to_channel(minX, maxX)
-            if self.ptype == self.WAVE: 
-                channels    = self.resp.wl_to_channel(minX, maxX)
             fitshandler.ignore(channels)
         if self.area.any():
             self.area = self.resp.eff
-        self.plot(user = False,keepannotations = True)
+
+        minC  = channels[0]
+        maxC  = channels[-1]
+        total = maxC-minC
+        start = None
+        for label in self.ionlabs:
+            if label[self.CHANNEL] > maxC:
+                label[3] -= total
+            elif label[self.CHANNEL] >= minC:
+                label[3] = -1
+        if not noplot: self.plot(user = False)
     except AttributeError:
         raise self.noIgnoreBeforeLoad()
+
 
 def reset(self, zoom = True, ignore = True):
     if zoom:
@@ -98,5 +109,7 @@ def reset(self, zoom = True, ignore = True):
             except AttributeError: pass
         if self.area.any():
             self.area = self.resp.eff
+        for label in self.ionlabs:
+            label[3] = label[0]-1
     self.plot(user = False,keepannotations = True)
 
