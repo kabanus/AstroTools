@@ -1,1 +1,0 @@
-/home/uperetz/Sync/workspace/fitterGui/fitshandler.py
