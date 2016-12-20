@@ -32,7 +32,7 @@ class Fitter(object):
     from _plotdefs import badPlotType, badZoomRange, labelAxis, unlabelAxis, toggleIonLabels
 
     #Methods
-    from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset, untransmit, div, group
+    from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset, untransmit, div, group, updateIonLabels
     from _modeling import chisq,reduced_chisq,append,delete,activate,nameModel,energies,tofit,fit
     from _error    import error
     from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift,initplot,plotModel, plotDiv, toggle_area

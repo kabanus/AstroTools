@@ -13,15 +13,19 @@ def loadResp(self,resp):
     self.resp      = Response(resp)
     self.checkLoaded()
     self.resp_file = resp
+    self.updateIonLabels()
+
+def updateIonLabels(self, shift = None):
     self.ionlabs   = []
     ions           = iter(self.ionlocations)
     ebounds        = self.resp.ebounds
     channeliter    = iter(range(len(ebounds)))
     try:
         while True:
-            channel= channeliter.next()
-            ion    = ions.next()
-            energy = Response.keVAfac/ion[0]
+            channel    = channeliter.next()
+            ion        = ions.next()
+            if shift is not None: ion[0]     = shift(ion[0])
+            energy     = Response.keVAfac/ion[0]
             while energy > ebounds[channel][1]:
                 ion    = ions.next()
                 energy = Response.keVAfac/ion[0]

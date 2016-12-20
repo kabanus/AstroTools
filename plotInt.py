@@ -53,7 +53,6 @@ class Iplot(object):
                 start = Iplot.axes.axis()[self.ind*2]
             if start >= stop: raise Exception("Bad range! stop must be greater then start: "+str(start)+">="+str(stop))
             self.sizer(start,stop)
-            plt.draw()
             if self.sizer2 is not None:
                 self.sizer2(start,stop)
             plt.draw()
@@ -79,12 +78,30 @@ class Iplot(object):
     def ylog(off=False):
         Iplot._log(Iplot.y,off)
 
+    pickstate = None
     @staticmethod
     def onclick(event):
-        try: event.artist.arrow.remove()
-        except AttributeError: pass
-        event.artist.remove()
-        plt.gcf().canvas.draw()
+        if event.mouseevent.button == 3:
+            try: event.artist.arrow.remove()
+            except (AttributeError,ValueError): pass
+            try: event.artist.remove()
+            except (ValueError): pass
+        else: Iplot.pickstate = event.artist
+    
+    @staticmethod
+    def release(event):
+        if Iplot.pickstate is not None:
+            xy                 = [event.xdata,event.ydata]
+            Iplot.pickstate.set_position((0,2))
+            Iplot.pickstate.xy = xy
+            try:
+                origArrow          = Iplot.pickstate.arrow.get_xy()
+                origArrow[3:5]     = xy
+                Iplot.pickstate.arrow.set_xy(origArrow)
+            except AttributeError: pass
+            Iplot.pickstate    = None
+        try: plt.gcf().canvas.draw()
+        except TypeError: pass
 
     @staticmethod
     def init():
@@ -95,9 +112,9 @@ class Iplot(object):
         Iplot.y = Iplot.axis('y')
         Iplot.col = 0
         Iplot.plots = list()
-        Iplot.boxes = list()
         Iplot.clearPlots()
         plt.gcf().canvas.mpl_connect('pick_event',Iplot.onclick)
+        plt.gcf().canvas.mpl_connect('button_release_event',Iplot.release)
    
     @staticmethod
     def secondAxis(function,axis='x'):
@@ -117,7 +134,6 @@ class Iplot(object):
             if keepannotations: annotations = Iplot.axes.texts
             Iplot.axes.clear()
             if keepannotations: Iplot.axes.texts = annotations
-            else: Iplot.boxes = []
 
         except AttributeError: return
         try: Iplot.axes.legend().remove()
@@ -233,8 +249,11 @@ class Iplot(object):
             xytexts = None
         pixel_diff = 1
         
+        boxes = []
+        for annotation in Iplot.axes.texts:
+            boxes.append(annotation.get_window_extent())
+
         newlabs = []
-        plt.draw()
         for i in range(len(labels)):
             try: 
                 len(xytexts[i])
@@ -250,7 +269,11 @@ class Iplot(object):
                 a = Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset pixels',
                                         xytext=xytext,picker = True,**kwargs)
             newlabs.append(a)
-        plt.draw()
+        plt.gcf().canvas.draw()
+        xstart,xstop = Iplot.x.get_bounds()
+        ystart,ystop = Iplot.y.get_bounds()
+        xtickshift  = (Iplot.axes.get_xticks()[1]-Iplot.axes.get_xticks()[0])
+        ytickshift  = (Iplot.axes.get_yticks()[1]-Iplot.axes.get_yticks()[0])
         for i in range(len(labels)):
             a = newlabs[i]
             cbox = a.get_window_extent()
@@ -261,7 +284,7 @@ class Iplot(object):
                 while True:
                     overlaps = False
                     count = 0
-                    for box in Iplot.boxes:
+                    for box in boxes:
                         if cbox.overlaps(box):
                             if direct*box.get_points()[slide] > direct*current:
                                 overlaps = True
@@ -273,11 +296,16 @@ class Iplot(object):
                     a.set_position(position)
                     cbox = a.get_window_extent()
                     arrow = True
+            x,y = Iplot.axes.transData.inverted().transform(cbox)[0]
+            if x < xstart: xstart = x - xtickshift 
+            if x > xstop : xstop  = x + xtickshift 
+            if y < ystart: ystart = y - ytickshift 
+            if y > ystop : ystop  = y + ytickshift 
             if arrow or offset[0] or offset[1]:
-                x,y = Iplot.axes.transData.inverted().transform(cbox)[0]
                 a.arrow = Iplot.axes.arrow(x,y,data[i][0]-x,data[i][1]-y,head_length=0,head_width=0)
-            Iplot.boxes.append(cbox)
+            boxes.append(cbox)
         plt.draw()
+        return (xstart,xstop,ystart,ystop)
 
     @staticmethod
     def quiet():

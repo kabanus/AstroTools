@@ -35,9 +35,9 @@ class Gui(object):
 
     def menuCommands(self):
         #Can't list comprehend with lambda. Arr.
-        self.setplot = (lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(0),calcignore = True),
-                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(1),calcignore = True),
-                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(2),calcignore = True))
+        self.setplot = (lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(0)),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(1)),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(2)))
         self.load    = (lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadData)),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp)), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadBack)), 

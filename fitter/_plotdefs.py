@@ -50,14 +50,20 @@ def labelAxis(self,axis,label):
 def unlabelAxis(self):
     self.axisOverride = [None,None]
 
-def setplot(self, plotType):
+def setplot(self, plotType,plot = False):
     if plotType not in [self.ENERGY, self.CHANNEL, self.WAVE]: 
         raise self.badPlotType(plotType)
     self.ptype = plotType
     self.ionlabs.sort(key = lambda x: x[plotType])
     self.plot(user = False)
+    shifter = _embedz(self.axisz,self.ptype)
+    if shifter is not None: Iplot.secondAxis(shifter)
+    else: Iplot.hideSecondAxis()
+    if plot:
+        self.plot(user=False)
 
 def _embedz(z,ptype):
+    if z is None: return None
     if ptype == WAVE:
         exec('shift = lambda x: x/(1.0+'+str(z)+')')
     elif ptype == ENERGY:
@@ -67,19 +73,23 @@ def _embedz(z,ptype):
     return shift
 
 def shift(self,z,data = False):
+    plot = False
     if not data:
         self.axisz = z
     else:
         self.dataz = z
-    self.plot(user = False)
+        plot = True
+    self.setplot(self.ptype,plot)
 
 def removeShift(self,data = False):
+    plot = False
     if not data:
         self.axisz = None
         Iplot.hideSecondAxis()
     else:
         self.dataz = None
-    self.plot(user = False)
+        plot = True
+    self.setplot(self.ptype,plot)
 
 def toggle_area(self):
     if self.area.any():
@@ -183,30 +193,36 @@ def plot(self, save = None, user = True, keepannotations = False):
     else:
         _labelaxes(self,model)
 
-    if self.axisz != None:
-        Iplot.secondAxis(_embedz(self.axisz,self.ptype))
-
     y = self.ystart
     if self.ystart == None: y = 0
     Iplot.x.resize(self.xstart,self.xstop)
     Iplot.y.resize(y,self.ystop)
-     
+   
     if not keepannotations and self.labelions > 0:
-        labels = []
-        posits = []
-        ymax   = Iplot.y.get_bounds()[1]
-        yindex = 1+(self.ptype!=self.CHANNEL)
-        start,stop = Iplot.x.get_bounds()
-        totaloffset = (0,0)
-        for label in self.ionlabs:
-            if label[self.ptype] > stop : break
-            if label[self.ptype] < start or label[3] < 0: continue
-            xindex = label[3]//self.binfactor
-            if plots[0][xindex][yindex+1]  == float('inf'): continue
-            labels.append(label[-1])
-            yoffset = plots[0][xindex][yindex+1]
-            if totaloffset[1] < yoffset*5: totaloffset = (0,5*yoffset)
-            posits.append((label[self.ptype],min(plots[0][xindex][yindex]+yoffset,ymax)))
-        if labels:
-            Iplot.annotate(labels,posits,slide=(1,1),offset=totaloffset)
+        if self.axisz is not None:
+            self.updateIonLabels(_embedz(self.axisz,self.CHANNEL))
+        while True:
+            labels      = []
+            posits      = []
+            offsetfac   = 1
+            ymax        = Iplot.y.get_bounds()[1]
+            yindex      = 1+(self.ptype!=self.CHANNEL)
+            start,stop  = Iplot.x.get_bounds()
+            totaloffset = (0,0)
+            for label in self.ionlabs:
+                if label[self.ptype] > stop : break
+                if label[self.ptype] < start or label[3] < 0: continue
+                xindex = label[3]//self.binfactor
+                if plots[0][xindex][yindex+1]  == float('inf'): continue
+                yoffset = plots[0][xindex][yindex+1]
+                if yoffset*(offsetfac+1)+plots[0][xindex][yindex] >= ymax: continue
+                if totaloffset[1] < offsetfac*yoffset: totaloffset = (0,offsetfac*yoffset)
+                labels.append(label[-1])
+                posits.append((label[self.ptype],plots[0][xindex][yindex]+yoffset))
+            if labels:
+                _,_,_,ystop = Iplot.annotate(labels,posits,slide=(1,1),offset=totaloffset)
+            if ystop > ymax:
+                Iplot.axes.texts = []
+                Iplot.y.resize(stop=ystop)
+            else: break
 
