@@ -44,7 +44,7 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(
                             lambda fname: self.parent.fitter.loadData(fname," "))),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
-                        self.parent.untransmit,
+                        lambda: self.parent.doAndPlot(self.parent.untransmit),
                         self.parent.loadSession)
         self.ignore  = (lambda: ignoreReader(self.parent), lambda: self.parent.doAndPlot(self.parent.resetIgnore))
         self.plot    = (lambda: zoomReader(self.parent), 

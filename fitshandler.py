@@ -3,7 +3,8 @@ from astropy.table     import Table
 from numpy             import int    as ndint
 from numpy             import max    as ndmax
 from numpy             import append as ndappend
-from numpy             import array,dot,inf,delete,sort,zeros,unravel_index,argmax,isnan,ones
+from numpy             import array,dot,inf,delete,sort,zeros
+from numpy             import unravel_index,argmax,isnan,ones,fromfile
 from itertools         import izip
 from matplotlib.pyplot import show,figure
 
@@ -313,9 +314,18 @@ class Data(fitsHandler):
 
     #Assume same amount of channels
     def __div__(self,other):
-        you   = other.cts(rebin=self.grouping)
+        try:
+            you   = other.cts(rebin=self.grouping)
+            eyou  = other.errors(rebin=self.grouping)
+        except AttributeError:
+            try:
+                dother = Data(other)
+                you   = other.cts(rebin=self.grouping)
+                eyou  = other.errors(rebin=self.grouping)
+            except IOError:
+                you   = Data.ndrebin(fromfile(other,sep = " "),self.grouping)
+                eyou  = zeros(you.size)
         me    =  self.cts(rebin=self.grouping)
-        eyou  = other.errors(rebin=self.grouping)
         eme   =  self.errors(rebin=self.grouping)
         if len(you) != len(me):
             raise Data.lengthMismatch("Dividing to data with different amount of channels!")

@@ -218,10 +218,14 @@ class modelReader(object):
                                 args = '('+PARAMS[m]()+')'
                         except IndexError:
                             args = '('+PARAMS[m]()+')'
+                    for rng in paramrng:
+                        if p.start() < rng[0]:
+                            rng[0] += len(args)
+                            rng[1] += len(args)
                     model = model[:padded+p.end()] + args + model[padded+p.end():]
                     padded += len(args)
             exec('model = ' + model)
-        except TypeError: raise
+        except TypeError: return
         except Exception as e:
             messagebox.showerror("Failed to build model!",str(e)+'\n\nFinal model attempted to execute: '+model)
             if self.parent.debug: raise

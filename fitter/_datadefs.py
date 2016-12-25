@@ -5,9 +5,7 @@ class dataResponseMismatch(Exception): pass
 class noIgnoreBeforeLoad(Exception): pass
 
 def div(self,other):
-    try: self.division = list(self.data/other)
-    except AttributeError:
-        self.division = list(self.data/Data(other))
+    self.division = self.data/other
 
 def loadResp(self,resp):
     self.resp      = Response(resp)
@@ -43,10 +41,10 @@ def loadData(self,data, text = None):
     elif text is not None:
         self.resp  = FakeResponse(self.data.channels)
     self.checkLoaded()
-    self.plot(user = False)
-    self.data_file = data
     try: self.untransmit()
     except AttributeError: pass
+    self.data_file = data
+    self.plot(user = False)
 
 def loadBack(self,back):
     self.data.loadback(back)
@@ -61,6 +59,7 @@ def checkLoaded(self):
 def untransmit(self):
     self.data.untransmit()
     del(self.transmit_file)
+    self.plot(user=False)
 
 def transmit(self, table):
     self.data.transmit(table)
