@@ -1,5 +1,6 @@
 from fitshandler import Response,Data,FakeResponse
 from os.path     import dirname,join
+from numpy       import array
 
 class dataResponseMismatch(Exception): pass
 class noIgnoreBeforeLoad(Exception): pass
@@ -41,6 +42,7 @@ def loadData(self,data, text = None):
     elif text is not None:
         self.resp  = FakeResponse(self.data.channels)
     self.checkLoaded()
+    self.area = array(())
     try: self.untransmit()
     except AttributeError: pass
     self.data_file = data
@@ -87,7 +89,7 @@ def ignore(self, minX, maxX, noplot = False):
 
         minC  = channels[0]
         maxC  = channels[-1]
-        total = maxC-minC
+        total = maxC-minC+1
         start = None
         for label in self.ionlabs:
             if label[self.CHANNEL] > maxC:
