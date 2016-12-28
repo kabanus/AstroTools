@@ -34,6 +34,10 @@ def updateIonLabels(self, shift = None):
     except StopIteration: pass
 
 def loadData(self,data, text = None):
+    try:
+        self.resp = None
+        self.data.resp = None
+    except AttributeError: pass
     self.data  = Data(data, text=text)
     if self.data.resp is not None:
         try: self.loadResp(self.data.resp)

@@ -143,7 +143,7 @@ if True or __name__ == "__main__":
                 self.commandline.dump(self.dumpParams())
             except AttributeError: pass
 
-        def loadSession(self):
+        def loadSession(self,keyword = None):
             init = {}
             fname = getfile('fsess')
             if not fname: return
@@ -151,48 +151,52 @@ if True or __name__ == "__main__":
                 index = line.index(':')
                 init[line[:index]] = line[index+1:].strip('\n').strip()
 
-            self.fitter.resp = None
-            try: self.load(self.fitter.loadData,init['data'])
-            except KeyError: pass
-            try: 
-                if self.fitter.resp == None: self.load(self.fitter.loadResp,init['resp'])
-            except KeyError: pass
-            try: 
-                self.load(self.fitter.transmit,init['tran'])
-            except KeyError: pass
-            try: 
-                self.fitter.setplot(int(init['ptype']))
-            except (KeyError,AttributeError): pass
-            try:
-                pkgs = init['xspecpackages'].split(',')
-                for i in range(0,len(pkgs),2):
-                    if [pkgs[i],pkgs[i+1]] not in self.xspec_packages:
-                        self.xspec_packages.append([pkgs[i],pkgs[i+1]])
-            except KeyError: pass
-            
-            try:
-                ignored = init['Ignored']
-                ig = ignoreReader(self,False)
-                ig.parse(ignored)
-            except (KeyError,AttributeError): pass
-            except Exception as e:
-                messagebox.showerror("Failed to load session!",'Got ignore channels, but no data')
-                return
+            done = False
+            for k,action in (
+                    ('data' ,lambda: self.load(self.fitter.loadData,init['data'])),
+                    ('resp' ,lambda: self.load(self.fitter.loadResp,init['resp'])),
+                    ('tran' ,lambda: self.load(self.fitter.transmit,init['tran'])),
+                    ('ptype',lambda: self.fitter.setplot(int(init['ptype'])))
+                ):
+                try: 
+                    if keyword is None or keyword == k:
+                        done = True
+                        action()
+                except (KeyError,AttributeError): pass
+
+            if keyword is None or keyword == "xspecpackages":
+                try:
+                    pkgs = init['xspecpackages'].split(',')
+                    for i in range(0,len(pkgs),2):
+                        if [pkgs[i],pkgs[i+1]] not in self.xspec_packages:
+                            self.xspec_packages.append([pkgs[i],pkgs[i+1]])
+                except KeyError: pass
+           
+            if keyword is None or keyword == "Ignored":
+                try:
+                    ignored = init['Ignored']
+                    ig = ignoreReader(self,False)
+                    ig.parse(ignored)
+                except (KeyError,AttributeError): pass
+                except Exception as e:
+                    messagebox.showerror("Failed to load session!",'Got ignore channels, but no data')
+                    return
         
-            try: 
-                model     = modelReader(self,False)
-                model.parse(init['model'])
-                self.commandline.parseCmd(init['param'])
-                e = init['errors'].split(',')
-                self.ranfit = True
-                l = 4
-                for index,param,mine,maxe in ([e[n] for n in range(i,i+l)] for i in range(0,len(e),l)):
-                    iparam = (int(index),param)
-                    self.errors[iparam] = (float(mine),float(maxe))
-                    error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
-                    self.thawedDict[iparam][1].set('(%.2E)'%error)
-                    self.paramLabels[iparam][2].configure(relief='flat',state='disabled')
-            except KeyError: pass
+            if keyword is None or keyword == "model":
+                try: 
+                    model     = modelReader(self,False)
+                    model.parse(init['model'])
+                    self.commandline.parseCmd(init['param'])
+                    e = init['errors'].split(',')
+                    self.ranfit = True
+                    l = 4
+                    for index,param,mine,maxe in ([e[n] for n in range(i,i+l)] for i in range(0,len(e),l)):
+                        iparam = (int(index),param)
+                        self.errors[iparam] = (float(mine),float(maxe))
+                        error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
+                        self.thawedDict[iparam][1].set('(%.2E)'%error)
+                        self.paramLabels[iparam][2].configure(relief='flat',state='disabled')
+                except KeyError: pass
             self.refreshPlot()
 
         def saveSession(self, name, extension):
@@ -318,7 +322,7 @@ if True or __name__ == "__main__":
                     self.ring()
                     if err:
                         messagebox.showerror(title,err)
-                        return
+                        return 1
                 error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
                 self.thawedDict[(index,param)][1].set('(%.2E)'%error)
                 self.paramLabels[(index,param)][2].configure(relief='flat',state='disabled')

@@ -10,7 +10,7 @@ class Gui(object):
         self.menuCommands()
         for  title,cmd, labels in (
                 ('Load'  , self.load   , ('Data','Response','Background','ASCII',
-                                          'Transmission','Remove Transmission','Session')),
+                                          'Transmission','Remove Transmission','Session','Model')),
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
                 ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
                                           'Rest frame axis Z','Remove rest frame axis',
@@ -45,7 +45,7 @@ class Gui(object):
                             lambda fname: self.parent.fitter.loadData(fname," "))),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
                         lambda: self.parent.doAndPlot(self.parent.untransmit),
-                        self.parent.loadSession)
+                        self.parent.loadSession,lambda: self.parent.loadSession(keyword='model'))
         self.ignore  = (lambda: ignoreReader(self.parent), lambda: self.parent.doAndPlot(self.parent.resetIgnore))
         self.plot    = (lambda: zoomReader(self.parent), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.reset(ignore=False)),

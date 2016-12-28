@@ -15,6 +15,9 @@ class parameterFrame(object):
         self.menu.add_command(label='Hide frozen',command = self.hide)
         self.menu.add_command(label='Show all',command = self.show)
         self.menu.add_command(label='Show thawed',command = self.showthawed)
+        self.menu.add_command(label='Thaw visible',command   = lambda:self.toggleVisibleThaw(True))
+        self.menu.add_command(label='Freeze visible',command = lambda:self.toggleVisibleThaw(False))
+        self.menu.add_command(label='Errors on visible',command = self.errorVisible)
         self.menu.add_command(label='Show error log',command = lambda: errorLog(self.parent))
         self.menu.add_command(label='Hide Parameters',command = self.hideall)
         root_frame.bind("<Button-3>",self.showMenu)
@@ -23,6 +26,11 @@ class parameterFrame(object):
         self.frame.bind("<Button-3>",self.showMenu)
         for child in self.frame.winfo_children():
             child.bind("<Button-3>",self.showMenu)
+
+    def errorVisible(self):
+        for iparam,labels in self.parent.paramLabels.items():
+           if labels[0].grid_info():
+               if self.parent.getError(iparam): return
 
     def hideall(self):
         row = self.parent.cmdFrame.grid_info()['row']
@@ -54,6 +62,12 @@ class parameterFrame(object):
         for iparam,labels in self.parent.paramLabels.items():
             if self.parent.thawedDict[iparam][0].get(): 
                 for label in labels: label.grid()
+
+    def toggleVisibleThaw(self,thaw):
+        for iparam,labels in self.parent.paramLabels.items():
+           if labels[0].grid_info():
+               self.parent.thawedDict[iparam][0].set(thaw)
+               self.parent.toggleParam(*iparam)
 
     def hide(self):
         for iparam,labels in  self.parent.paramLabels.items():
