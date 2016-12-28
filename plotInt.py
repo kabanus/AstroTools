@@ -8,6 +8,7 @@ warnings.filterwarnings('ignore')
 SF = ScalarFormatter()
 plt.ion()
 class Iplot(object):
+    xytext = (-6,20)
     class axis(object):
         class noSuchAxis(Exception): pass
         def __init__(self,axis):
@@ -92,7 +93,7 @@ class Iplot(object):
     def release(event):
         if Iplot.pickstate is not None:
             xy                 = [event.xdata,event.ydata]
-            Iplot.pickstate.set_position((0,2))
+            Iplot.pickstate.set_position(Iplot.xytext)
             Iplot.pickstate.xy = xy
             try:
                 origArrow          = Iplot.pickstate.arrow.get_xy()
@@ -245,7 +246,7 @@ class Iplot(object):
             xytexts = kwargs.pop("xytexts")
             xytext  = xytexts
         except KeyError: 
-            xytext = (0,2)
+            xytext = Iplot.xytext 
             xytexts = None
         pixel_diff = 1
         
@@ -274,6 +275,7 @@ class Iplot(object):
         ystart,ystop = Iplot.y.get_bounds()
         xtickshift  = (Iplot.axes.get_xticks()[1]-Iplot.axes.get_xticks()[0])
         ytickshift  = (Iplot.axes.get_yticks()[1]-Iplot.axes.get_yticks()[0])
+
         for i in range(len(labels)):
             a = newlabs[i]
             cbox = a.get_window_extent()
@@ -296,13 +298,20 @@ class Iplot(object):
                     a.set_position(position)
                     cbox = a.get_window_extent()
                     arrow = True
-            x,y = Iplot.axes.transData.inverted().transform(cbox)[0]
+            x,y = a.xy 
             if x < xstart: xstart = x - xtickshift 
             if x > xstop : xstop  = x + xtickshift 
             if y < ystart: ystart = y - ytickshift 
             if y > ystop : ystop  = y + ytickshift 
             if arrow or offset[0] or offset[1]:
-                a.arrow = Iplot.axes.arrow(x,y,data[i][0]-x,data[i][1]-y,head_length=0,head_width=0)
+                a.arrow = Iplot.axes.arrow(x,y,data[i][0]-x,
+                                               data[i][1]-y,
+                                               head_length=0,
+                                               head_width=0,width = 0)
+                #Don't know how to calculate the offset...
+                origArrow          = a.arrow.get_xy()
+                origArrow[3:5]     = a.xy
+                a.arrow.set_xy(origArrow)
             boxes.append(cbox)
         plt.draw()
         return (xstart,xstop,ystart,ystop)

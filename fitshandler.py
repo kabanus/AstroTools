@@ -166,7 +166,7 @@ class Data(fitsHandler):
         self.obscales   = array(self.obscales)
         self.reset()
 
-        if background != None:
+        if background is not None:
             self.loadback(background,text)
 
     def loadFits(self,data):
@@ -287,8 +287,8 @@ class Data(fitsHandler):
         except AttributeError:
             return (back.bscale/self.bscale)*back.scale*back.exposure*eff
 
-    def loadback(self,background,text = False):
-        back = Data(background,text)
+    def loadback(self,background,text = None):
+        back = Data(background,text=text)
         if self.deleted:
             back.ignore([c+1 for c in self.deleted])
         if len(back) != len(self):

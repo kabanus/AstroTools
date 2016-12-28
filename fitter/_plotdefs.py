@@ -76,6 +76,7 @@ def shift(self,z,data = False):
     plot = False
     if not data:
         self.axisz = z
+        self.updateIonLabels(_embedz(-self.axisz,self.WAVE))
     else:
         self.dataz = z
         plot = True
@@ -84,6 +85,7 @@ def shift(self,z,data = False):
 def removeShift(self,data = False):
     plot = False
     if not data:
+        self.updateIonLabels(_embedz(self.axisz,self.WAVE))
         self.axisz = None
         Iplot.hideSecondAxis()
     else:
@@ -199,8 +201,6 @@ def plot(self, save = None, user = True, keepannotations = False):
     Iplot.y.resize(y,self.ystop)
    
     if not keepannotations and self.labelions > 0:
-        if self.axisz is not None:
-            self.updateIonLabels(_embedz(self.axisz,self.CHANNEL))
         while True:
             labels      = []
             posits      = []
@@ -220,7 +220,8 @@ def plot(self, save = None, user = True, keepannotations = False):
                 labels.append(label[-1])
                 posits.append((label[self.ptype],plots[0][xindex][yindex]+yoffset))
             if labels:
-                _,_,_,ystop = Iplot.annotate(labels,posits,slide=(1,1),offset=totaloffset)
+                _,_,_,ystop = Iplot.annotate(labels,posits,slide=(1,1),
+                                                offset=totaloffset,rotation=90)
             if ystop > ymax:
                 Iplot.axes.texts = []
                 Iplot.y.resize(stop=ystop)
