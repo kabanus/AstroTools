@@ -276,6 +276,7 @@ class Iplot(object):
         xtickshift  = (Iplot.axes.get_xticks()[1]-Iplot.axes.get_xticks()[0])
         ytickshift  = (Iplot.axes.get_yticks()[1]-Iplot.axes.get_yticks()[0])
 
+        origin = Iplot.axes.transData.inverted().transform((0,0))
         for i in range(len(labels)):
             a = newlabs[i]
             cbox = a.get_window_extent()
@@ -285,20 +286,24 @@ class Iplot(object):
                 current = -direct*float("inf")
                 while True:
                     overlaps = False
-                    count = 0
+                    total = 0
                     for box in boxes:
                         if cbox.overlaps(box):
                             if direct*box.get_points()[slide] > direct*current:
                                 overlaps = True
                                 current =  box.get_points()[slide] 
                                 shift   = direct*(current - cbox.get_points()[1-slide[0],slide[1]])
+                                total += shift*pixel_diff
                     if not overlaps: break
                     position = array(a.get_position())
                     position[slide[1]] += shift * direct * pixel_diff
                     a.set_position(position)
                     cbox = a.get_window_extent()
                     arrow = True
-            x,y = a.xy 
+            (x1,y1),(x2,y2) = Iplot.axes.transData.inverted().transform(cbox)
+            #For now arrow always to bottom mid
+            x = (x1+x2)/2.0
+            y = y1
             if x < xstart: xstart = x - xtickshift 
             if x > xstop : xstop  = x + xtickshift 
             if y < ystart: ystart = y - ytickshift 
@@ -308,10 +313,6 @@ class Iplot(object):
                                                data[i][1]-y,
                                                head_length=0,
                                                head_width=0,width = 0)
-                #Don't know how to calculate the offset...
-                origArrow          = a.arrow.get_xy()
-                origArrow[3:5]     = a.xy
-                a.arrow.set_xy(origArrow)
             boxes.append(cbox)
         plt.draw()
         return (xstart,xstop,ystart,ystop)
