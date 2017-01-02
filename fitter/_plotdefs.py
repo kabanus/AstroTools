@@ -23,9 +23,12 @@ def initplot(self):
     loadIonPositions(self)
 
 def loadIonPositions(self):
-    ions = ibifit(ncut=1).ions
-    self.ionlocations = sorted(sum([[[t[0],ion+a] 
-        for a,t in zip(('$\\alpha$','$\\beta$','$\\gamma$'),ions[ion].l + ions[ion].e)]
+    ions = ibifit(ncut=3).ions
+    suffix = ['$\\alpha$','$\\beta$','$\\gamma$']
+    self.ionlocations = sorted(sum([[[t[0],ion+a,i] if i > 0.5 else [1000*keVAfac/t[0],ion,i]
+        for i,a,t in zip(range(1,len(ions[ion].l)+1) + [0.5,]*len(ions[ion].e),
+                         suffix[:len(ions[ion].l)]   + ['' ,]*len(ions[ion].e),
+                         ions[ion].l                 + ions[ion].e)]
             for ion in ions],[]))
 
 def zoomto(self, xstart = None, xstop = None, ystart = None, ystop = None):
@@ -209,7 +212,9 @@ def plot(self, save = None, user = True, keepannotations = False):
             yindex      = 1+(self.ptype!=self.CHANNEL)
             start,stop  = Iplot.x.get_bounds()
             totaloffset = (0,0)
+            ystop = float("-inf")
             for label in self.ionlabs:
+                if label[-1] > self.labelions: continue
                 if label[self.ptype] > stop : break
                 if label[self.ptype] < start or label[3] < 0: continue
                 xindex = label[3]//self.binfactor
@@ -217,7 +222,7 @@ def plot(self, save = None, user = True, keepannotations = False):
                 yoffset = plots[0][xindex][yindex+1]
                 if yoffset*(offsetfac+1)+plots[0][xindex][yindex] >= ymax: continue
                 if totaloffset[1] < offsetfac*yoffset: totaloffset = (0,offsetfac*yoffset)
-                labels.append(label[-1])
+                labels.append(label[-2])
                 posits.append((label[self.ptype],plots[0][xindex][yindex]+yoffset))
             if labels:
                 _,_,_,ystop = Iplot.annotate(labels,posits,slide=(1,1),

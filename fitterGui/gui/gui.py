@@ -1,5 +1,7 @@
 from Tkinter import Button,Menubutton,N,S,W,E,Menu
-from entrywindows import zoomReader, rebinReader, ignoreReader, Save, paramReader, zReader, rangeReader, strReader
+from entrywindows import (zoomReader, rebinReader, ignoreReader, 
+                          Save, paramReader, zReader, rangeReader, 
+                          strReader, ionLabeler)
 from simplewindows import Help
 ALL = N+S+E+W
 
@@ -61,7 +63,7 @@ class Gui(object):
                         lambda: strReader(self.parent,'Tex math may be entered between $$',
                                 lambda s: self.parent.fitter.labelAxis('y',s)),
                         lambda: self.parent.doAndPlot(self.parent.fitter.unlabelAxis),
-                        lambda: self.parent.doAndPlot(self.parent.fitter.toggleIonLabels),
+                        lambda: ionLabeler(self.parent,u"Enter 1,2,3 (\u0251 \u03B2 \u0263)"),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.toggle_area()),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.plot()))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),

@@ -11,6 +11,28 @@ class entryWindow(simpleWindow):
         self.entry.pack()
         self.entry.focus_set()
 
+class ionLabeler(entryWindow):
+    def __init__(self, parent,title):
+        if parent.fitter.labelions > 0:
+            parent.doAndPlot(parent.fitter.toggleIonLabels)
+            return
+
+        try: entryWindow.__init__(self,parent,'',"ioner",title)
+        except AttributeError: return
+
+    def parse(self,event):
+        mode = self.entry.get()
+        try:
+            mode = int(mode)
+            if mode < 0 or mode > 4:
+                #Secret 0 to turn off
+                raise ValueError
+            self.parent.doAndPlot(lambda m=mode: self.parent.fitter.toggleIonLabels(m))
+        except ValueError:
+            messagebox.showerror('Bad level!', 'Integer between 1 and 3 please!')
+            return
+        self.root.destroy()
+
 class strReader(entryWindow):
     def __init__(self, parent,title, action = None):
         try: entryWindow.__init__(self,parent,'',"stringer",title)

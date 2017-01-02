@@ -30,7 +30,7 @@ def updateIonLabels(self, shift = None):
                 energy = Response.keVAfac/ion[0]
             while energy < ebounds[channel][0]:
                 channel= channeliter.next()
-            self.ionlabs.append([channel+1,energy,ion[0],channel,ion[1]])
+            self.ionlabs.append([channel+1,energy,ion[0],channel,ion[1],ion[-1]])
     except StopIteration: pass
 
 def loadData(self,data, text = None):

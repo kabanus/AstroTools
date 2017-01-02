@@ -65,7 +65,6 @@ class ibifit(_singleModel):
         self.nzeroions = set()
         self.generator()
    
-    blabla = 0
     @staticmethod
     def getlines(linef,fcut = 10**-3,edge = False, number = float('inf')):
         #Indices:
