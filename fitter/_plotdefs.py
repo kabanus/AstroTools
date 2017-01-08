@@ -38,7 +38,7 @@ def zoomto(self, xstart = None, xstop = None, ystart = None, ystop = None):
     self.ystop  = ystop
     Iplot.x.resize(self.xstart,self.xstop)
     Iplot.y.resize(self.ystart,self.ystop)
-    self.plot()
+    self.plot(user=False)
 
 def rebin(self, count):
     self.binfactor = count
@@ -88,10 +88,12 @@ def shift(self,z,data = False):
 def removeShift(self,data = False):
     plot = False
     if not data:
-        self.updateIonLabels(_embedz(self.axisz,self.WAVE))
+        if self.axisz is None: return
+        self.updateIonLabels()
         self.axisz = None
         Iplot.hideSecondAxis()
     else:
+        if self.dataz is None: return
         self.dataz = None
         plot = True
     self.setplot(self.ptype,plot)
@@ -167,9 +169,11 @@ def plot(self, save = None, user = True, keepannotations = False):
     if not self.area.any():
         area = 1
     if model is None:
+        if not len(self.data.channels): return
         plots = [self.data.getPlot(self.binfactor,area)]
         if len(self.result) == len(self.data.channels):
-            plots.append(zip(Data.ndrebin(self.data.channels,self.binfactor),Data.rebin(self.result,self.binfactor,scale = lambda x=area:x)))
+            plots.append(zip(Data.ndrebin(self.data.channels,self.binfactor),
+                             Data.rebin(self.result,self.binfactor,scale = lambda x=area:x)))
         for i in range(len(plots)):
             if self.ptype == self.ENERGY:
                 plots[i] = self.resp.energy(plots[i])

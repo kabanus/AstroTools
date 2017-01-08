@@ -37,9 +37,9 @@ class Gui(object):
 
     def menuCommands(self):
         #Can't list comprehend with lambda. Arr.
-        self.setplot = (lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(0)),
-                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(1)),
-                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(2)))
+        self.setplot = (lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(0),True),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(1),True),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(2),True))
         self.load    = (lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadData)),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp)), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadBack)), 
@@ -75,9 +75,9 @@ class Gui(object):
                         lambda: rebinReader(self.parent,True))
     def bindCommands(self):
         self.parent.root.bind("<Return>",lambda event: self.parent.canvas.get_tk_widget().focus_set())
-        self.parent.canvas.get_tk_widget().bind("<C>",lambda event: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(0)))
-        self.parent.canvas.get_tk_widget().bind("<E>",lambda event: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(1)))
-        self.parent.canvas.get_tk_widget().bind("<A>",lambda event: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(2)))
+        self.parent.canvas.get_tk_widget().bind("<C>",lambda event: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(0),True))
+        self.parent.canvas.get_tk_widget().bind("<E>",lambda event: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(1),True))
+        self.parent.canvas.get_tk_widget().bind("<A>",lambda event: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(2),True))
         self.parent.canvas.get_tk_widget().bind("<H>",lambda event: Help(self.parent))
         self.parent.canvas.get_tk_widget().bind("<R>",lambda event: rebinReader(self.parent))
         self.parent.canvas.get_tk_widget().bind("<d>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadData)))

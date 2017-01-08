@@ -23,14 +23,15 @@ def updateIonLabels(self, shift = None):
         while True:
             channel    = channeliter.next()
             ion        = ions.next()
-            if shift is not None: ion[0]     = shift(ion[0])
-            energy     = Response.keVAfac/ion[0]
+            wl = shift(ion[0]) if shift is not None else ion[0]
+            energy     = Response.keVAfac/wl
             while energy > ebounds[channel][1]:
                 ion    = ions.next()
-                energy = Response.keVAfac/ion[0]
+                wl = shift(ion[0]) if shift is not None else ion[0]
+                energy = Response.keVAfac/wl
             while energy < ebounds[channel][0]:
                 channel= channeliter.next()
-            self.ionlabs.append([channel+1,energy,ion[0],channel,ion[1],ion[-1]])
+            self.ionlabs.append([channel+1,energy,wl,channel,ion[1],ion[-1]])
     except StopIteration: pass
 
 def loadData(self,data, text = None):
@@ -101,7 +102,7 @@ def ignore(self, minX, maxX, noplot = False):
             elif label[self.CHANNEL] >= minC:
                 label[3] = -1
         if not noplot: self.plot(user = False)
-    except AttributeError:
+    except AttributeError as e:
         raise self.noIgnoreBeforeLoad()
 
 

@@ -67,7 +67,6 @@ class Response(fitsHandler):
         return dot(self.matrix,vector*self.ebins)
 
     def _to_channel(self, minX, maxX, to = lambda x: x):
-        eps = 1e-12
         for channel in range(len(self.omatrix)):
             e0,e1  = self.ebounds[channel]
             if not e0 or not e1:
@@ -77,10 +76,10 @@ class Response(fitsHandler):
             x0 = min(to(e0),to(e1))
             x1 = max(to(e0),to(e1))
             if minX == maxX:
-                if x0 <= minX+eps and x1 >= minX-eps:
+                if x0 <= minX and x1 >= minX:
                     yield channel + 1
             else:
-                if x0 <= maxX+eps and x1 >= minX-eps:
+                if x0 <= maxX and x1 >= minX:
                     yield channel + 1
     
     keVAfac = 12.39842
@@ -315,13 +314,16 @@ class Data(fitsHandler):
     #Assume same amount of channels
     def __div__(self,other):
         try:
+            other.reset()
+            other.ignore((c+1 for c in self.delete))
             you   = other.cts(rebin=self.grouping)
             eyou  = other.errors(rebin=self.grouping)
         except AttributeError:
             try:
                 dother = Data(other)
-                you   = other.cts(rebin=self.grouping)
-                eyou  = other.errors(rebin=self.grouping)
+                dother.ignore((c+1 for c in self.deleted))
+                you   = dother.cts(rebin=self.grouping)
+                eyou  = dother.errors(rebin=self.grouping)
             except IOError:
                 you   = Data.ndrebin(fromfile(other,sep = " "),self.grouping)
                 eyou  = zeros(you.size)
@@ -349,7 +351,7 @@ class Data(fitsHandler):
     def ignore(self,channels):
         if self.asciiflag:
             raise NotImplementedError("Can't ignore when using a text file as data.")
-        self.deleted.update([c-1 for c in channels if c >= self.ochannels[0] and c <= self.ochannels[-1]])
+        self.deleted.update((c-1 for c in channels if c >= self.ochannels[0] and c <= self.ochannels[-1]))
         self.channels  = delete(self.ochannels ,list(self.deleted),axis = 0)
         self.counts    = delete(self.ocounts   ,list(self.deleted),axis = 0)
         self.scales    = delete(self.oscales   ,list(self.deleted),axis = 0)
