@@ -73,11 +73,11 @@ class Iplot(object):
             axis.scale('log')
         plt.draw()
     @staticmethod
-    def xlog(off=False):
-        Iplot._log(Iplot.x,off)
+    def xlog(on=True):
+        Iplot._log(Iplot.x,not on)
     @staticmethod
-    def ylog(off=False):
-        Iplot._log(Iplot.y,off)
+    def ylog(on=True):
+        Iplot._log(Iplot.y,not on)
 
     pickstate = None
     @staticmethod
@@ -93,14 +93,22 @@ class Iplot(object):
     def release(event):
         if Iplot.pickstate is not None:
             xy                 = [event.xdata,event.ydata]
-            Iplot.pickstate.set_position(Iplot.xytext)
-            Iplot.pickstate.xy = xy
-            try:
-                origArrow          = Iplot.pickstate.arrow.get_xy()
-                origArrow[3:5]     = xy
-                Iplot.pickstate.arrow.set_xy(origArrow)
-            except AttributeError: pass
+            if xy == [None,None]: return
+            try: 
+                Iplot.pickstate.set_position((0,0))
+                Iplot.pickstate.xy = xy
+                try:
+                    origArrow          = Iplot.pickstate.arrow.get_xy()
+                    origArrow[3:5]     = xy
+                    Iplot.pickstate.arrow.set_xy(origArrow)
+                except AttributeError: pass
+            except AttributeError:
+                xy  = Iplot.axes.transAxes.inverted().transform((event.x,event.y))
+                Iplot.axes.get_legend()._set_loc(10) #This means center
+                Iplot.axes.get_legend().set_bbox_to_anchor((xy))
+
             Iplot.pickstate    = None
+            plt.draw()
         try: plt.gcf().canvas.draw()
         except TypeError: pass
 
@@ -149,7 +157,8 @@ class Iplot(object):
         for plot,label in zip(Iplot.plots,labels):
             plot.set_label(label)
         if label is None: return 
-        Iplot.axes.legend(**legend_kwrags)
+        legend = Iplot.axes.legend(**legend_kwrags)
+        legend.set_picker(True)
         plt.draw()
 
     #Can send this a curve, ccf table or any list. If args contain
@@ -202,7 +211,7 @@ class Iplot(object):
                 addtolist = Iplot.plots.extend
                 if plotter == Iplot.axes.scatter:
                     addtolist = Iplot.plots.append
-                addtolist(plotter(*xv[:2],c=color,**dict(**kwargs)))
+                addtolist(plotter(*xv[:2],c=color,**kwargs))
             except IndexError:
                 if plotter == Iplot.axes.scatter:
                     Iplot.plots.append(

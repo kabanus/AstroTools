@@ -23,6 +23,9 @@ masses = { #keV
     'Na': 21415000,
     'S' : 29868000
 }
+globalIBIHash = {}
+globalkTHash = {}
+globalVHash = {}
 
 deflinepath = os.path.dirname(os.path.realpath(__file__))+'/../appdata/ionbyion/lines'
  
@@ -167,7 +170,13 @@ class ibifit(_singleModel):
                                                     str(ion)+'",'+
                                                     str(kT) +','+
                                                     str(vturb)+')') in locals(), globals()
-        self.wlhash = {}
+         
+        if globalVHash == vturb and globalkTHash == kT: 
+            self.wlhash  = globalIBIHash 
+        else:
+            self.wlhash  = {}
+            globalkTHash = kT
+            globalVHash  = vturb
 
     def ionExp(self, ion, wl, units):
         try: return -self.params[ion]*units*self.ions[ion].t(wl)
@@ -199,6 +208,7 @@ class ibifit(_singleModel):
            
             yield 1-self.params['~C']*(1-exp(sum( (-self.params[ion]*units*self.wlhash[wl][ion] 
                                                                     for ion in self.wlhash[wl]) )))
+    globalIBIHash = self.wlhash
     
     def sethook(self, index, key):
         gparams = ['~kT','~redshift','~vturb','~C']
