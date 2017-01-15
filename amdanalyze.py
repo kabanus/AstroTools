@@ -1,7 +1,7 @@
 from scipy.optimize import minimize
-from numpy import float64,isnan,inf,array,isinf
+from numpy import float64,array,isinf
 from numpy import append as ndappend
-from utils import closest,RomanConversion,nwise
+from utils import RomanConversion
 from collections import defaultdict
 from randomizers import points as rpoints
 from plotInt import Iplot
@@ -55,8 +55,8 @@ class AMD(object):
                     continue
                 raise IOError('Bad xi table, more than pne header line!')
             data.append(line)
+            
         self.fractions = defaultdict(lambda: defaultdict(dict))
-        count = defaultdict(lambda: defaultdict(float))
         for xiline in data:
             xi = xiline[self.ind['ion_run']]
             for ion in self.ind:
@@ -67,7 +67,8 @@ class AMD(object):
                 if charge =='p': print ion
                 self.fractions[xi][elem][charge] = xiline[self.ind[ion]]
         self.fractions = dict(self.fractions)
-        self.xiOrder = sorted(self.fractions,key = self.xif)
+        self.xiOrder   = sorted(self.fractions,key = self.xif)
+        self.xiOrderF  = array([self.xif(xi) for xi in self.xiOrder])
                
     def readParams(self, fname):
         self.params = defaultdict(lambda: defaultdict(dict))
@@ -100,43 +101,54 @@ class AMD(object):
             a                    = array(self.coefficients[c])
             a[isinf(a)]          = 0
             self.coefficients[c] = a
-            self.resVector[c] = array(self.resVector[c])
-            self.errVector[c] = array(self.errVector[c])
+            self.resVector[c]    = array(self.resVector[c])
+            self.errVector[c]    = abs(array(self.errVector[c])).mean(axis=1)
 
         self._coeff  = dict() 
         self._xi     = dict()
         for comp in self.coefficients:
-            self._coeff[comp] = self.redistributeCoefficients(comp)
-            self._xi[comp]    = self.rebinVec(comp,array([self.xif(xi) for xi in self.xiOrder]))
+            self.rebinComp(comp)
 
-    def _prepRebin(self,component,sh,params = None):
+    def rebinComp(self,comp,**kwargs):
+        comp = str(comp)
+        self.rebinXi(comp,**kwargs)
+        self.redistributeCoefficients(comp,**kwargs)
+
+    def _prepRebin(self,component,xiMin,xiMax):
         c = str(component)
-        if params is None: params = len(self.coefficients[c])
-        L     = params
+        L     = len(self.resVector[component])
+        xiMax = len(self.xiOrderF)-1 if xiMax is None else abs(self.xiOrderF-xiMax).argmin()
+        xiMin = 0                    if xiMin is None else abs(self.xiOrderF-xiMin).argmin()
+        sh    = len(self.xiOrderF[xiMin:xiMax+1])
+        if len(self.resVector[c]) > sh:
+            raise ValueError(
+                "Amount of Xi bins "+str(sh)+" is smaller then amount of give Ni "+str(len(self.resVector[c])))
         bins  = sh//L 
         extra = sh-L*bins 
-        return c,L,bins,extra
+        return c,bins,extra,xiMin,xiMax
 
-    def rebinVec(self,component,vec, params = None):
-        c,L,bins,extra = self._prepRebin(component,vec.shape[0],params)
+    def rebinXi(self,component,xiMin = None, xiMax = None):
+        c,bins,extra,xiMin,xiMax = self._prepRebin(component,xiMin,xiMax)
+        vec = self.xiOrderF[xiMin:xiMax+1]
         start = vec[:extra*(bins+1)].reshape(-1,bins+1).mean(axis=1)
         final = vec[extra*(bins+1):].reshape(-1,bins).mean(axis=1)
-        return ndappend(start,final)
+        self._xi[c] = ndappend(start,final)
 
-    def redistributeCoefficients(self,component,params = None,distribution = None):
-        c,L,bins,extra = self._prepRebin(component,self.coefficients[str(component)].shape[1],params) 
+    def redistributeCoefficients(self,component,xiMin = None, xiMax = None,distribution = None):
+        c,bins,extra,xiMin,xiMax = self._prepRebin(component,xiMin,xiMax)
+        L     = len(self.resVector[component])
+        arr   = self.coefficients[c][:,xiMin:xiMax+1]
         if distribution is None: distribution = array([1 for _ in range(len(self.coefficients[c]))])
-        arr   = self.coefficients[c]
-        start = arr[0:L,:extra*(bins+1)].reshape(L,-1,bins+1).sum(axis=2)
-        final = arr[0:L,extra*(bins+1):].reshape(L,-1,bins).sum(axis=2)
-        return ndappend(start,final,axis=1)
+        start = arr[:,:extra*(bins+1)].reshape(L,-1,bins+1).sum(axis=2)
+        final = arr[:,extra*(bins+1):].reshape(L,-1,bins).sum(axis=2)
+        self._coeff[c] = ndappend(start,final,axis=1)
 
     def AMDs(self,component,niter=3,marker='',**kwargs):
         c = str(component)
         kwargs['plot'] = False
         AMDS = [
-            self.AMD(component,resV = array(rpoints(self.resVector[c],self.errVector[c].mean(axis=1))),**kwargs)
-                for i in range(niter)
+            self.AMD(component,resV = array(rpoints(self.resVector[c],self.errVector[c])),**kwargs)
+                for _ in range(niter)
         ]
         Iplot.init()
         Iplot.plotCurves(*AMDS,marker=marker)
@@ -144,34 +156,37 @@ class AMD(object):
         Iplot.x.label('log $\\xi$')
         Iplot.y.label('$N_H$ $10^{18}$ cm$^2$')
 
-    def AMD(self,component, guess = None,plot = False, constraint = False, resV = None):
+    def AMDQuality(self,AMDarray,component,estimate = None):
         c = str(component)
-        _resVector = self.resVector[c]
-        if resV is not None:
-            _resVector = resV
-        
-        def AMDGen(AMDarray, c = self._coeff[c], r = _resVector): 
-            objective = c.dot(AMDarray) - r
-            return objective.dot(objective)
+        if estimate is not None: 
+            if estimate: 
+                return self._coeff[c].dot(AMDarray)
+            return (self._coeff[c].dot(AMDarray)-self.resVector[c])/self.resVector[c]
+        objective = (self._coeff[c].dot(AMDarray) - self.resVector[c])/self.errVector[c]
+        o = objective.dot(objective)
+        return o
+
+    def AMD(self,component, guess = None,plot = False, constraint = False):
+        c = str(component)
 
         constr = {'type':'ineq','fun': lambda x: x.min()}
         if guess is None:
             guess = [1 for _ in range(len(self._coeff[c][0]))]
 
         if constraint:
-            result = minimize(AMDGen,guess,constraints=constr,method='slsqp',options={'maxiter':1000})
+            result = minimize(self.AMDQuality,guess,args=(c,),constraints=constr,method='slsqp',options={'maxiter':1000})
         else:
-            result = minimize(AMDGen,guess,bounds=[(0,None) for _ in range(len(guess))],method='slsqp',options={'maxiter':1000})
+            result = minimize(self.AMDQuality,guess,args=(c,),bounds=[(0,None) for _ in range(len(guess))],method='slsqp',options={'maxiter':1000})
         self._last = result
         if result.success:
-            result = ndappend(self._xi[c].reshape(-1,1),result.x.reshape(-1,1),axis=1)
             if plot:
+                toplot = ndappend(self._xi[c].reshape(-1,1),result.x.reshape(-1,1),axis=1)
                 Iplot.init()
-                Iplot.plotCurves(result,marker='o')
+                Iplot.plotCurves(toplot,marker='o')
                 Iplot.ylog()
                 Iplot.x.label('log $\\xi$')
                 Iplot.y.label('$N_H$ $10^{18}$ cm$^2$')
-            return result
+            return result.x
         print 'Failed with '+ result.message
 
     def AMDEst(self,*components,**kwargs):

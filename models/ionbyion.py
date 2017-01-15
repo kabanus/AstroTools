@@ -172,11 +172,12 @@ class ibifit(_singleModel):
                                                     str(vturb)+')') in locals(), globals()
          
         if globalVHash == vturb and globalkTHash == kT: 
-            self.wlhash  = globalIBIHash 
+            self.wlhash   = globalIBIHash 
         else:
-            self.wlhash  = {}
-            globalkTHash = kT
-            globalVHash  = vturb
+            self.wlhash   = {}
+            globalkTHash  = kT
+            globalVHash   = vturb
+            globalIBIHash = self.wlhash
 
     def ionExp(self, ion, wl, units):
         try: return -self.params[ion]*units*self.ions[ion].t(wl)
@@ -208,7 +209,6 @@ class ibifit(_singleModel):
            
             yield 1-self.params['~C']*(1-exp(sum( (-self.params[ion]*units*self.wlhash[wl][ion] 
                                                                     for ion in self.wlhash[wl]) )))
-    globalIBIHash = self.wlhash
     
     def sethook(self, index, key):
         gparams = ['~kT','~redshift','~vturb','~C']
