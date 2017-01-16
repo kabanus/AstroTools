@@ -88,15 +88,24 @@ class AMD(object):
         self.coefficients = dict()
         self.resVector    = dict()
         self.errVector    = dict()
+        self.abundMap     = dict()
+        self.abundMapN    = dict()
         for comp in self.params:
             self.coefficients[comp] = list()
             self.resVector[comp]    = list()
             self.errVector[comp]    = list()
+            self.abundMap[comp]     = list()
+            self.abundMapN[comp]    = list()
+            abundCounter = 0
             for elem in self.params[comp]:
+                self.abundMapN[comp].append(elem)
                 for ion in self.params[comp][elem]:
-                    self.coefficients[comp].append([(abundances[elem]*self.fractions[xi][elem][ion]) for xi in self.xiOrder])
+                    #self.coefficients[comp].append([(abundances[elem]*self.fractions[xi][elem][ion]) for xi in self.xiOrder])
+                    self.coefficients[comp].append([(self.fractions[xi][elem][ion]) for xi in self.xiOrder])
                     self.resVector[comp].append(self.params[comp][elem][ion])
                     self.errVector[comp].append(self.errors[comp][elem][ion])
+                    self.abundMap[comp].append(abundCounter)
+                abundCounter += 1
         for c in self.coefficients: 
             a                    = array(self.coefficients[c])
             a[isinf(a)]          = 0
@@ -156,43 +165,58 @@ class AMD(object):
         Iplot.x.label('log $\\xi$')
         Iplot.y.label('$N_H$ $10^{18}$ cm$^2$')
 
-    def AMDQuality(self,AMDarray,component,estimate = None):
+    def AMDQuality(self,AMDlist,component,abundAmount = None,abundances=None,estimate = None):
         c = str(component)
-        if estimate is not None: 
-            if estimate: 
-                return self._coeff[c].dot(AMDarray)
-            return (self._coeff[c].dot(AMDarray)-self.resVector[c])/self.resVector[c]
-        objective = (self._coeff[c].dot(AMDarray) - self.resVector[c])/self.errVector[c]
-        o = objective.dot(objective)
-        return o
-
-    def AMD(self,component, guess = None,plot = False, constraint = False):
-        c = str(component)
-
-        constr = {'type':'ineq','fun': lambda x: x.min()}
-        if guess is None:
-            guess = [1 for _ in range(len(self._coeff[c][0]))]
-
-        if constraint:
-            result = minimize(self.AMDQuality,guess,args=(c,),constraints=constr,method='slsqp',options={'maxiter':1000})
+        if abundAmount is None:
+            abundAmount = len(set(self.abundMap[c]))
+            
+        if abundances is None:
+            AMDarray, abundances = AMDlist[:-abundAmount], AMDlist[-abundAmount:]
+            abundArray = map(lambda x: abundances[x], self.abundMap[c])
         else:
-            result = minimize(self.AMDQuality,guess,args=(c,),bounds=[(0,None) for _ in range(len(guess))],method='slsqp',options={'maxiter':1000})
-        self._last = result
+            AMDarray   = AMDlist
+            abundArray = map(lambda x: abundances[self.abundMapN[c][x]], self.abundMap[c])
+            
+
+        est = self._coeff[c].dot(AMDarray*abundArray)
+        objective = (est - self.resVector[c])/self.errVector[c]
+        if estimate is not None: 
+            if   estimate == 0: 
+                return est
+            elif estimate == 1:
+                return est - self.resVector[c]
+            elif estimate == 2:
+                return (est - self.resVector[c])/self.resVector[c]
+            return objective  
+
+        return objective.dot(objective)
+
+    def AMD(self,component, guess = None,plot = False):
+        c = str(component)
+        a = len(set(self.abundMap[c]))
+        if guess is None:
+            guess = [1 for _ in range(len(self._coeff[c][0]))] + [1e-4 for _ in range(a)]
+
+        result = minimize(self.AMDQuality,guess,args=(c,a),bounds=[(0,None) for _ in range(len(guess))],method='slsqp',options={'maxiter':1000})
+        self._last = result        
         if result.success:
+            NH, abunds = result.x[:-a], result.x[-a:]
             if plot:
-                toplot = ndappend(self._xi[c].reshape(-1,1),result.x.reshape(-1,1),axis=1)
+                toplot = ndappend(self._xi[c].reshape(-1,1),NH.reshape(-1,1),axis=1)
                 Iplot.init()
                 Iplot.plotCurves(toplot,marker='o')
                 Iplot.ylog()
                 Iplot.x.label('log $\\xi$')
                 Iplot.y.label('$N_H$ $10^{18}$ cm$^2$')
-            return result.x
+            return NH,dict(zip(self.abundMapN[c],abunds))
         print 'Failed with '+ result.message
+        return (None,None)
 
     def AMDEst(self,*components,**kwargs):
         Iplot.init()
         plotDict = defaultdict(int)
         legend = []
+        result = []
         for component in components:
             c = str(component)
             legend.append('Component '+c)
@@ -201,13 +225,16 @@ class AMD(object):
                     eIon = elem+'_'+ion
                     Xi = self.probableXi(eIon)
                     plotDict[self.xif(Xi)] += self.NH(eIon,Xi,self.params[c][elem][ion])
-            Iplot.plotCurves(sorted(plotDict.items()),chain=True,marker='o')
+            result.append(sorted(plotDict.items()))
+            Iplot.plotCurves(result[-1],chain=True,marker='o')
         try: legend = kwargs['labels']
         except KeyError: pass
         Iplot.legend(*legend, bbox_to_anchor=(1.1,1.1))
         Iplot.ylog()
-        Iplot.y.label('d $N_H$')
+        Iplot.y.label('log $N_H 10^{18} cm^2$')
         Iplot.x.label('log $\\xi$')
+        if len(result) == 1: return result[0]
+        return result
 
     def ionAMDEst(self,*components):
         Iplot.init()
