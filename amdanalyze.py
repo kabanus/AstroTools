@@ -100,8 +100,7 @@ class AMD(object):
             for elem in self.params[comp]:
                 self.abundMapN[comp].append(elem)
                 for ion in self.params[comp][elem]:
-                    #self.coefficients[comp].append([(abundances[elem]*self.fractions[xi][elem][ion]) for xi in self.xiOrder])
-                    self.coefficients[comp].append([(self.fractions[xi][elem][ion]) for xi in self.xiOrder])
+                    self.coefficients[comp].append([(abundances[elem]*self.fractions[xi][elem][ion]) for xi in self.xiOrder])
                     self.resVector[comp].append(self.params[comp][elem][ion])
                     self.errVector[comp].append(self.errors[comp][elem][ion])
                     self.abundMap[comp].append(abundCounter)
@@ -123,34 +122,41 @@ class AMD(object):
         self.rebinXi(comp,**kwargs)
         self.redistributeCoefficients(comp,**kwargs)
 
-    def _prepRebin(self,component,xiMin,xiMax):
+    def _prepRebin(self,component,xiMin,xiMax,binSize = None):
         c = str(component)
-        L     = len(self.resVector[component])
-        xiMax = len(self.xiOrderF)-1 if xiMax is None else abs(self.xiOrderF-xiMax).argmin()
-        xiMin = 0                    if xiMin is None else abs(self.xiOrderF-xiMin).argmin()
-        sh    = len(self.xiOrderF[xiMin:xiMax+1])
-        if len(self.resVector[c]) > sh:
-            raise ValueError(
-                "Amount of Xi bins "+str(sh)+" is smaller then amount of give Ni "+str(len(self.resVector[c])))
-        bins  = sh//L 
-        extra = sh-L*bins 
+        if binSize: binSize = int(round(binSize/(self.xiOrderF[1]-self.xiOrderF[0])))
+        xiMax   = len(self.xiOrderF)-1 if xiMax is None else abs(self.xiOrderF-xiMax).argmin()
+        xiMin   = 0                    if xiMin is None else abs(self.xiOrderF-xiMin).argmin()
+        sh      = len(self.xiOrderF[xiMin:xiMax+1])
+        L       = sh//binSize if binSize else len(self.resVector[component])
+        bins    = binSize     if binSize else sh//L 
+        extra   = sh-L*bins
+        if extra >= L and extra > bins: raise ValueError("Bad bin size")
         return c,bins,extra,xiMin,xiMax
 
-    def rebinXi(self,component,xiMin = None, xiMax = None):
-        c,bins,extra,xiMin,xiMax = self._prepRebin(component,xiMin,xiMax)
+    def rebinXi(self,component,xiMin = None, xiMax = None, binSize = None):
+        c,bins,extra,xiMin,xiMax = self._prepRebin(component,xiMin,xiMax,binSize)
         vec = self.xiOrderF[xiMin:xiMax+1]
-        start = vec[:extra*(bins+1)].reshape(-1,bins+1).mean(axis=1)
-        final = vec[extra*(bins+1):].reshape(-1,bins).mean(axis=1)
-        self._xi[c] = ndappend(start,final)
+        if extra > bins: 
+            start = vec[:extra*(bins+1)].reshape(-1,bins+1).mean(axis=1) if extra else array(())
+            final = vec[extra*(bins+1):]
+        else:
+            start = vec[:extra].mean(axis=0) if extra else array(())
+            final = vec[extra:]
+        self._xi[c] = ndappend(start,final.reshape(-1,bins).mean(axis=1)) if final.any() else start
 
-    def redistributeCoefficients(self,component,xiMin = None, xiMax = None,distribution = None):
-        c,bins,extra,xiMin,xiMax = self._prepRebin(component,xiMin,xiMax)
-        L     = len(self.resVector[component])
+    def redistributeCoefficients(self,component,xiMin = None, xiMax = None, binSize = None, distribution = None):
+        c,bins,extra,xiMin,xiMax = self._prepRebin(component,xiMin,xiMax,binSize)
         arr   = self.coefficients[c][:,xiMin:xiMax+1]
+        L     = len(self.resVector[component])
         if distribution is None: distribution = array([1 for _ in range(len(self.coefficients[c]))])
-        start = arr[:,:extra*(bins+1)].reshape(L,-1,bins+1).sum(axis=2)
-        final = arr[:,extra*(bins+1):].reshape(L,-1,bins).sum(axis=2)
-        self._coeff[c] = ndappend(start,final,axis=1)
+        if extra > bins: 
+            start = arr[:,:extra*(bins+1)].reshape(L,-1,bins+1).sum(axis=2) if extra else array(()).reshape(L,0)
+            final = arr[:,extra*(bins+1):]
+        else:
+            start = arr[:,:extra].sum(axis=1).reshape(L,1) if extra else array(()).reshape(L,0)
+            final = arr[:,extra:]
+        self._coeff[c] = ndappend(start,final.reshape(L,-1,bins).sum(axis=2),axis=1) if final.any() else start
 
     def AMDs(self,component,niter=3,marker='',**kwargs):
         c = str(component)
@@ -165,20 +171,17 @@ class AMD(object):
         Iplot.x.label('log $\\xi$')
         Iplot.y.label('$N_H$ $10^{18}$ cm$^2$')
 
-    def AMDQuality(self,AMDlist,component,abundAmount = None,abundances=None,estimate = None):
+    def AMDQuality(self,AMDlist,component,abundances=None,estimate = None):
         c = str(component)
-        if abundAmount is None:
-            abundAmount = len(set(self.abundMap[c]))
-            
-        if abundances is None:
-            AMDarray, abundances = AMDlist[:-abundAmount], AMDlist[-abundAmount:]
-            abundArray = map(lambda x: abundances[x], self.abundMap[c])
-        else:
-            AMDarray   = AMDlist
-            abundArray = map(lambda x: abundances[self.abundMapN[c][x]], self.abundMap[c])
-            
-
-        est = self._coeff[c].dot(AMDarray*abundArray)
+        AMDArray = AMDlist
+        if abundances:
+            try: 
+                AMDArray, abundances = AMDlist[:-abundances], AMDlist[-abundances:]
+                abundArray = map(lambda x: abundances[x], self.abundMap[c])
+            except TypeError:
+                abundArray = map(lambda x: abundances[self.abundMapN[c][x]], self.abundMap[c])
+        else: abundArray = [1 for _ in range(len(abundMap[c]))]
+        est = self._coeff[c].dot(AMDArray)*abundArray
         objective = (est - self.resVector[c])/self.errVector[c]
         if estimate is not None: 
             if   estimate == 0: 
@@ -191,16 +194,19 @@ class AMD(object):
 
         return objective.dot(objective)
 
-    def AMD(self,component, guess = None,plot = False):
+    def AMD(self,component, guess = None,plot = False, fitAbunds = True):
         c = str(component)
-        a = len(set(self.abundMap[c]))
+        a = len(set(self.abundMap[c])) if fitAbunds else None
         if guess is None:
-            guess = [1 for _ in range(len(self._coeff[c][0]))] + [1e-4 for _ in range(a)]
+            guess = [1 for _ in range(len(self._coeff[c][0]))]
+            if fitAbunds: guess += [1e-4 for _ in range(a)]
 
         result = minimize(self.AMDQuality,guess,args=(c,a),bounds=[(0,None) for _ in range(len(guess))],method='slsqp',options={'maxiter':1000})
         self._last = result        
         if result.success:
-            NH, abunds = result.x[:-a], result.x[-a:]
+            abunds = None
+            NH = result.x
+            if fitAbunds: NH, abunds = result.x[:-a], result.x[-a:]
             if plot:
                 toplot = ndappend(self._xi[c].reshape(-1,1),NH.reshape(-1,1),axis=1)
                 Iplot.init()
@@ -208,6 +214,13 @@ class AMD(object):
                 Iplot.ylog()
                 Iplot.x.label('log $\\xi$')
                 Iplot.y.label('$N_H$ $10^{18}$ cm$^2$')
+            dof = len(self.resVector[c])-len(guess)
+            red = self._last['fun']/dof
+            self._last.dof  = dof
+            self._last.bins = len(self.resVector[c])
+            self._last.pars = len(guess)
+            print u"{0} parameters, {1} bins, {2} d.o.f, \u03C7\u00B2 = {3},and reduced {4}".format(
+                len(guess),len(self.resVector[c]),dof,self._last['fun'],red)
             return NH,dict(zip(self.abundMapN[c],abunds))
         print 'Failed with '+ result.message
         return (None,None)
