@@ -64,20 +64,30 @@ class Iplot(object):
             plt.draw()
 
     @staticmethod
-    def _log(axis,off):
-        if axis.get_bounds()[0] <= 0: 
-            axis.resize(start=1)
-        if off:
-            axis.scale('linear')
-        else:
+    def _log(axis,on):
+        if Iplot.plots and axis.get_bounds()[0] <= 0:
+            index = 0 if axis is Iplot.x else 1
+            minimum = min(map(lambda p: min(p.get_xydata()[:,index]),Iplot.plots))
+            if minimum <= 0:
+                axis.resize(start=1e-10)
+        if on:
             axis.scale('log')
+        else:
+            axis.scale('linear')
         plt.draw()
+
+    xlogon = False
     @staticmethod
-    def xlog(on=True):
-        Iplot._log(Iplot.x,not on)
+    def xlog(on=None):
+        if on is None: on = not Iplot.xlogon
+        Iplot.xlogon = on
+        Iplot._log(Iplot.x,on)
+    ylogon = False
     @staticmethod
-    def ylog(on=True):
-        Iplot._log(Iplot.y,not on)
+    def ylog(on=None):
+        if on is None: on = not Iplot.ylogon
+        Iplot.ylogon = on
+        Iplot._log(Iplot.y,on)
 
     pickstate = None
     @staticmethod
@@ -138,17 +148,17 @@ class Iplot(object):
             plt.draw()
         
     @staticmethod
-    def clearPlots(keepannotations = False):
-        try: 
-            if keepannotations: annotations = Iplot.axes.texts
-            Iplot.axes.clear()
-            if keepannotations: Iplot.axes.texts = annotations
-
-        except AttributeError: return
+    def clearPlots(keepannotations = False,keepscale = False):
+        if keepannotations: annotations = Iplot.axes.texts
+        Iplot.axes.clear()
+        if keepannotations: Iplot.axes.texts = annotations
         try: Iplot.axes.legend().remove()
         except AttributeError: pass
         Iplot.plots = list()
         Iplot.axes.minorticks_on()
+        if keepscale:
+            Iplot.xlog(Iplot.xlogon)
+            Iplot.ylog(Iplot.ylogon)
         plt.draw()
 
     @staticmethod 

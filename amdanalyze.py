@@ -1,10 +1,11 @@
 from scipy.optimize import minimize
-from numpy import float64,array,isinf
+from numpy import float64,array,zeros,concatenate,delete
 from numpy import append as ndappend
 from utils import RomanConversion
 from collections import defaultdict
 from randomizers import points as rpoints
 from plotInt import Iplot
+import staterr
 import re
 
 abundances = {
@@ -40,7 +41,8 @@ abundances = {
 }
 
 class AMD(object):
-    def __init__(self, table):
+    def __init__(self, table, params = None):
+        self._error = None
         data = []
         self._running_component = 0
         header = False
@@ -58,108 +60,130 @@ class AMD(object):
             
         self.fractions = defaultdict(lambda: defaultdict(dict))
         for xiline in data:
-            xi = xiline[self.ind['ion_run']]
+            xi = self.xif(xiline[self.ind['ion_run']])
             for ion in self.ind:
                 if ion in ('ion_run','delta_r','x_e','n_p','frac_heat_error'): continue
                 try: 
                     elem,charge = ion.split('_')
                 except ValueError: continue
-                if charge =='p': print ion
                 self.fractions[xi][elem][charge] = xiline[self.ind[ion]]
-        self.fractions = dict(self.fractions)
-        self.xiOrder   = sorted(self.fractions,key = self.xif)
-        self.xiOrderF  = array([self.xif(xi) for xi in self.xiOrder])
+        self.fractions = dict(((k,dict(v)) for k,v in self.fractions.items()))
+        self.xiOrder   = array(sorted(self.fractions))
+        if params is not None: self.readParams(params)
                
     def readParams(self, fname):
-        self.params = defaultdict(lambda: defaultdict(dict))
-        self.errors = defaultdict(lambda: defaultdict(dict))
+        self.errors = defaultdict(dict)
+        self.data   = defaultdict(dict)
         for line in open(fname):
             line = re.split('\s+',line.strip())
             if len(line) <= 4: continue
             try: 
-                (elem,charge), = self.getIons(line[1],split = True)
-                component = line[0]
+                ion = self.getIon(line[1])
+                component = int(line[0])
             except KeyError: continue
-            self.params[component][elem][charge] = float(line[3])
-            exec('self.errors[component][elem][charge] = '+line[4]) in locals()
-        self.params = dict((k,dict(v)) for k,v in self.params.items())
-        self.errors = dict((k,dict(v)) for k,v in self.errors.items())
+            self.data[component][ion] = float(line[3])
+            exec('self.errors[component][ion] = abs(array('+line[4]+')).mean()') in locals(),globals()
+        self.errors = dict(self.errors)
+        self.data   = dict(self.data)
+        self.params = dict()
+        for component in self.data:
+            self.params[component] = defaultdict(dict)
+            for eIon in self.data[component]:
+                elem,ion = self.getIon(eIon,split=True)
+                self.params[component][elem][ion] = self.data[component][eIon]
+            self.params[component] = dict(self.params[component])
+        self.rebin()
 
-        self.coefficients = dict()
-        self.resVector    = dict()
-        self.errVector    = dict()
-        self.abundMap     = dict()
-        self.abundMapN    = dict()
-        for comp in self.params:
-            self.coefficients[comp] = list()
-            self.resVector[comp]    = list()
-            self.errVector[comp]    = list()
-            self.abundMap[comp]     = list()
-            self.abundMapN[comp]    = list()
-            abundCounter = 0
-            for elem in self.params[comp]:
-                self.abundMapN[comp].append(elem)
-                for ion in self.params[comp][elem]:
-                    self.coefficients[comp].append([(abundances[elem]*self.fractions[xi][elem][ion]) for xi in self.xiOrder])
-                    self.resVector[comp].append(self.params[comp][elem][ion])
-                    self.errVector[comp].append(self.errors[comp][elem][ion])
-                    self.abundMap[comp].append(abundCounter)
-                abundCounter += 1
-        for c in self.coefficients: 
-            a                    = array(self.coefficients[c])
-            a[isinf(a)]          = 0
-            self.coefficients[c] = a
-            self.resVector[c]    = array(self.resVector[c])
-            self.errVector[c]    = abs(array(self.errVector[c])).mean(axis=1)
 
-        self._coeff  = dict() 
-        self._xi     = dict()
-        for comp in self.coefficients:
-            self.rebinComp(comp)
+    def rebin(self, epsilon = 1e-2,amount = None,fixedGrid = None,outerBin = None, boundary = 0):
+        self.nhMaps = dict()
+        self._coeff = dict()
+        self.xilist = dict()
+        for component in self.data:
+            self.nhMaps[component] = dict()
+            self._coeff[component] = dict()
+            self.xilist[component] = set()
+            for ion in self.data[component]:
+                elem,charge = self.getIon(ion,split=True)
+                self._coeff[component][ion] = list()
+                self.nhMaps[component][ion] = list()
+                xis = fixedGrid if fixedGrid else self.relaventXis(ion,epsilon,amount)
+                for xi in xis: 
+                    self._coeff[component][ion].append(abundances[elem]*self.fractions[xi][elem][charge])
+                    self.nhMaps[component][ion].append(xi)
+                    self.xilist[component].add(xi)
 
-    def rebinComp(self,comp,**kwargs):
-        comp = str(comp)
-        self.rebinXi(comp,**kwargs)
-        self.redistributeCoefficients(comp,**kwargs)
-
-    def _prepRebin(self,component,xiMin,xiMax,binSize = None):
-        c = str(component)
-        if binSize: binSize = int(round(binSize/(self.xiOrderF[1]-self.xiOrderF[0])))
-        xiMax   = len(self.xiOrderF)-1 if xiMax is None else abs(self.xiOrderF-xiMax).argmin()
-        xiMin   = 0                    if xiMin is None else abs(self.xiOrderF-xiMin).argmin()
-        sh      = len(self.xiOrderF[xiMin:xiMax+1])
-        L       = sh//binSize if binSize else len(self.resVector[component])
-        bins    = binSize     if binSize else sh//L 
-        extra   = sh-L*bins
-        if extra >= L and extra > bins: raise ValueError("Bad bin size")
-        return c,bins,extra,xiMin,xiMax
-
-    def rebinXi(self,component,xiMin = None, xiMax = None, binSize = None):
-        c,bins,extra,xiMin,xiMax = self._prepRebin(component,xiMin,xiMax,binSize)
-        vec = self.xiOrderF[xiMin:xiMax+1]
-        if extra > bins: 
-            start = vec[:extra*(bins+1)].reshape(-1,bins+1).mean(axis=1) if extra else array(())
-            final = vec[extra*(bins+1):]
-        else:
-            start = vec[:extra].mean(axis=0) if extra else array(())
-            final = vec[extra:]
-        self._xi[c] = ndappend(start,final.reshape(-1,bins).mean(axis=1)) if final.any() else start
-
-    def redistributeCoefficients(self,component,xiMin = None, xiMax = None, binSize = None, distribution = None):
-        c,bins,extra,xiMin,xiMax = self._prepRebin(component,xiMin,xiMax,binSize)
-        arr   = self.coefficients[c][:,xiMin:xiMax+1]
-        L     = len(self.resVector[component])
-        if distribution is None: distribution = array([1 for _ in range(len(self.coefficients[c]))])
-        if extra > bins: 
-            start = arr[:,:extra*(bins+1)].reshape(L,-1,bins+1).sum(axis=2) if extra else array(()).reshape(L,0)
-            final = arr[:,extra*(bins+1):]
-        else:
-            start = arr[:,:extra].sum(axis=1).reshape(L,1) if extra else array(()).reshape(L,0)
-            final = arr[:,extra:]
-        self._coeff[c] = ndappend(start,final.reshape(L,-1,bins).sum(axis=2),axis=1) if final.any() else start
+        try: rbound,lbound = boundary 
+        except TypeError: rbound = lbound = boundary
+        self._cMat   = dict()
+        self._rVec   = dict()
+        self._eVec   = dict()
+        self.dxilist = dict()
+        for c in self.nhMaps:
+            self.xilist[c] = sorted(self.xilist[c])
+            if outerBin is None:
+                sBin = 2*self.xilist[c][0]-self.xilist[c][1]
+                fBin = 2*self.xilist[c][-1]-self.xilist[c][-2]
+            else:
+                try: sBin,fBin = outerBin
+                except TypeError: sBin = fBin = outerBin
+            self.xilist[c] = [sBin] + self.xilist[c] + [fBin]
+            self.dxilist[c]= array([0] + [(self.xilist[c][i+1]-self.xilist[c][i-1])/2.0 
+                            for i in range(1,len(self.xilist[c])-1)] + [0])
+            self._cMat[c]  = zeros(shape=(len([_ for v in self.nhMaps[c].values() if v]),len(self.xilist[c])))
+            self._rVec[c]  = list()
+            self._eVec[c]  = list()
+            row = 0           
+            for ion in self.nhMaps[c]:
+                if not self.nhMaps[c][ion]: continue
+                self.nhMaps[c][ion] = array(map(lambda x: self.xilist[c].index(x),self.nhMaps[c][ion]))
+                self._coeff[c][ion] = array(self._coeff[c][ion])
+                self._cMat[c][row,self.nhMaps[c][ion]] = self._coeff[c][ion]
+                self._rVec[c].append(self.data[c][ion])
+                self._eVec[c].append(self.errors[c][ion])
+                row += 1
+            self._rVec[c] = array(self._rVec[c])
+            self._eVec[c] = array(self._eVec[c])
+               
+    def contributions(self,component,ion=None,xiMin=None,xiMax=None):
+        c = component
+        ions = self.data[c].keys() if ion is None else [ion]
+        header = ion is None
+        if header:
+            print "%-8s %-4s %-8s %-8s %-8s %-8s"%('ion','xi','NI','Fraction','Abund','Product')
+        for ion in ions:
+            ion = self.getIon(ion)           
+            try:
+                if not header: 
+                    print ion,'contributions:'
+                    print "%-4s %-8s %-8s %-8s %-8s"%('xi','NI','Fraction','Abund','Product')                   
+                for ind in self.nhMaps[c][ion]:
+                    xi = self.xilist[c][ind]
+                    if (xiMin is None or xi >= xiMin) and (xiMax is None or xi <= xiMax):
+                        elem,charge = self.getIon(ion,split=True)
+                        if header: print '%-8s'%(ion),
+                        print "%.2f %.2e %.2e %.2e %.2e"%(
+                                        xi,self.data[c][ion],self.fractions[xi][elem][charge],abundances[elem],
+                                        self.fractions[xi][elem][charge]*abundances[elem])
+            except KeyError: 
+                if not header: print None
+    
+    def relaventXis(self,ion,epsilon,amount):
+        elem,charge = self.getIon(ion,split=True)
+        res = []
+        count = 0
+        pxi = self.probableXi(ion)
+        for xi in self.xiOrder:
+            if self.fractions[xi][elem][charge] > epsilon:
+                if xi == pxi: i = count
+                res.append(xi)
+                count += 1
+        if amount is not None:
+            return res[(i-amount if i-amount > 0 else 0):(i+amount+1 if pxi+amount < len(res) else len(res))]
+        return res
 
     def AMDs(self,component,niter=3,marker='',**kwargs):
-        c = str(component)
+        c = component
         kwargs['plot'] = False
         AMDS = [
             self.AMD(component,resV = array(rpoints(self.resVector[c],self.errVector[c])),**kwargs)
@@ -171,115 +195,132 @@ class AMD(object):
         Iplot.x.label('log $\\xi$')
         Iplot.y.label('$N_H$ $10^{18}$ cm$^2$')
 
-    def AMDQuality(self,AMDlist,component,abundances=None,estimate = None):
-        c = str(component)
-        AMDArray = AMDlist
-        if abundances:
-            try: 
-                AMDArray, abundances = AMDlist[:-abundances], AMDlist[-abundances:]
-                abundArray = map(lambda x: abundances[x], self.abundMap[c])
-            except TypeError:
-                abundArray = map(lambda x: abundances[self.abundMapN[c][x]], self.abundMap[c])
-        else: abundArray = [1 for _ in range(len(abundMap[c]))]
-        est = self._coeff[c].dot(AMDArray)*abundArray
-        objective = (est - self.resVector[c])/self.errVector[c]
-        if estimate is not None: 
-            if   estimate == 0: 
-                return est
-            elif estimate == 1:
-                return est - self.resVector[c]
-            elif estimate == 2:
-                return (est - self.resVector[c])/self.resVector[c]
-            return objective  
+    def estimateNH(self,c,index,val,nh,**kwargs):
+        if val < 0: return float('inf')
+        contr = self._cMat[c][:,index+1].dot(val*self.dxilist[c][index+1])
+        Ocmat = self._cMat[c].copy()
+        Odxi  = self.dxilist[c].copy()
+        Oxi   = self.xilist[c][:]
+        nh    = delete(nh,index)
+        self._cMat[c]   = delete(self._cMat[c],index+1,axis=1)
+        self.dxilist[c] = delete(self.dxilist[c],index+1)
+        self.xilist[c]  = delete(self.xilist[c],index+1)
+        try:
+            nh = self.AMD(c,guess = nh, add = contr,**kwargs)
+        finally:
+            self._cMat[c]   = Ocmat
+            self.dxilist[c] = Odxi
+            self.xilist[c]  = Oxi
+        return self._last['fun']
+    
+    def error(self, *indices):
+        errors = []
+        for index in indices:
+            last    = self._last
+            lasterr = self._error
+            errCalc = self._error(index)
+            try:
+                res = errCalc(self._last.x[index],minimum=0)
+            except staterr.newBestFitFound as e:
+                print "New best fit found:",e
+                res = concatenate((self._last.x[:index],array((e.new,)), self._last.x[index:]))
+            finally:
+                self._last  = last
+                self._error = lasterr
+            errors.append(res)
+        return errors if len(errors) > 1 else errors[0]
+        
+    def AMDQuality(self,nh,c,estimate = None,add = None):
+        nh = concatenate(([0],nh,[0]))
+        predicted  = self._cMat[c].dot(nh*self.dxilist[c])
+        if add is not None: predicted += add
+        objective = predicted -self._rVec[c]
+        objNormed = objective/self._eVec[c]
+        res = objNormed.dot(objNormed)
+        if estimate is not None:
+            if estimate == 0:
+                return predicted
+            if estimate == 1:
+                return objective
+            return objNormed
+        return res
 
-        return objective.dot(objective)
-
-    def AMD(self,component, guess = None,plot = False, fitAbunds = True):
-        c = str(component)
-        a = len(set(self.abundMap[c])) if fitAbunds else None
+    def AMD(self,component, guess = None,plot = False,onlyElem = None,filterElems = [],
+            maxiter = 1000, add = None, errors = None, verbose = True):
+        c = component
         if guess is None:
-            guess = [1 for _ in range(len(self._coeff[c][0]))]
-            if fitAbunds: guess += [1e-4 for _ in range(a)]
+            guess = [1 for _ in range(len(self.xilist[c])-2)]
+        if isinstance(filterElems,str): filterElems = (filterElems,)
+        if onlyElem in filterElems:
+            raise TypeError("Can't provide onlyElem and also filter it!")
 
-        result = minimize(self.AMDQuality,guess,args=(c,a),bounds=[(0,None) for _ in range(len(guess))],method='slsqp',options={'maxiter':1000})
-        self._last = result        
+        useOnly = set()
+        for ion in self._coeff[c]:
+            elem,_ = self.getIon(ion, split = True)
+            if elem == onlyElem: useOnly.add(ion)
+            if onlyElem is None and elem not in filterElems: useOnly.add(ion)
+        if not useOnly:  useOnly = None
+
+        bounds      = [(0,None) for _ in range(len(guess))]
+        result      = minimize(self.AMDQuality,guess,args=(c,None,add),bounds=bounds,method='slsqp',options={'maxiter':maxiter})
+        result.x[result.x < 0] = 0
+        self._last  = result
+        self._error = lambda index: staterr.Error(lambda v,c=c,i=index,nh=result.x,f=self: f.estimateNH(c,i,v,nh,verbose = False))
         if result.success:
-            abunds = None
             NH = result.x
-            if fitAbunds: NH, abunds = result.x[:-a], result.x[-a:]
             if plot:
-                toplot = ndappend(self._xi[c].reshape(-1,1),NH.reshape(-1,1),axis=1)
+                toplot = concatenate((array(self.xilist[c][1:-1]).reshape(-1,1),(self.dxilist[c][1:-1]/2.0).reshape(-1,1),
+                                      NH.reshape(-1,1),zeros(shape=(len(NH),1))),axis=1)
+                if errors is not None:
+                    toplot[:,-1] = array([(e[1]-e[0])/len(e) for e in errors])
                 Iplot.init()
                 Iplot.plotCurves(toplot,marker='o')
-                Iplot.ylog()
+                Iplot.ylog(True)
                 Iplot.x.label('log $\\xi$')
                 Iplot.y.label('$N_H$ $10^{18}$ cm$^2$')
-            dof = len(self.resVector[c])-len(guess)
+            dof = len(self._rVec[c])-len(guess)
             red = self._last['fun']/dof
             self._last.dof  = dof
-            self._last.bins = len(self.resVector[c])
+            self._last.bins = len(self._rVec[c])
             self._last.pars = len(guess)
-            print u"{0} parameters, {1} bins, {2} d.o.f, \u03C7\u00B2 = {3},and reduced {4}".format(
-                len(guess),len(self.resVector[c]),dof,self._last['fun'],red)
-            return NH,dict(zip(self.abundMapN[c],abunds))
-        print 'Failed with '+ result.message
-        return (None,None)
+            if verbose: 
+                print u"{0} parameters, {1} bins, {2} d.o.f, \u03C7\u00B2 = {3},and reduced {4}".format(
+                    len(guess),len(self._rVec[c]),dof,self._last['fun'],red).encode('utf8')
+            return NH
+        if verbose: 
+            print 'Failed with '+ result.message
+            return None
+        raise ValueError("Failed with " + result.message)
 
-    def AMDEst(self,*components,**kwargs):
-        Iplot.init()
-        plotDict = defaultdict(int)
-        legend = []
-        result = []
-        for component in components:
-            c = str(component)
-            legend.append('Component '+c)
-            for elem in self.params[c]:
-                for ion in self.params[c][elem]:
-                    eIon = elem+'_'+ion
-                    Xi = self.probableXi(eIon)
-                    plotDict[self.xif(Xi)] += self.NH(eIon,Xi,self.params[c][elem][ion])
-            result.append(sorted(plotDict.items()))
-            Iplot.plotCurves(result[-1],chain=True,marker='o')
-        try: legend = kwargs['labels']
-        except KeyError: pass
-        Iplot.legend(*legend, bbox_to_anchor=(1.1,1.1))
-        Iplot.ylog()
-        Iplot.y.label('log $N_H 10^{18} cm^2$')
-        Iplot.x.label('log $\\xi$')
-        if len(result) == 1: return result[0]
-        return result
-
-    def ionAMDEst(self,*components):
+    def AMDEst(self,*components):
         Iplot.init()
         legend = []
         for component in components:
-            c = str(component)
+            c = component
             e = lambda ion: elem+'_'+ion
             for elem in self.params[c]:
                 legend.append(elem)
-                curve = sorted([(self.xif(self.probableXi(e(ion))),
+                curve = sorted([(self.probableXi(e(ion)),
                                     self.NH(e(ion),self.probableXi(e(ion)),self.params[c][elem][ion]))
                             for ion in self.params[c][elem]])
 
                 Iplot.plotCurves(curve,chain=True,marker='o')
-        Iplot.ylog()
+        Iplot.ylog(True)
         Iplot.legend(*legend, bbox_to_anchor=(1.1,1.1))
-        Iplot.y.label('d $N_H$')
+        Iplot.y.label('log $N_H 10^{18}$ cm$^2$')
         Iplot.x.label('log $\\xi$')
     
     def NI(self,ion,xi,NH):
-        xi = self.getXi(xi)
-        (elem,charge), = self.getIons(ion,split=True)
+        elem,charge = self.getIon(ion,split=True)
         return NH*self.fractions[xi][elem][charge]*abundances[elem]
 
     def NH(self,ion,xi,NI):
-        xi = self.getXi(xi)
-        (elem,charge), = self.getIons(ion,split=True)
+        elem,charge = self.getIon(ion,split=True)
         if type(charge) is int: charge = RomanConversion.toRoman(charge).lower()
         return NI/(self.fractions[xi][elem][charge]*abundances[elem])
    
     def probableXi(self,ion):
-        (elem,charge), = self.getIons(ion,split=True)
+        elem,charge = self.getIon(ion,split=True)
         return max(((self.fractions[xi][elem][charge],xi)
                         for xi in self.fractions))[1]
   
@@ -287,9 +328,8 @@ class AMD(object):
         charges = defaultdict(list) 
         for xi in self.fractions:
             for charge in self.fractions[xi][elem]:
-                fxi = self.xif(xi)
                 val = self.fractions[xi][elem][charge]
-                charges[charge].append((fxi,val))
+                charges[charge].append((xi,val))
         Iplot.init()
         for charge in charges:
             Iplot.plotCurves(sorted(charges[charge]),chain = True)
@@ -297,35 +337,24 @@ class AMD(object):
         for charge in charges:
             xi = self.probableXi(self.writeIon(elem,charge))
             height = self.fractions[xi][elem][charge]
-            fxi = self.xif(xi)
-            Iplot.annotate((charge,),((fxi,height),),slide=(1,1))
+            Iplot.annotate((charge,),((xi,height),),slide=(1,1))
         Iplot.x.label('log $\\xi$')
         Iplot.y.label('Ion Fraction')
         Iplot.title(elem.title())
     
-    def getIons(self,*ions, **kwargs):
-        try: split = kwargs['split']
-        except KeyError: split = False
-        for ion in ions:
-            if ion not in self.ind or split == True:
+    def getIon(self,ion,split = False):
+        if ion not in self.ind or split == True:
+            try:
                 try:
-                    try:
-                        elem,charge = ion.split('_')
-                    except ValueError:
-                        elem,charge,_ = re.split('([0-9]+)',ion)
-                        charge = RomanConversion.toRoman(int(charge)+1).lower()
-                    ion    = self.writeIon(elem,charge)
-                    if ion not in self.ind: raise ValueError
+                    elem,charge = ion.split('_')
                 except ValueError:
-                    raise KeyError('No such Ion ('+ion+')!')
-            yield (elem,charge) if split else ion
-
-    def getXi(self,xi):
-        try: 
-            xi = "%.1f"%xi
-            return 'logxi_'+xi
-        except TypeError: pass
-        return xi
+                    elem,charge,_ = re.split('([0-9]+)',ion)
+                    charge = RomanConversion.toRoman(int(charge)+1).lower()
+                ion    = self.writeIon(elem,charge)
+                if ion not in self.ind: raise ValueError
+            except ValueError:
+                raise KeyError('No such Ion ('+ion+')!')
+        return (elem,charge) if split else ion
 
     def xif(self,xi):
         return float(xi.split('_')[1])

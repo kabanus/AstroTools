@@ -163,6 +163,7 @@ class ibifit(_singleModel):
         return cs
 
     def generator(self):
+        global globalVHash, globalkTHash, globalIBIHash
         kT       = self.params['~kT']
         vturb    = self.params['~vturb']
         for ion in self.ions:
