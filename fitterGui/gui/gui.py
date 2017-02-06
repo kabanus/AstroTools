@@ -11,14 +11,17 @@ class Gui(object):
         self.parent = parent
         self.menuCommands()
         for  title,cmd, labels in (
-                ('Load'  , self.load   , ('Data','Response','Background','ASCII',
-                                          'Transmission','Remove Transmission','Session','Model')),
+                ('Load'  , self.load   , ('Data','Response','Background','Ancillary',
+                                          'ASCII','Transmission','Remove Transmission',
+                                          'Session','Model')),
                 ('Axes'  , self.setplot, ('Channel','Energy','Wavelength')),
                 ('Plot'  , self.plot,    ('Zoom','No zoom','Rebin',
                                           'Rest frame axis Z','Remove rest frame axis',
                                           'Shift data Z','Remove data Z','Model','Divide',
                                           'Label x','Label y','unLabel',
-                                          'Toggle Ion labels','Toggle effective area','Data')),
+                                          'Toggle Ion labels','Toggle effective area',
+                                          'Toggle x log','toggle y log', 
+                                          'Effective area','Data')),
                 ('Ignore', self.ignore,  ('Ignore','Reset')),
                 ('Model' , parent.loadModel, None),
                 ('Fit'   , parent.runFit, None),
@@ -43,6 +46,7 @@ class Gui(object):
         self.load    = (lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadData)),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp)), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadBack)), 
+                        lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadAncr)), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(
                             lambda fname: self.parent.fitter.loadData(fname," "))),
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
@@ -65,6 +69,9 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(self.parent.fitter.unlabelAxis),
                         lambda: ionLabeler(self.parent,u"Enter 1,2,3 (\u0251 \u03B2 \u0263)"),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.toggle_area()),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.toggleLog(0)),
+                        lambda: self.parent.doAndPlot(lambda: self.parent.fitter.toggleLog(1)),
+                        lambda: self.parent.doAndPlot(self.parent.fitter.plotEff),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.plot()))
         self.save    = (lambda: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'),
                         lambda: Save(self.parent), 

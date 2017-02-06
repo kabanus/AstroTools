@@ -66,13 +66,15 @@ if True or __name__ == "__main__":
             self.datatitle=StringVar()
             self.datatitle.set("No active model")
             self.respfile    = StringVar()
-            self.respfile.set("No response")
+            self.respfile.set("")
+            self.ancrfile    = StringVar()
+            self.ancrfile.set("")
             self.datafile    = StringVar()
-            self.datafile.set("No data")
+            self.datafile.set("")
             self.backfile    = StringVar()
-            self.backfile.set("No bg")
+            self.backfile.set("")
             self.transfile   = StringVar()
-            self.transfile.set("No transmission")
+            self.transfile.set("")
             self.paramLabels = {}
             self.ranfit      = False
             self.errors      = {}
@@ -92,7 +94,8 @@ if True or __name__ == "__main__":
                 child.configure(takefocus=False)
             Label(nav,textvar= self.datafile,padx=self.border).pack(side=LEFT)
             Label(nav,textvar= self.respfile,padx=self.border).pack(side=LEFT)
-            Label(nav,textvar=self.backfile,padx=self.border).pack(side=LEFT)
+            Label(nav,textvar= self.backfile,padx=self.border).pack(side=LEFT)
+            Label(nav,textvar= self.ancrfile,padx=self.border).pack(side=LEFT)
             Label(nav,textvar=self.transfile,padx=self.border).pack(side=LEFT)
             Gui(self,self.gui)
             self.canvas.get_tk_widget().pack( side = TOP, fill = BOTH, expand = 1) 
@@ -151,7 +154,6 @@ if True or __name__ == "__main__":
                 index = line.index(':')
                 init[line[:index]] = line[index+1:].strip('\n').strip()
 
-            done = False
             for k,action in (
                     ('data' ,lambda: self.load(self.fitter.loadData,init['data'])),
                     ('resp' ,lambda: self.load(self.fitter.loadResp,init['resp'])),
@@ -160,7 +162,6 @@ if True or __name__ == "__main__":
                 ):
                 try: 
                     if keyword is None or keyword == k:
-                        done = True
                         action()
                 except (KeyError,AttributeError): pass
 
@@ -180,6 +181,7 @@ if True or __name__ == "__main__":
                 except (KeyError,AttributeError): pass
                 except Exception as e:
                     messagebox.showerror("Failed to load session!",'Got ignore channels, but no data')
+                    if self.debug: raise
                     return
         
             if keyword is None or keyword == "model":
@@ -258,7 +260,7 @@ if True or __name__ == "__main__":
             paramFile.close
     
         def load(self, what, res = None, user = True):
-            if res == None: res = getfile('ds','dat','RMF','RSP')
+            if res == None: res = getfile('FTZ','FIT','ds','dat','RMF','RSP')
             if not res: return 
             m = runMsg(self,"Loading data")
             try: 
@@ -291,6 +293,8 @@ if True or __name__ == "__main__":
             try:  self.backfile.set('BG: ' + self.fitter.back_file.split('/')[-1]) 
             except AttributeError: pass
             try:  self.datafile.set('Data: ' + self.fitter.data_file.split('/')[-1]) 
+            except AttributeError: pass
+            try:  self.ancrfile.set('Ancillary: ' + self.fitter.ancr_file.split('/')[-1]) 
             except AttributeError: pass
 
         def getError(self, *args):

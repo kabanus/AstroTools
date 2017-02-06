@@ -14,6 +14,10 @@ def loadResp(self,resp):
     self.resp_file = resp
     self.updateIonLabels()
 
+def loadAncr(self,ancr):
+    self.resp.loadancr(ancr)
+    self.ancr_file = ancr
+
 def updateIonLabels(self, shift = None):
     self.ionlabs   = []
     ions           = iter(self.ionlocations)
@@ -40,12 +44,18 @@ def loadData(self,data, text = None):
         self.data.resp = None
     except AttributeError: pass
     self.data  = Data(data, text=text)
-    if self.data.resp is not None:
-        try: self.loadResp(self.data.resp)
-        except IOError: 
-            self.loadResp(join(dirname(data),self.data.resp))
-    elif text is not None:
+    for key in ('resp','back','ancr'):
+        if self.data.__dict__[key] is not None:
+            try: 
+                self.__class__.__dict__['load'+key.title()](self,
+                        self.data.__dict__[key])
+            except IOError: 
+                self.__class__.__dict__['load'+key.title()](self,
+                        join(dirname(data),self.data.__dict__[key]))
+    
+    if text is not None:
         self.resp  = FakeResponse(self.data.channels)
+
     self.checkLoaded()
     self.area = array(())
     try: self.untransmit()
@@ -108,10 +118,7 @@ def ignore(self, minX, maxX, noplot = False):
 
 def reset(self, zoom = True, ignore = True):
     if zoom:
-        self.xstart = None
-        self.xstop  = None
-        self.ystart = None
-        self.ystop  = None
+        self.zoomto(None,None,None,None)
     if ignore:
         for fitshandler in (self.data,self.resp):
             try:

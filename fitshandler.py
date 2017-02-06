@@ -14,6 +14,7 @@ class Response(fitsHandler):
     def __init__(self, response):
         fitsio           = fits.open(response)
         self.ebounds     = [(elow,ehigh) for _,elow,ehigh in fitsio['EBOUNDS'].data]
+        self.ebinbounds  = []
         self.ebins       = []
         self.ebinAvg     = []
 
@@ -28,6 +29,7 @@ class Response(fitsHandler):
         nchannels = fitsio['MATRIX'].header['DETCHANS']
         data = list(fitsio['MATRIX'].data)
         for record in data:
+            self.ebinbounds.append((record[elow],record[ehigh]))
             self.ebins.append(record[ehigh]-record[elow])
             self.ebinAvg.append((record[ehigh]+record[elow])/2.0)
             channel = 1
@@ -48,10 +50,39 @@ class Response(fitsHandler):
                 channel += 1
                 energies[-1].append(0)
         self.omatrix = array(energies).transpose()
-        self.oeff    = self.omatrix.sum(axis=1)
-        self.reset() 
-        self.ebins    = array(self.ebins)
-        self.ebinAvg  = array(self.ebinAvg)
+        self.calcEff()
+        self.reset()
+        self.ebins   = array(self.ebins)
+        self.ebinAvg = array(self.ebinAvg)
+
+    def calcEff(self):
+        oeff       = self.omatrix.sum(axis=0)
+        self.roeff = oeff
+        self.oeff  = oeff[argmax(self.omatrix,axis=1)]
+        return
+        self.oeff    = []
+        channel = 0
+        ebin    = 0
+        try:
+            for ebin in range(len(self.ebinbounds)):
+                minE,maxE = self.ebinbounds[ebin]
+                while self.ebounds[channel][1] < minE:
+                    self.oeff.append(0)
+                    channel += 1
+                while self.ebounds[channel][0] <= maxE: 
+                    self.oeff.append(oeff[ebin])
+                    channel += 1
+        except IndexError: pass
+        for i in range(channel,len(self.ebounds)):
+            self.oeff.append(0)
+        self.oeff = array(self.oeff)
+
+    def loadancr(self, ancr):
+        fitsio    = fits.open(ancr)
+        self.ancr = array([eff for _,_,eff in fitsio['SPECRESP'].data.tolist()])
+        self.omatrix *= self.ancr
+        self.calcEff()
+        self.reset()
 
     def ignore(self, channels):
         self.deleted.update([c-1 for c in channels if c > 0 and c <= len(self.omatrix)])
@@ -62,6 +93,7 @@ class Response(fitsHandler):
         self.deleted = set()
         self.matrix  = array(self.omatrix,copy=True)
         self.eff     = array(self.oeff,copy=True)
+        self.reff    = array(self.roeff,copy=True)
 
     def convolve_channels(self,vector):
         return dot(self.matrix,vector*self.ebins)
@@ -152,6 +184,8 @@ class Data(fitsHandler):
         self.obscales   = []
         self.grouping   = 1
         self.resp       = None
+        self.ancr       = None
+        self.back       = None
         self.background = None
 
         if text is None:
@@ -163,6 +197,8 @@ class Data(fitsHandler):
         self.ocounts    = array(self.ocounts)
         self.oscales    = array(self.oscales)
         self.obscales   = array(self.obscales)
+        if self.ochannels[0] == 0:
+            self.ochannels += 1
         self.reset()
 
         if background is not None:
@@ -174,14 +210,13 @@ class Data(fitsHandler):
         h               = fitsio[1].header
         self.exposure   = h['EXPOSURE']
         self.asciiflag  = False
-        try:
-            if h['RESPFILE'].lower() != 'none':
-                self.resp   = h['RESPFILE']
-        except KeyError: pass
-        try:
-            if h['BACKFILE'].lower() != 'none':
-                background = h['BACKFILE']
-        except KeyError: pass
+
+        for key in ('RESPFILE','BACKFILE','ANCRFILE'):
+            try:
+                if h[key] != 'none':
+                    self.__dict__[key[:4].lower()] = h[key]
+            except KeyError: pass
+        
         CHANNEL = "CHANNEL"
         COUNTS  = "COUNTS"
         QUALITY = "QUALITY"
@@ -204,7 +239,7 @@ class Data(fitsHandler):
                 bscale = scale = 1.0
                 try:
                     scale   = record[AREASCAL]
-                    bscale   = record[BACKSCAL]
+                    bscale  = record[BACKSCAL]
                 except KeyError: pass
                 self.ocounts.append(counts)
                 self.oscales.append(scale)
@@ -282,9 +317,9 @@ class Data(fitsHandler):
     def bscale(self, eff = 1):
         back = self.background
         try:
-            return (back.bscale/self.bscale)*back.scale*back.exposure*eff*self.transmission
+            return (back.bscales/self.bscales)*back.scales*back.exposure*eff*self.transmission
         except AttributeError:
-            return (back.bscale/self.bscale)*back.scale*back.exposure*eff
+            return (back.bscales/self.bscales)*back.scales*back.exposure*eff
 
     def loadback(self,background,text = None):
         back = Data(background,text=text)
@@ -355,6 +390,7 @@ class Data(fitsHandler):
         self.channels  = delete(self.ochannels ,list(self.deleted),axis = 0)
         self.counts    = delete(self.ocounts   ,list(self.deleted),axis = 0)
         self.scales    = delete(self.oscales   ,list(self.deleted),axis = 0)
+        self.bscales   = delete(self.obscales  ,list(self.deleted),axis = 0)
         try:
             self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
         except AttributeError: pass

@@ -1,7 +1,7 @@
-
 from model import _singleModel,modelExport
 from collections import OrderedDict
 from interpolations import linear
+from numpy import exp,sin,cos,tan
 
 keVAfac = 12.39842
 class simple(_singleModel):
@@ -21,7 +21,7 @@ class Function(simple):
             raise self.paramsMustBeDict()
         self.params = params
         self.expression = expression
-        exec('self.func = lambda x,'+','.join(params.keys())+': '+expression)
+        exec('self.func = lambda x,'+','.join(params.keys())+': '+expression) in dict(locals(), **globals())
    
     def __call__(self,x):
         return self.func(x,**self.params)
@@ -40,18 +40,26 @@ class powerlaw(Function):
     description = 'Energy powerlaw'
     def __init__(self):
         Function.__init__(self,"K*x**-a",{'K':1,'a':2})
+    def sethook(self,param,val):
+        if self.params['K'] < 0: self.params['K'] = 0
 
 @modelExport
 class alorentz(Function):
     description = "Lorentzian centered in Angstrom"
     def __init__(self):
         Function.__init__(self,"norm/(pi*g*(1+((keVAfac/x-center)/g)**2))",{'norm':0,'g':1,'center':1})
+    def sethook(self,param,val):
+        if self.params['norm'] < 0: self.params['norm'] = 0
 
+@modelExport
 class bbody(Function):
     description = 'Blackbody'
-    def __init__(self):
-        dE = str(0.03)
-        Function.__init__(self,"(N*8.0525*x**2*"+dE+")/(kT**4*(exp(x/kT)-1))",{'N':1,'kT':0.5})
+    def __init__(self,energyGrid):
+        self.dE = energyGrid
+        Function.__init__(self,"(N*8.0525*x**2*self.dE)/(kT**4*(exp(x/kT)-1))",{'N':1,'kT':0.5})
+    def sethook(self,param,val):
+        if self.params['N'] < 0: self.params['N'] = 0
+        if self.params['kT'] < 0: self.params['kT'] = 0
 
 @modelExport
 class Table(simple):

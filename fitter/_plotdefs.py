@@ -31,14 +31,17 @@ def loadIonPositions(self):
                          ions[ion].l                 + ions[ion].e)]
             for ion in ions],[]))
 
-def zoomto(self, xstart = None, xstop = None, ystart = None, ystop = None):
+def toggleLog(self,axis):
+    if axis == 0: Iplot.xlog()
+    if axis == 1: Iplot.ylog()
+
+def zoomto(self, xstart = None, xstop = None, ystart = 0, ystop = None):
     self.xstart = xstart
     self.xstop  = xstop
     self.ystart = ystart
     self.ystop  = ystop
     Iplot.x.resize(self.xstart,self.xstop)
     Iplot.y.resize(self.ystart,self.ystop)
-    self.plot(user=False)
 
 def rebin(self, count):
     self.binfactor = count
@@ -134,6 +137,12 @@ def plotModel(self,start = None,stop = None,delta = None):
     self.plotmodel = zip(energies,model)
     self.plot(user = False)
 
+def plotEff(self):
+    Iplot.clearPlots()
+    Iplot.plotCurves(zip(self.resp.ebinAvg,self.resp.reff))
+    Iplot.x.label('KeV')
+    Iplot.y.label('cm$^2$')
+
 def plotDiv(self, other = None):
     if other != None: self.div(other)
     self.plotmodel = self.division
@@ -159,7 +168,7 @@ def _plotOrSave(save = None,model = None, data = None):
         fd.close()
 
 def plot(self, save = None, user = True, keepannotations = False):
-    Iplot.clearPlots(keepannotations=keepannotations)
+    Iplot.clearPlots(keepannotations=keepannotations,keepscale = True)
     model = None
     if not user and self.plotmodel:
         model = self.plotmodel

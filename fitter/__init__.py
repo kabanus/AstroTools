@@ -29,13 +29,18 @@ class Fitter(object):
     from _datadefs import dataResponseMismatch, noIgnoreBeforeLoad
     from _modeling import NotAModel
     from _error    import errorNotConverging, newBestFitFound
-    from _plotdefs import badPlotType, badZoomRange, labelAxis, unlabelAxis, toggleIonLabels
+    from _plotdefs import badPlotType, badZoomRange, labelAxis,toggleLog
+    from _plotdefs import unlabelAxis, toggleIonLabels, plotEff
 
     #Methods
-    from _datadefs import loadResp, loadData, loadBack, checkLoaded, transmit, ignore, reset, untransmit, div, group, updateIonLabels
-    from _modeling import chisq,reduced_chisq,append,delete,activate,nameModel,energies,tofit,fit
+    from _datadefs import loadResp, loadData, loadBack, loadAncr
+    from _datadefs import checkLoaded, transmit, ignore, reset
+    from _datadefs import untransmit, div, group, updateIonLabels
+    from _modeling import chisq,reduced_chisq,append,delete
+    from _modeling import activate,nameModel,energies,tofit,fit
     from _error    import error
-    from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift,initplot,plotModel, plotDiv, toggle_area
+    from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift
+    from _plotdefs import initplot,plotModel, plotDiv, toggle_area
 
     #utility
     @staticmethod

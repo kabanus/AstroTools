@@ -106,7 +106,7 @@ for m in models.exported:
     exec(m+' = MODELS["'+m+'"][1]')
 
 PARAMS = {'Table' : lambda: '"'+getfile()+'"', 'function': lambda: getFunc().activate(),
-          'Xspec' : lambda: XspecLoader().activate()}
+          'Xspec' : lambda: XspecLoader().activate(),'bbody': lambda :'self.parent.fitter.resp.ebinAvg'}
 PARAMNAMES  = {'Table' : ('file'), 'function': ('expression'), 'Xspec' : 'XSPEC model'}
 class modelReader(object):
     def __init__(self,parent,gui = True):
@@ -225,7 +225,16 @@ class modelReader(object):
                     model = model[:padded+p.end()] + args + model[padded+p.end():]
                     padded += len(args)
             exec('model = ' + model)
-        except TypeError: return
+        except TypeError:
+            messagebox.showerror("Failed to build model!","Perhaps you forgot '*' for multiplication?")
+            if self.parent.debug: raise
+            return
+        except AttributeError as e:
+            first = e.message.split()[0]
+            if first != "'Fitter'": return
+            messagebox.showerror("Failed to build model!","Can't use bbody without loaded response!")
+            if self.parent.debug: raise
+            return
         except Exception as e:
             messagebox.showerror("Failed to build model!",str(e)+'\n\nFinal model attempted to execute: '+model)
             if self.parent.debug: raise
