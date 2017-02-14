@@ -11,15 +11,15 @@ class ArgLess(object):
         self()
         return ''
 
-def printlist(lst, width = None):
+def printlist(lst, width = None, delim = "\n"):
     try:
         if width is not None:
             form = ('{:<'+str(width)+'}')*len(lst[0])
-            print "\n".join(form.format(*y) for y in lst)
+            print delim.join(form.format(*y) for y in lst)
         else: 
-            print "\n".join((" ".join((str(x) for x in y)) for y in lst))
+            print delim.join((" ".join((str(x) for x in y)) for y in lst))
     except TypeError:
-        print "\n".join((str(y) for y in lst))
+        print delim.join((str(y) for y in lst))
 
 def printfunc(func):
     print ''.join(getsourcelines(func)[0])
