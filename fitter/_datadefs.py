@@ -50,8 +50,10 @@ def loadData(self,data, text = None):
                 self.__class__.__dict__['load'+key.title()](self,
                         self.data.__dict__[key])
             except IOError: 
-                self.__class__.__dict__['load'+key.title()](self,
+                try: self.__class__.__dict__['load'+key.title()](self,
                         join(dirname(data),self.data.__dict__[key]))
+                except ValueError: pass
+            except ValueError: pass
     
     if text is not None:
         self.resp  = FakeResponse(self.data.channels)

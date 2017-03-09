@@ -130,7 +130,7 @@ class AMD(object):
             self.xilist[c] = [sBin] + self.xilist[c] + [fBin]
             self.dxilist[c]= array([0] + [(self.xilist[c][i+1]-self.xilist[c][i-1])/2.0 
                             for i in range(1,len(self.xilist[c])-1)] + [0])
-            self._cMat[c]  = zeros(shape=(len([_ for v in self.nhMaps[c].values() if v]),len(self.xilist[c])))
+            self._cMat[c]  = zeros(shape=(len([0 for v in self.nhMaps[c].values() if v]),len(self.xilist[c])))
             self._rVec[c]  = list()
             self._eVec[c]  = list()
             row = 0           
@@ -228,6 +228,8 @@ class AMD(object):
                 self._last  = last
                 self._error = lasterr
             errors.append(res)
+        if not errors:
+            return "No index to calculate error on given!"
         return errors if len(errors) > 1 else errors[0]
         
     def AMDQuality(self,nh,c,estimate = None,add = None):
@@ -277,7 +279,7 @@ class AMD(object):
                 Iplot.plotCurves(toplot,marker='o')
                 Iplot.ylog(True)
                 Iplot.x.label('log $\\xi$')
-                Iplot.y.label('$N_H$ $10^{18}$ cm$^2$')
+                Iplot.y.label('$N_H$ $10^{18}$ cm$^2$ (log $\\xi$)$^{-1}$')
             dof = len(self._rVec[c])-len(guess)
             red = self._last['fun']/dof
             self._last.dof  = dof
@@ -292,18 +294,25 @@ class AMD(object):
             return None
         raise ValueError("Failed with " + result.message)
 
-    def AMDEst(self,*components):
+    def AMDEst(self,*components, **kwargs):
         Iplot.init()
         legend = []
+        try: errors = kwargs['errors']
+        except KeyError: errors = False
         for component in components:
             c = component
             e = lambda ion: elem+'_'+ion
             for elem in self.params[c]:
                 legend.append(elem)
-                curve = sorted([(self.probableXi(e(ion)),
+                if errors:
+                    curve = sorted([(self.probableXi(e(ion)),
+                                    self.NH(e(ion),self.probableXi(e(ion)),self.params[c][elem][ion]),
+                                    self.NH(e(ion),self.probableXi(e(ion)),self.errors[c][e(ion)]))
+                            for ion in self.params[c][elem]])
+                else:
+                    curve = sorted([(self.probableXi(e(ion)),
                                     self.NH(e(ion),self.probableXi(e(ion)),self.params[c][elem][ion]))
                             for ion in self.params[c][elem]])
-
                 Iplot.plotCurves(curve,chain=True,marker='o')
         Iplot.ylog(True)
         Iplot.legend(*legend, bbox_to_anchor=(1.1,1.1))

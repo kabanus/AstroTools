@@ -15,8 +15,11 @@ try:
             _singleModel.__init__(self)
             self.model    = xspec.Model(modelString,str(Xspec.modelCounter))
             self.plot     = xspec.plot.Plot
-            self.params   = OrderedDict(((str(i)+':'+self.model(i).name,self.model(i).values[0]) 
+           
+            self.params   = dict(((str(i)+':'+self.model(i).name,self.model(i).values[0]) 
                                     for i in range(1,self.model.nParameters+1)))
+            params        = [str(i)+':'+self.model(i).name for i in range(1,self.model.nParameters+1)]
+            self.paramMap = map(lambda x: self.params.keys().index(x),params)
             self.energies = ()
             self.efile    = 'fitterModel.Energies'
             self.plot('model')
@@ -56,7 +59,8 @@ try:
             return self.ehash
 
         def sethook(self, index, key):
-            self.model.setPars(*[self.params[k] for k in self.params])
+            values = [x.val for x in self.params.values()]
+            self.model.setPars(*[values[k] for k in self.paramMap])
     
         def __str__(self):
             return 'Xspec("'+self.string+'")'

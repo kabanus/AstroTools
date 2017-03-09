@@ -7,6 +7,7 @@ from numpy             import array,dot,inf,delete,sort,zeros
 from numpy             import unravel_index,argmax,isnan,ones,fromfile
 from itertools         import izip
 from matplotlib.pyplot import show,figure
+import re
 
 class fitsHandler(object): pass
 
@@ -250,9 +251,9 @@ class Data(fitsHandler):
         self.errorarray = []
         with open(fname) as data:
             for line in data:
+                line = re.split(delimiter+"+",line.strip())
                 self.oscales.append(1.0)
                 self.obscales.append(1.0)
-                line = line.split(delimiter)
                 self.ochannels.append(float(line[0]))
                 self.ocounts.append(float(line[1]))
                 self.errorarray.append(float(line[2]))

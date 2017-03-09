@@ -60,7 +60,8 @@ def setplot(self, plotType,plot = False):
     if plotType not in [self.ENERGY, self.CHANNEL, self.WAVE]: 
         raise self.badPlotType(plotType)
     self.ptype = plotType
-    self.ionlabs.sort(key = lambda x: x[plotType])
+    try: self.ionlabs.sort(key = lambda x: x[plotType])
+    except AttributeError: pass
     self.plot(user = False)
     shifter = _embedz(self.axisz,self.ptype)
     if shifter is not None: Iplot.secondAxis(shifter)
@@ -201,7 +202,14 @@ def plot(self, save = None, user = True, keepannotations = False):
             if self.ptype == self.WAVE:   model = list(self.resp.wl(model,True))
             if self.ptype == self.ENERGY: model = list(self.resp.energy(model,True))
         else:
-            self.ptype = self.ENERGY
+            if self.ptype == self.CHANNEL: self.ptype = self.ENERGY
+            if self.ptype == self.WAVE:
+                amodel = []
+                for i in range(len(model)-1):
+                    dE = abs(model[i+1][0]-model[i][0])
+                    C  = model[i][1]
+                    amodel.append((keVAfac/model[i][0], model[i][1]**2*C/keVAfac))
+                model = amodel
         _plotOrSave(save,model=model)
     if save is not None: return
 
