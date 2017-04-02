@@ -1,23 +1,60 @@
 from astropy.io        import fits
 from astropy.table     import Table
+from numpy             import __dict__ as npdict
 from numpy             import int    as ndint
 from numpy             import max    as ndmax
 from numpy             import append as ndappend
-from numpy             import array,dot,inf,delete,sort,zeros
+from numpy             import concatenate as ndconc
+from numpy             import array,dot,inf,delete,sort,zeros,where,arange
 from numpy             import unravel_index,argmax,isnan,ones,fromfile
 from itertools         import izip
 from matplotlib.pyplot import show,figure
 import re
 
-class fitsHandler(object): pass
+class fitsHandler(object):
+    def group(self,binfactor = None,reset = True):
+        if reset:
+            self.reset()
+        if binfactor: 
+            self.grouping = binfactor
+
+    @staticmethod
+    def rebin(model,binfactor,scale = lambda: 1):
+        res = model/scale()
+        res[isnan(res)] = 0
+        res = fitsHandler.ndrebin(res,binfactor)
+        return res
+
+    @staticmethod
+    def ndrebin(arr, rebin, function = 'mean'):
+        if rebin <= 1: return arr
+        start = arr[:(arr.shape[0]/rebin)*rebin].reshape(arr.shape[0]//rebin,-1,*arr.shape[1:])
+        final = arr[(arr.shape[0]/rebin)*rebin:]
+        
+        arr = npdict[function](start,axis=1)
+        if final.any():
+            arr = ndappend(arr,npdict[function](final,axis=0))
+        return arr
+    
+    @staticmethod
+    def padgrouped(vector, binfactor):
+        res = [] 
+        for line in vector:
+            count = 1
+            res.append(line)
+            while count < binfactor:
+                res.append(line)
+                count += 1
+        return res
 
 class Response(fitsHandler):
     def __init__(self, response):
         fitsio           = fits.open(response)
-        self.ebounds     = [(elow,ehigh) for _,elow,ehigh in fitsio['EBOUNDS'].data]
-        self.ebinbounds  = []
+        self.ominebounds = array(list(fitsio['EBOUNDS'].data))[:,1]
+        self.omaxebounds = array(list(fitsio['EBOUNDS'].data))[:,2]
         self.ebins       = []
         self.ebinAvg     = []
+        self.grouping    = 1
 
         elow  = 0
         ehigh = 1
@@ -30,7 +67,6 @@ class Response(fitsHandler):
         nchannels = fitsio['MATRIX'].header['DETCHANS']
         data = list(fitsio['MATRIX'].data)
         for record in data:
-            self.ebinbounds.append((record[elow],record[ehigh]))
             self.ebins.append(record[ehigh]-record[elow])
             self.ebinAvg.append((record[ehigh]+record[elow])/2.0)
             channel = 1
@@ -60,106 +96,87 @@ class Response(fitsHandler):
         oeff       = self.omatrix.sum(axis=0)
         self.roeff = oeff
         self.oeff  = oeff[argmax(self.omatrix,axis=1)]
-        return
-        self.oeff    = []
-        channel = 0
-        ebin    = 0
-        try:
-            for ebin in range(len(self.ebinbounds)):
-                minE,maxE = self.ebinbounds[ebin]
-                while self.ebounds[channel][1] < minE:
-                    self.oeff.append(0)
-                    channel += 1
-                while self.ebounds[channel][0] <= maxE: 
-                    self.oeff.append(oeff[ebin])
-                    channel += 1
-        except IndexError: pass
-        for i in range(channel,len(self.ebounds)):
-            self.oeff.append(0)
-        self.oeff = array(self.oeff)
-
-    def loadancr(self, ancr):
-        fitsio    = fits.open(ancr)
-        self.ancr = array([eff for _,_,eff in fitsio['SPECRESP'].data.tolist()])
-        self.omatrix *= self.ancr
-        self.calcEff()
-        self.reset()
 
     def ignore(self, channels):
-        self.deleted.update([c-1 for c in channels if c > 0 and c <= len(self.omatrix)])
-        self.matrix = delete(self.omatrix,list(self.deleted), axis = 0)
-        self.eff    = delete(self.oeff,list(self.deleted))
+        self.group(self.grouping,reset = False)
+        self.deleted.update([c-1 for c in channels if c > 0 and c <= len(self.matrix)])
+        self.matrix     = delete(self.matrix     ,list(self.deleted), axis = 0)
+        self.eff        = delete(self.eff        ,list(self.deleted))
+        #self.minebounds = delete(self.minebounds,list(self.deleted))
+        #self.maxebounds = delete(self.maxebounds,list(self.deleted))
 
     def reset(self):
-        self.deleted = set()
-        self.matrix  = array(self.omatrix,copy=True)
-        self.eff     = array(self.oeff,copy=True)
-        self.reff    = array(self.roeff,copy=True)
+        self.deleted    = set()
+        self.matrix     = array(self.omatrix,copy=True)
+        self.eff        = array(self.oeff,copy=True)
+        self.reff       = array(self.roeff,copy=True)
+        self.minebounds = self.ominebounds.copy()
+        self.maxebounds = self.omaxebounds.copy()
+
+    def group(self, binfactor = None, reset = True):
+        fitsHandler.group(self,binfactor,reset)
+        self.matrix     = fitsHandler.ndrebin(self.omatrix,self.grouping,'sum')
+        self.eff        = fitsHandler.ndrebin(self.oeff,self.grouping,'sum')
+        self.minebounds = fitsHandler.ndrebin(self.ominebounds,self.grouping,'min')
+        self.maxebounds = fitsHandler.ndrebin(self.omaxebounds,self.grouping,'max')
 
     def convolve_channels(self,vector):
         return dot(self.matrix,vector*self.ebins)
 
-    def _to_channel(self, minX, maxX, to = lambda x: x):
-        for channel in range(len(self.omatrix)):
-            e0,e1  = self.ebounds[channel]
-            if not e0 or not e1:
-                yield 0
-                continue
-            energy = (e0+e1)/2.0
-            x0 = min(to(e0),to(e1))
-            x1 = max(to(e0),to(e1))
-            if minX == maxX:
-                if x0 <= minX and x1 >= minX:
-                    yield channel + 1
-            else:
-                if x0 <= maxX and x1 >= minX:
-                    yield channel + 1
+    def _to_channel(self, minX, maxX):
+        minE = self.minebounds
+        maxE = self.maxebounds
+        if minX == maxX:
+            res = where((minX > minE) & (minX <= maxE))[0]
+        else:
+            res = where((minX <= maxE) & (maxX > minE))[0]
+        return res+1
     
     keVAfac = 12.39842
     def wl_to_channel(self,minX,maxX):
-        return self._to_channel(minX,maxX,lambda x: self.keVAfac/x)
+        newMax = self.keVAfac/minX if minX else inf
+        return self._to_channel(self.keVAfac/maxX,newMax)
     def energy_to_channel(self,minX,maxX):
         return self._to_channel(minX,maxX)
 
     def energy(self,table = None, xonly = False):
-        for row in table:
-            if len(row) == 2:
-                channel,count = row
-            else:
-                channel,count,error = row
-            channel = int(channel - 1)
-            energy = (self.ebounds[channel][1]+self.ebounds[channel][0])/2.0
-            eerror = (self.ebounds[channel][1]-self.ebounds[channel][0])
-            if xonly:
-                if len(row) > 2: 
-                    yield [energy,eerror,count,error]
-                else: yield [energy,count]
-                continue
-            cts    = count/eerror
-            if len(row) > 2: 
-                error  = error/eerror
-                yield [energy,eerror,cts,error]
-            else:
-                yield [energy,cts]
+        try: 
+            return ((self.maxebounds+self.minebounds)*0.5)[int(table)-1]
+        except IndexError:
+            return ((self.maxebounds+self.minebounds)*0.5)[-1]
+        except TypeError: pass
+     
+        channels = table[:,0].astype('int16')-1
+        energy   = ((self.maxebounds+self.minebounds)*0.5)[channels].reshape(-1,1)
+        eerror   = (self.maxebounds-self.minebounds)[channels].reshape(-1,1)
+        if xonly:
+            if len(table[0]) > 2:
+                return ndconc((energy,eerror,table[:,1:]),axis=1)
+            return ndappend(energy,table[:,1:2],axis=1)
+
+        cts = table[:,1:2]/eerror
+        if len(table[0]) > 2:
+            error = (table[:,2:3]/eerror)
+            return ndconc((energy,eerror,cts,error),axis=1)
+        return ndappend(energy,cts,axis=1)
 
     def wl(self, table, xonly = False):
-        for row in self.energy(table, xonly):
-            row = list(row)
-            E  = row[0]
-            dltodE = self.keVAfac/E**2
-            row[0] = self.keVAfac/E
-            if xonly:
-                if len(row) == 4:
-                    row[1] = dltodE*row[1] #dl
-                yield row
-                continue
-            if len(row) == 4:
-                row[1] = dltodE*row[1] #dl
-                row[2] = row[2]/dltodE
-                row[3] = row[3]/dltodE
-                yield row
-            else:
-                yield [row[0],row[1]/dltodE]
+        wave      = self.energy(table,xonly)
+        try: return self.keVAfac/float(wave)
+        except TypeError: pass
+        E         = wave[:,0]
+        dltodE    = self.keVAfac/E**2
+        wave[:,0] = self.keVAfac/E
+        if xonly:
+            if len(wave[0]) == 4:
+                wave[:,1] *= dltodE
+            return wave
+        if len(wave[0]) == 4:
+            wave[:,1]  *= dltodE #dl
+            wave[:,2:] /= dltodE.reshape(-1,1)
+            return wave 
+        wave[:,1] /= dltodE
+        return wave
 
 class FakeResponse(object):
     def __init__(self,axis):
@@ -260,33 +277,13 @@ class Data(fitsHandler):
         self.errorarray = array(self.errorarray)
         self.errors = lambda rebin=1,_=1,x=self.errorarray: Data.ndrebin(x,rebin)
 
-    @staticmethod
-    def rebin(model,binfactor,scale = lambda: 1):
-        res = model/scale()
-        res[isnan(res)] = 0
-        res = Data.ndrebin(res,binfactor)
-        return res
-
-    @staticmethod
-    def ndrebin(arr, rebin, sumit = False):
-        if rebin <= 1: return arr
-        start = arr[:(arr.shape[0]/rebin)*rebin].reshape(arr.shape[0]//rebin,-1)
-        final = arr[(arr.shape[0]/rebin)*rebin:]
-        if not sumit:
-            arr = start.mean(1)
-            if final.any():
-                arr = ndappend(arr,final.mean())
-        else:
-            arr = start.sum(1)
-            if final.any():
-                arr = ndappend(arr,final.sum())
-        return arr
-
     def getPlot(self,rebin = 1, eff = 1):
-        return zip(Data.ndrebin(self.channels,rebin),
-                   self.cts(rebin,eff),self.errors(rebin,eff))
+        return ndconc((
+                   Data.ndrebin(self.channels,rebin).reshape(-1,1),
+                   self.cts(rebin,eff),
+                   self.errors(rebin,eff)),axis=1)
 
-    def cts(self,rebin = 1,eff = 1):
+    def cts(self,rebin = 1,eff = 1, row = False):
         if self.background is None:
             cts = self.counts/self.scale(eff)
         else:
@@ -295,19 +292,19 @@ class Data(fitsHandler):
                    back.counts/self.bscale(eff))
         cts[isnan(cts)] = 0
         cts = Data.ndrebin(cts,rebin)
-        return cts
+        return cts if row else cts.reshape(-1,1)
 
-    def errors(self,rebin = 1,eff = 1):
-        counts = Data.ndrebin(self.counts,rebin,sumit = True)
+    def errors(self,rebin = 1,eff = 1, row = False):
+        counts = Data.ndrebin(self.counts,rebin,'sum')
         if self.background is None:
-            error = counts**0.5/Data.ndrebin(self.scale(eff),rebin,sumit = True)
+            error = counts**0.5/Data.ndrebin(self.scale(eff),rebin,'sum')
         else:
             back    = self.background
-            bcounts = Data.ndrebin(back.counts,rebin, sumit = True)
-            error   = ( counts/Data.ndrebin(self. scale(eff),rebin,sumit=True)**2+
-                       bcounts/Data.ndrebin(self.bscale(eff),rebin,sumit=True)**2)**0.5
+            bcounts = Data.ndrebin(back.counts,rebin,'sum')
+            error   = ( counts/Data.ndrebin(self. scale(eff),rebin,'sum')**2+
+                       bcounts/Data.ndrebin(self.bscale(eff),rebin,'sum')**2)**0.5
         error[isnan(error)] = inf
-        return error
+        return error if row else error.reshape(-1,1)
 
     def scale(self, eff = 1):
         try:
@@ -322,27 +319,14 @@ class Data(fitsHandler):
         except AttributeError:
             return (back.bscales/self.bscales)*back.scales*back.exposure*eff
 
-    def loadback(self,background,text = None):
+    def loadback(self,background = None,text = None):
+        if background is None: background = self.back
         back = Data(background,text=text)
         if self.deleted:
             back.ignore([c+1 for c in self.deleted])
         if len(back) != len(self):
             raise Data.lengthMismatch("Got "+str(background)+" with length "+str(len(back))+".")
         self.background = back
-
-    def group(self,binfactor):
-        self.grouping = binfactor
-
-    @staticmethod
-    def padgrouped(vector, binfactor):
-        res = [] 
-        for line in vector:
-            count = 1
-            res.append(line)
-            while count < binfactor:
-                res.append(line)
-                count += 1
-        return res
 
     def __len__(self):
         return len(self.channels)
@@ -384,14 +368,28 @@ class Data(fitsHandler):
         if self.background != None:
             self.background.reset()
 
+    def group(self, binfactor = None, reset = True):
+        fitsHandler.group(self,binfactor,reset)
+        self.channels = arange(len(self.ochannels)//self.grouping+
+                              (len(self.ochannels)% self.grouping>0))+1
+        self.counts   = fitsHandler.ndrebin(self.ocounts,self.grouping,'sum')
+        self.scales   = fitsHandler.ndrebin(self.oscales ,self.grouping,'mean')
+        self.bscales  = fitsHandler.ndrebin(self.obscales,self.grouping,'mean')
+        try:
+            self.transmission  = fitsHandler.ndrebin(self.otransmission,self.grouping,'mean')
+        except AttributeError: pass
+        if self.background != None:
+            self.background.group(self.grouping,reset)
+
     def ignore(self,channels):
         if self.asciiflag:
             raise NotImplementedError("Can't ignore when using a text file as data.")
-        self.deleted.update((c-1 for c in channels if c >= self.ochannels[0] and c <= self.ochannels[-1]))
-        self.channels  = delete(self.ochannels ,list(self.deleted),axis = 0)
-        self.counts    = delete(self.ocounts   ,list(self.deleted),axis = 0)
-        self.scales    = delete(self.oscales   ,list(self.deleted),axis = 0)
-        self.bscales   = delete(self.obscales  ,list(self.deleted),axis = 0)
+        self.group(self.grouping,reset = False)
+        self.deleted.update((c-1 for c in channels if c >= self.channels[0] and c <= self.channels[-1]))
+        self.channels  = delete(self.channels ,list(self.deleted),axis = 0)
+        self.counts    = delete(self.counts   ,list(self.deleted),axis = 0)
+        self.scales    = delete(self.scales   ,list(self.deleted),axis = 0)
+        self.bscales   = delete(self.bscales  ,list(self.deleted),axis = 0)
         try:
             self.transmission  = delete(self.otransmission, list(self.deleted),axis = 0)
         except AttributeError: pass

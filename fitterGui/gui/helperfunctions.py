@@ -25,6 +25,7 @@ def make_frames(self):
     self.info_frame.grid(row=1,column=2,sticky=ALL)
     Label(self.info_frame, textvariable = self.statistic, font = ('courier',12,'bold'),wraplength=370,bg='aliceblue',anchor=W).pack(fill=BOTH,side = TOP)
     Label(self.info_frame, textvariable = self.ignored, font = ('courier',12,'bold'),wraplength=370,bg='aliceblue',anchor=W).pack(fill=BOTH,side = TOP)
+    Label(self.info_frame, textvariable = self.grouped, font = ('courier',12,'bold'),wraplength=370,bg='aliceblue',anchor=W).pack(fill=BOTH,side = TOP)
 
     self.data_frame = Frame(self.root)
     self.data_frame.grid( row = 0, column = 2, sticky = ALL  )

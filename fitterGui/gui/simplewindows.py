@@ -69,7 +69,7 @@ class Help(ScrollingCanvas):
         self.helplabel("Plot         : Plot options that do not affect fit such as persistent zoom, rebin and second Z axis or data shift. "+
                        "In addition can plot data divided by other data, or divide out effective area.")
         self.helplabel("Ignore       : Ignore channels in fitting and plotting, or reset to all.")
-        self.helplabel("Axis         : Plot counts as function of energy,wavelength or channel.")
+        self.helplabel("Axis         : Plot counts as function of energy, wavelength, or channel.")
         self.helplabel("Calculate    : Calculate and plot model with given parameters, and errors on parameters. Grouping here bins the data so the fit and division by other data is affected.")
         self.helplabel("Fit          : Go ahead and guess.")
         self.helplabel("Model        : Model selection - see syntax inside.")
@@ -84,11 +84,12 @@ class Help(ScrollingCanvas):
         self.helplabel(u"3. The current \u03C7\u00B2/d.o.f and ignored channels in the current axis' units.\n\n","   ")
         self.helplabel("Right clicking gives some options such as hiding/showing frozen parameters and hiding the "+
                        "window all together. Ctrl-F allows jumping to parameters if list is long, format is index:param.","")
+        self.helplabel("\n")
 
         self.helplabel("Errors","",16)
-        self.helplabel("Errors will be appear once a fit is perfomed - initial values, marked in a redish tint, "+
+        self.helplabel("Errors will be appear once a fit is performed - initial values, marked in a redish tint, "+
                        "and appearing on a raised button are the standard error, and shouldn't be quoted in anything." + 
-                       u"Once a fit is performed you can press these buttons on thawed parameters to compute the \u03C7\u00B2 "+
+                       u"Once a fit is performed you can press these buttons to compute the \u03C7\u00B2 "+
                        "based proper errors, though this may take a while depending on the amount of thawed parameters."+
                        " Once this is done the errors will be black and the button flattened (until you change "+
                        "somthing/fit). Note if a new best fit is found this will reflect in the parameter window.\n\n","")
@@ -102,10 +103,14 @@ class Help(ScrollingCanvas):
                         "while frozen are hidden will not make it appear, and freezing won't make a parameter disappear, "
                         "use the show thawed/hide frozen right clicks to refresh this.\n\n","")
         
+        self.helplabel("Important notes","",16)
+        self.helplabel("1. When saving session note you should leave parameters you want to focus on on load thawed.","")
+        self.helplabel("\n")
+        
         self.helplabel("Useful shortcuts (middle click plot area to get keyboard focus):", "",16)
         self.helplabel("C,W,A  : Channel, wavelength, energy on axes.", "")
         self.helplabel("d,r,t,b: Load data/response/transmission/background.", "")
-        self.helplabel("R,i,z  : Rebin/ignore/zoom.", "")
+        self.helplabel("R,G,i,z: Rebin/group/ignore/zoom.", "")
         self.helplabel("m,F,s  : Load model/fit/save parameters.", "")
         self.helplabel("L,S:   : Load/Save fitting session.", "")
         self.helplabel("c      : Switch to commandline.", "")

@@ -60,14 +60,21 @@ class zReader(entryWindow):
         self.root.destroy()
 
 class rebinReader(entryWindow):
-    def __init__(self, parent, group = False):
-        try: entryWindow.__init__(self,parent,'data',"rebinner","Rebin")
+    def __init__(self, parent, group = False, gui = True):
+        if not gui:
+            self.parent = parent
+            return
+        rebin = "Group" if group else "Rebin"
+        try: entryWindow.__init__(self,parent,'data',"rebinner",rebin)
         except AttributeError: return
         self.group = group
     
     def parse(self, event):
         try: 
-            res = int(self.entry.get())
+            try:
+                res = int(self.entry.get())
+            except AttributeError:
+                res = int(event)
             if res < 1: raise ValueError()
         except ValueError:
             messagebox.showerror('Bad rebin!', 'Only positive (>=1) integer please')
@@ -75,7 +82,9 @@ class rebinReader(entryWindow):
         if not self.group:
             self.parent.doAndPlot(lambda: self.parent.fitter.rebin(res))
         else:
+            self.parent.resetIgnore()
             self.parent.doAndPlot(lambda: self.parent.fitter.group(res))
+            self.parent.grouped.set("Grouped: "+str(self.parent.fitter.data.grouping))
         self.root.destroy()
 
 class ignoreReader(entryWindow):
@@ -106,9 +115,12 @@ class ignoreReader(entryWindow):
                         start,stop = [int(x) for x in rng.split('-')]
                     else:
                         start,stop = [float(x) for x in rng.split('-')]
+                if start > stop: 
+                    messagebox.showerror('Failed to ignore!', 'Start value larger then stop!')
+                    return
                 channels.append((start,stop))
         except ValueError as e:
-            messagebox.showerror('Failed to resize!', 'All values must be integers: '+str(e))
+            messagebox.showerror('Failed to ignore!', 'Channel values must be integers: '+str(e))
             return
         for start,stop in channels:
             self.parent.fitter.ignore(start,stop,noplot = True)
@@ -116,7 +128,7 @@ class ignoreReader(entryWindow):
         ignored = ''
         deleted = sorted(self.parent.fitter.data.deleted)
         i = 0
-        while i <  len(deleted):
+        while i < len(deleted):
             start = deleted[i]
             i += 1
             while i < len(deleted) and deleted[i] - deleted[i-1] == 1: i += 1
@@ -138,13 +150,13 @@ class ignoreReader(entryWindow):
             if self.parent.fitter.ptype == 0: end   = '-%d'%end
             if self.parent.fitter.ptype == 1:
                 tmp   = end
-                end   = '-%.2f'%list(self.parent.fitter.resp.energy(((start,0),)))[0][0]
+                end   = '-%.2f'%self.parent.fitter.resp.energy(start)
                 start = tmp
-            if self.parent.fitter.ptype == 2: end   = '-%.2f'%list(self.parent.fitter.resp.wl    (((end,0),)))[0][0]
+            if self.parent.fitter.ptype == 2: end   = '-%.2f'%self.parent.fitter.resp.wl(end)
       
         if self.parent.fitter.ptype == 0: return ('%d'%start)+end
-        if self.parent.fitter.ptype == 1: return ('%.2f'%list(self.parent.fitter.resp.energy(((start,0),)))[0][0])+end
-        if self.parent.fitter.ptype == 2: return ('%.2f'%list(self.parent.fitter.resp.wl    (((start,0),)))[0][0])+end
+        if self.parent.fitter.ptype == 1: return ('%.2f'%self.parent.fitter.resp.energy(start))+end
+        if self.parent.fitter.ptype == 2: return ('%.2f'%self.parent.fitter.resp.wl    (start))+end
    
 class Save(entryWindow):
     def __init__(self,parent,saver = Iplot.export, title = 'Save (extension determines type)', default_ext = 'ps'):

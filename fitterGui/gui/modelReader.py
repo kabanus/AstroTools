@@ -230,9 +230,11 @@ class modelReader(object):
             if self.parent.debug: raise
             return
         except AttributeError as e:
-            first = e.message.split()[0]
-            if first != "'Fitter'": return
-            messagebox.showerror("Failed to build model!","Can't use bbody without loaded response!")
+            if str(e) == "'Fitter' object has no attribute 'resp'":
+                messagebox.showerror("Failed to build model!","Can't use bbody without loaded response")
+            elif str(e) == "'str' object has no attribute 'sort'":
+                messagebox.showerror("Failed to build model!", "Missing file for table!")
+            else: raise
             if self.parent.debug: raise
             return
         except Exception as e:

@@ -19,21 +19,21 @@ def loadAncr(self,ancr):
     self.ancr_file = ancr
 
 def updateIonLabels(self, shift = None):
-    self.ionlabs   = []
-    ions           = iter(self.ionlocations)
-    ebounds        = self.resp.ebounds
-    channeliter    = iter(range(len(ebounds)))
+    self.ionlabs = []
+    ions         = iter(self.ionlocations)
+    emin,emax    = self.resp.minebounds,self.resp.maxebounds
+    channeliter  = iter(range(len(emin)))
     try:
         while True:
             channel    = channeliter.next()
             ion        = ions.next()
             wl = shift(ion[0]) if shift is not None else ion[0]
             energy     = Response.keVAfac/wl
-            while energy > ebounds[channel][1]:
+            while energy > emax[channel]:
                 ion    = ions.next()
                 wl = shift(ion[0]) if shift is not None else ion[0]
                 energy = Response.keVAfac/wl
-            while energy < ebounds[channel][0]:
+            while energy < emin[channel]:
                 channel= channeliter.next()
             self.ionlabs.append([channel+1,energy,wl,channel,ion[1],ion[-1]])
     except StopIteration: pass
@@ -87,6 +87,7 @@ def transmit(self, table):
 
 def group(self,g):
     self.data.group(g)
+    self.resp.group(g)
     self.plot(user = False)
 
 def ignore(self, minX, maxX, noplot = False):
@@ -103,7 +104,7 @@ def ignore(self, minX, maxX, noplot = False):
             fitshandler.ignore(channels)
         if self.area.any():
             self.area = self.resp.eff
-
+        if not channels: return
         minC  = channels[0]
         maxC  = channels[-1]
         total = maxC-minC+1

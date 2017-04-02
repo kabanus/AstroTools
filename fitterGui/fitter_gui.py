@@ -40,7 +40,7 @@ if True or __name__ == "__main__":
     from plotInt             import Iplot,plt
     from gui.modelReader     import modelReader
     from gui.simplewindows   import runMsg
-    from gui.entrywindows    import ignoreReader
+    from gui.entrywindows    import ignoreReader,rebinReader
     from gui.parameterframe  import parameterFrame
     from gui.helperfunctions import make_frames, getfile
     from gui.gui             import Gui
@@ -62,6 +62,8 @@ if True or __name__ == "__main__":
             self.statistic.set("No fit run")
             self.ignored     = StringVar()
             self.ignored.set("Ignored:")
+            self.grouped     = StringVar()
+            self.grouped.set("Grouped: 1")
             self.model       = ""
             self.datatitle=StringVar()
             self.datatitle.set("No active model")
@@ -176,13 +178,20 @@ if True or __name__ == "__main__":
             if keyword is None or keyword == "Ignored":
                 try:
                     ignored = init['Ignored']
-                    ig = ignoreReader(self,False)
+                    ig = ignoreReader(self,gui=False)
                     ig.parse(ignored)
                 except (KeyError,AttributeError): pass
                 except Exception as e:
                     messagebox.showerror("Failed to load session!",'Got ignore channels, but no data')
                     if self.debug: raise
                     return
+            
+            if keyword is None or keyword == "Grouped":
+                try:
+                    group = init['Grouped']
+                    ig    = rebinReader(self,group=True,gui=False)
+                    ig.parse(group)
+                except (KeyError,AttributeError): pass
         
             if keyword is None or keyword == "model":
                 try: 
@@ -198,7 +207,9 @@ if True or __name__ == "__main__":
                         error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
                         self.thawedDict[iparam][1].set('(%.2E)'%error)
                         self.paramLabels[iparam][2].configure(relief='flat',state='disabled')
-                except KeyError: pass
+                except KeyError: 
+                    if self.debug: raise 
+                    pass
             self.refreshPlot()
 
         def saveSession(self, name, extension):
@@ -214,6 +225,8 @@ if True or __name__ == "__main__":
             try: writeline('ptype:'+str(self.fitter.ptype))
             except AttributeError: pass
             try: writeline(self.ignored.get())
+            except AttributeError: pass
+            try: writeline(self.grouped.get())
             except AttributeError: pass
             try: writeline('model:'+self.fitter.current.__str__())
             except AttributeError: pass
@@ -252,6 +265,7 @@ if True or __name__ == "__main__":
 
             params.append(  self.statistic.get())
             params.append(  self.ignored.get())
+            params.append(  self.grouped.get())
             params.insert(0,self.datatitle.get())
 
             paramFile = open(name,'w')
@@ -303,33 +317,34 @@ if True or __name__ == "__main__":
                 if self.debug: raise
                 return
            
-            for iparam in args:
-                index,param = iparam
-                #Message construct used so beep is heard before message, and save return on each one.
-                try:
-                    m = runMsg(self)
+            try:
+                #Message construct used so beep is heard before message, 
+                #and save return on each one.
+                m = runMsg(self)
+                for iparam in args:
+                    index,param = iparam
                     err = ''
                     self.errors[iparam] = self.fitter.error(index,param)
-                except (ValueError,KeyError):
-                    title, err = ('No such parameter!','Check yourself')
-                except KeyboardInterrupt: 
-                    title, err = ('Halt',"Caught Keyboard - thawed parameters may have changed.")
-                except (self.fitter.errorNotConverging,RuntimeError):
-                    title, err = ('Error not converging!',"Statistic insensitive to parameter")
-                except self.fitter.newBestFitFound:
-                    title, err = ('Error not converging!',"Found new best fit! Space not convex.")
-                    self.params.resetErrors()
-                    self.ranfit = False
-                    self.params.relabel()
-                finally:
-                    m.destroy()
-                    self.ring()
-                    if err:
-                        messagebox.showerror(title,err)
-                        return 1
-                error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
-                self.thawedDict[(index,param)][1].set('(%.2E)'%error)
-                self.paramLabels[(index,param)][2].configure(relief='flat',state='disabled')
+                    error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
+                    self.thawedDict[(index,param)][1].set('(%.2E)'%error)
+                    self.paramLabels[(index,param)][2].configure(relief='flat',state='disabled')
+            except (ValueError,KeyError):
+                title, err = ('No such parameter!','Check yourself')
+            except KeyboardInterrupt: 
+                title, err = ('Halt',"Caught Keyboard - thawed parameters may have changed.")
+            except (self.fitter.errorNotConverging,RuntimeError):
+                title, err = ('Error not converging!',"Statistic insensitive to parameter")
+            except self.fitter.newBestFitFound:
+                title, err = ('Error not converging!',"Found new best fit! Space not convex.")
+                self.params.resetErrors()
+                self.ranfit = False
+                self.params.relabel()
+            finally:
+                m.destroy()
+                self.ring()
+                if err:
+                    messagebox.showerror(title,err)
+                    return 1
 
         def ring(self):
             #Windows
@@ -416,7 +431,7 @@ if True or __name__ == "__main__":
         def resetIgnore(self):
             self.fitter.reset(zoom=False)
             self.ignored.set("Ignored:")
-
+        
         def _quit(self, event = None):
             if askquestion("Exit","Sure?") == 'no': return
             self.root.quit()

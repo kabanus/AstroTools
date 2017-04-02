@@ -1,5 +1,6 @@
 from plotInt     import Iplot,plt
 from numpy       import array
+from numpy       import append as ndappend
 from itertools   import izip
 from fitshandler import Data
 from models      import ibifit #For labeling
@@ -182,15 +183,16 @@ def plot(self, save = None, user = True, keepannotations = False):
         if not len(self.data.channels): return
         plots = [self.data.getPlot(self.binfactor,area)]
         if len(self.result) == len(self.data.channels):
-            plots.append(zip(Data.ndrebin(self.data.channels,self.binfactor),
-                             Data.rebin(self.result,self.binfactor,scale = lambda x=area:x)))
-        for i in range(len(plots)):
+            plots.append(ndappend(
+                           Data.ndrebin(self.data.channels,self.binfactor).reshape(-1,1),
+                           Data.rebin(self.result,self.binfactor,scale = lambda x=area:x).reshape(-1,1),axis=1))
+        for i,plot in enumerate(plots):
             if self.ptype == self.ENERGY:
-                plots[i] = self.resp.energy(plots[i])
+                plots[i] = self.resp.energy(plot)
             if self.ptype == self.WAVE:
-                plots[i] = self.resp.wl(plots[i])
+                plots[i] = self.resp.wl(plot)
             if self.dataz != None:
-                plots[i] = _shiftlist(plots[i],self.dataz,self.ptype)
+                plots[i] = _shiftlist(plot,self.dataz,self.ptype)
         if self.labelions:
             plots[0] = list(plots[0])
         if len(plots) == 1:

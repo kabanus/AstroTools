@@ -28,9 +28,9 @@ class parameterFrame(object):
             child.bind("<Button-3>",self.showMenu)
 
     def errorVisible(self):
-        for iparam,labels in self.parent.paramLabels.items():
-           if labels[0].grid_info():
-               if self.parent.getError(iparam): return
+        #x[0] is the iparam
+        #x[1] is the label
+        self.parent.getError(*map(lambda x: x[0],filter(lambda x: x[1][0].grid_info(),self.parent.paramLabels.items())))
 
     def hideall(self):
         row = self.parent.cmdFrame.grid_info()['row']

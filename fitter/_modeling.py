@@ -3,10 +3,9 @@ from itertools      import izip
 
 class NotAModel(Exception): pass
 
-
 def chisq(self):
     try:
-        return sum((self.data.cts()-self.result)**2/self.data.errors()**2)
+        return sum((self.data.cts(row = True)-self.result)**2/self.data.errors(row = True)**2)
     except ValueError:
         return float('nan')
 
@@ -47,9 +46,9 @@ def tofit(self, elist, *args):
 def fit(self):
     model = self.current
     args  = self.initArgs()
-  
-    bestfit,self.errs = curve_fit(self.tofit,self.energies(),self.data.cts(),
-                                  p0=args,sigma=self.data.errors())
+    
+    bestfit,self.errs = curve_fit(self.tofit,self.energies(),self.data.cts(row = True),
+                                  p0=args,sigma=self.data.errors(row = True))
 
     self.stderr  = dict(izip(model.getThawed(),
                     [self.errs[j][j]**0.5 for j in range(len(self.errs))]))
