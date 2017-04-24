@@ -187,6 +187,8 @@ class Iplot(object):
         except KeyError: stepx = None
         try: stepy = kwargs.pop('stepy')
         except KeyError: stepy = None
+        try: histogram = kwargs.pop('histogram')
+        except KeyError: histogram = False
 
         my = mx = float("Inf")
         My = Mx = float("-Inf")
@@ -207,6 +209,8 @@ class Iplot(object):
         plotter = Iplot.axes.plot
         if scatter: 
             plotter = Iplot.axes.scatter
+        if histogram: 
+            plotter = Iplot.axes.bar
         for c in args:
             color = [Iplot.col,0,1-Iplot.col]
             try: xv = c.vector
@@ -221,7 +225,7 @@ class Iplot(object):
                 addtolist = Iplot.plots.extend
                 if plotter == Iplot.axes.scatter:
                     addtolist = Iplot.plots.append
-                addtolist(plotter(*xv[:2],c=color,**kwargs))
+                addtolist(plotter(*xv[:2],color=color,**kwargs))
             except IndexError:
                 if plotter == Iplot.axes.scatter:
                     Iplot.plots.append(
