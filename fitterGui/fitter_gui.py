@@ -174,6 +174,13 @@ if True or __name__ == "__main__":
                         if [pkgs[i],pkgs[i+1]] not in self.xspec_packages:
                             self.xspec_packages.append([pkgs[i],pkgs[i+1]])
                 except KeyError: pass
+            
+            if keyword is None or keyword == "Grouped":
+                try:
+                    group = init['Grouped']
+                    ig    = rebinReader(self,group=True,gui=False)
+                    ig.parse(group)
+                except (KeyError,AttributeError): pass
            
             if keyword is None or keyword == "Ignored":
                 try:
@@ -186,13 +193,6 @@ if True or __name__ == "__main__":
                     if self.debug: raise
                     return
             
-            if keyword is None or keyword == "Grouped":
-                try:
-                    group = init['Grouped']
-                    ig    = rebinReader(self,group=True,gui=False)
-                    ig.parse(group)
-                except (KeyError,AttributeError): pass
-        
             if keyword is None or keyword == "model":
                 try: 
                     model     = modelReader(self,False)
@@ -329,11 +329,11 @@ if True or __name__ == "__main__":
                     self.thawedDict[(index,param)][1].set('(%.2E)'%error)
                     self.paramLabels[(index,param)][2].configure(relief='flat',state='disabled')
             except (ValueError,KeyError):
-                title, err = ('No such parameter!','Check yourself')
+                title, err = (str(index)+':'+param+': No such parameter!','Check yourself')
             except KeyboardInterrupt: 
                 title, err = ('Halt',"Caught Keyboard - thawed parameters may have changed.")
             except (self.fitter.errorNotConverging,RuntimeError):
-                title, err = ('Error not converging!',"Statistic insensitive to parameter")
+                title, err = (str(index)+':'+param+': Error not converging!',"Statistic insensitive to parameter")
             except self.fitter.newBestFitFound:
                 title, err = ('Error not converging!',"Found new best fit! Space not convex.")
                 self.params.resetErrors()

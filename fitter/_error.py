@@ -73,7 +73,7 @@ def binary_find_chisq(self,initial,needfit,bestchi,thawed,iparam,epsilon,goal):
 def run_away(self,initial,needfit,bestchi,thawed,iparam,save,direction,v0):
     limit   = 10
     oldchi  = bestchi
-    v0     *= direction * initial
+    v0     *= direction * (initial if initial else 1)
     t       = 1
 
     while abs(oldchi-bestchi) < 2.76:

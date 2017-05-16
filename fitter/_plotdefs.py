@@ -141,7 +141,7 @@ def plotModel(self,start = None,stop = None,delta = None):
 
 def plotEff(self):
     Iplot.clearPlots()
-    Iplot.plotCurves(zip(self.resp.ebinAvg,self.resp.reff))
+    Iplot.plotCurves(zip(self.resp.ebinAvg,self.resp.reff),plotype="xy")
     Iplot.x.label('KeV')
     Iplot.y.label('cm$^2$')
 
@@ -154,9 +154,10 @@ _writePlot = lambda table: "\n".join((" ".join((str(x) for x in line)) for line 
 def _plotOrSave(save = None,model = None, data = None):
     if save is None:
         if data is not None:
-            Iplot.plotCurves(data,stepx = 0,scatter = True,s=1)
+            plotype = "xdxydy" if len(data[0]) == 4 else "xydy"
+            Iplot.plotCurves(data,stepx = 0,scatter = True,plotype=plotype,marker="+")
         if model is not None:
-            Iplot.plotCurves(model,chain=True)
+            Iplot.plotCurves(model,chain=True,plotype="xy",marker="+")
     else:
         fd = open(save,'w')
         table = []

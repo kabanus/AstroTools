@@ -61,13 +61,13 @@ class zReader(entryWindow):
 
 class rebinReader(entryWindow):
     def __init__(self, parent, group = False, gui = True):
+        self.group = group
         if not gui:
             self.parent = parent
             return
         rebin = "Group" if group else "Rebin"
         try: entryWindow.__init__(self,parent,'data',"rebinner",rebin)
         except AttributeError: return
-        self.group = group
     
     def parse(self, event):
         try: 

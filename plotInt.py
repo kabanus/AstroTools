@@ -1,14 +1,20 @@
 #Make an even simpler plotting interface
-import matplotlib.pyplot as plt
-from   matplotlib.ticker import ScalarFormatter, FuncFormatter, NullFormatter
 import warnings
-from numpy import array
+import matplotlib.pyplot as plt
+from   matplotlib.ticker  import ScalarFormatter, FuncFormatter, NullFormatter
+from   matplotlib.markers import MarkerStyle as MS
+from   itertools          import cycle
+from   numpy              import array
+import numpy as np
 warnings.filterwarnings('ignore')
 
 SF = ScalarFormatter()
 plt.ion()
 class Iplot(object):
-    xytext = (-6,20)
+    markers = sorted((marker for marker in MS.markers.keys() 
+        if marker not in (None,'None'," ","",',')+tuple(range(8))))
+    cmarker = cycle(markers)
+    xytext  = (-6,20)
     class axis(object):
         class noSuchAxis(Exception): pass
         def __init__(self,axis):
@@ -67,7 +73,7 @@ class Iplot(object):
     def _log(axis,on):
         if Iplot.plots and axis.get_bounds()[0] <= 0:
             index = 0 if axis is Iplot.x else 1
-            minimum = min(map(lambda p: min(p.get_xydata()[:,index]),Iplot.plots))
+            minimum = min(map(lambda p: min(p[0].get_xydata()[:,index]),Iplot.plots))
             if minimum <= 0:
                 axis.resize(start=1e-10)
         if on:
@@ -134,6 +140,12 @@ class Iplot(object):
         Iplot.clearPlots()
         plt.gcf().canvas.mpl_connect('pick_event',Iplot.onclick)
         plt.gcf().canvas.mpl_connect('button_release_event',Iplot.release)
+        for axis in ['top','bottom','left','right']:
+            Iplot.axes.spines[axis].set_linewidth(2)
+        Iplot.axes.xaxis.set_tick_params(width=2)
+        Iplot.axes.yaxis.set_tick_params(width=2)
+        Iplot.axes.xaxis.set_tick_params(which='minor',width=2)
+        Iplot.axes.yaxis.set_tick_params(which='minor',width=2)
    
     @staticmethod
     def secondAxis(function,axis='x'):
@@ -163,11 +175,12 @@ class Iplot(object):
 
     @staticmethod 
     def legend(*labels,**legend_kwrags):
-        label = None
-        for plot,label in zip(Iplot.plots,labels):
-            plot.set_label(label)
-        if label is None: return 
-        legend = Iplot.axes.legend(**legend_kwrags)
+        if labels:
+            for plot,label in zip(Iplot.plots,labels):
+                plot.set_label(label)
+        legend = Iplot.axes.legend(
+                        frameon=False,numpoints=1,
+                        scatterpoints=1,**legend_kwrags)
         legend.set_picker(True)
         plt.draw()
 
@@ -177,6 +190,7 @@ class Iplot(object):
     def plotCurves(*args,**kwargs):
         if not args: return
 
+        plotype = kwargs.pop('plotype')
         try: scatter = kwargs.pop('scatter')
         except KeyError: scatter = False
         try: autosize = kwargs.pop('autosize')
@@ -189,6 +203,14 @@ class Iplot(object):
         except KeyError: stepy = None
         try: histogram = kwargs.pop('histogram')
         except KeyError: histogram = False
+        if 'marker' not in kwargs:
+            if not chain:
+                Iplot.cmarker = cycle(Iplot.markers)
+            kwargs['marker'] = Iplot.cmarker.next()
+        kwargs['linewidth'] = 2
+        if not scatter:
+            kwargs['markeredgewidth'] = 2
+            kwargs['markersize'] = 8
 
         my = mx = float("Inf")
         My = Mx = float("-Inf")
@@ -196,55 +218,60 @@ class Iplot(object):
         Iplot.col = 0
         col_step = 1.0/len(args)
         if chain:
-            children = []
-            for child in Iplot.axes.collections+Iplot.axes.lines:
-                children.append(child)
-            col_step = 1.0/(len(children)+len(args))
-            for child in children:
-                child.set_color([Iplot.col,0,1-Iplot.col])
+            col_step = 1.0/(len(Iplot.plots)+len(args))
+            for child in Iplot.plots:
+                child[0].set_color([Iplot.col,0,1-Iplot.col])
+                for echild in child[1]+child[2]:
+                    echild.set_color([Iplot.col,0,1-Iplot.col])
                 Iplot.col += col_step
 
-        try: plotter = Iplot.axes.plot
-        except AttributeError: Iplot.init()
-        plotter = Iplot.axes.plot
-        if scatter: 
-            plotter = Iplot.axes.scatter
+        try:                  
+            plotter = Iplot.axes.plot
+        except AttributeError: 
+            Iplot.init()
+            plotter = Iplot.axes.plot
         if histogram: 
             plotter = Iplot.axes.bar
         for c in args:
-            color = [Iplot.col,0,1-Iplot.col]
-            try: xv = c.vector
-            except AttributeError: xv = c
-            tmp = zip(*xv)
-            if len(tmp) == 4:
-                xv = (tmp[0],tmp[2],tmp[3],tmp[1])
-            elif len(tmp) < 4:
-                xv = tmp
-            else: raise Exception("Data has more than 4 columns!")
+            iserr = False
+            errs  = {'x': None, 'y': None}
+            index = 0
             try:
-                addtolist = Iplot.plots.extend
-                if plotter == Iplot.axes.scatter:
-                    addtolist = Iplot.plots.append
-                addtolist(plotter(*xv[:2],color=color,**kwargs))
-            except IndexError:
-                if plotter == Iplot.axes.scatter:
-                    Iplot.plots.append(
-                        plotter(*xv[:2],s=2,edgecolor=None,c=color,**kwargs))
-                else: 
-                    Iplot.plots.extend(plotter(*xv[:2],c=color,**kwargs))
-            if len(tmp) > 2: 
-                Iplot.axes.errorbar(*xv,linestyle="None",capsize = 0)
+                for letter in plotype:
+                    if letter == 'd':
+                        iserr = True
+                        continue
+                    if iserr:
+                        iserr = False
+                        if errs[letter] is not None: 
+                              errs[letter] = np.vstack((errs[letter],c[:,index]))
+                        else: errs[letter] = c[:,index]
+                    else:
+                        if   letter == 'x': xdata = c[:,index]
+                        elif letter == 'y': ydata = c[:,index]
+                        else: raise KeyError();
+                    index += 1
+            except KeyError:
+                raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
+            
+            color = [Iplot.col,0,1-Iplot.col]
+            plot = Iplot.axes.errorbar(xdata,ydata,xerr=errs['x'],yerr=errs['y'],capsize = 0,
+                            elinewidth=kwargs['linewidth'],ecolor=color,color=color,**kwargs)
+            Iplot.plots.append(plot)
+            if scatter: plot[0].set_linestyle("")
+            xv = xdata
+            yv = ydata
             if not chain and autosize:
-                if min(xv[0]) < mx or max(xv[0]) > Mx or\
-                   min(xv[1]) < my or max(xv[1]) > My:
+                if min(xv) < mx or max(xv) > Mx or\
+                   min(yv) < my or max(yv) > My:
                     if stepx == None: 
-                        stepx = min(abs(max(xv[0])),abs(min(xv[0])))*0.5 if scatter else 0
+                        stepx = min(abs(max(xv)),abs(min(xv)))*0.5 if scatter else 0
                     if stepy == None:
-                        stepy = stepy = min(abs(max(xv[1])),abs(min(xv[1])))*0.5 if scatter else 0
-                    if min(xv[0]) < mx: mx = min(xv[0])
-                    if max(xv[0]) > Mx: Mx = max(xv[0])
-                    if min(xv[1]) < my: my = min(xv[1])
-                    if max(xv[1]) > My: My = max(xv[1])
+                        stepy = stepy = min(abs(max(yv)),abs(min(yv)))*0.5 if scatter else 0
+                    if min(xv) < mx: mx = min(xv)
+                    if max(xv) > Mx: Mx = max(xv)
+                    if min(yv) < my: my = min(yv)
+                    if max(yv) > My: My = max(yv)
             Iplot.col += col_step
         if not chain and autosize:
             Iplot.axes.set_xlim(mx-stepx,Mx+stepx)

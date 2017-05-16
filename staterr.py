@@ -71,11 +71,17 @@ class Error(object):
         v0      = self.v0 * direction * (self.init if self.init else 1)
         t       = 1
         maxiter = self.miter
+        runs    = 1
        
         while abs(oldchi-bestchi) < self.goal and self.init + v0*t >= self.min and self.init + v0*t <= self.max:
             tmp = self.score(self.init + v0*t)
             if tmp < bestchi:
                 raise newBestFitFound(self.init+v0*t,tmp)
+            attempts -= 1
+            runs     += 1
+            if not attempts:
+                v0 *= 2**runs
+                attempts = 10
             if tmp == oldchi: 
                 limit -= 1
             else: 
@@ -83,11 +89,7 @@ class Error(object):
                 limit  = 10
             if not limit:
                 if self.min == 0 and self.init+v0*(t) < self.eps: return 0
-                if not attempts: 
-                    raise errorNotConverging((self.init+v0*t,tmp),(self.init,bestchi))
-                limit = 10
-                attempts -= 1
-                v0 *= 2
+                raise errorNotConverging((self.init+v0*t,tmp),(self.init,bestchi))
             t += 1
             if not maxiter:
                 raise insensitiveToParameter((self.init+v0*t,tmp),(self.init,bestchi))
