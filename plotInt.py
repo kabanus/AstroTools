@@ -190,7 +190,9 @@ class Iplot(object):
     def plotCurves(*args,**kwargs):
         if not args: return
 
-        plotype = kwargs.pop('plotype')
+        try: plotype = kwargs.pop('plotype')
+        except KeyError:
+            raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
         try: scatter = kwargs.pop('scatter')
         except KeyError: scatter = False
         try: autosize = kwargs.pop('autosize')

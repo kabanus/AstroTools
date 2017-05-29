@@ -345,7 +345,7 @@ class AMD(object):
                 Iplot.plotCurves(toplot,marker='o')
                 Iplot.ylog(True)
                 Iplot.x.label('log $\\xi$')
-                Iplot.y.label('$N_H$ $10^{18}$ cm$^2$ (log $\\xi$)$^{-1}$')
+                Iplot.y.label('$N_H$ $10^{18}$ cm$^{-2}$ (log $\\xi$)$^{-1}$')
             dof = len(self._rVec[c])-len(guess)
             red = self._last['fun']/dof
             self._last.dof  = dof
@@ -377,7 +377,7 @@ class AMD(object):
                 Iplot.plotCurves(array(curve),chain=True,plotype='xydydy')
         Iplot.ylog(True)
         Iplot.legend(*legend, bbox_to_anchor=(1.1,1.1))
-        Iplot.y.label('log $N_H 10^{18}$ cm$^2$')
+        Iplot.y.label('log $N_H$ $10^{18}$ cm$^{-2}$')
         Iplot.x.label('log $\\xi$')
     
     def NI(self,ion,xi,NH):
@@ -402,7 +402,7 @@ class AMD(object):
                 charges[charge].append((xi,val))
         Iplot.init()
         for charge in charges:
-            Iplot.plotCurves(sorted(charges[charge]),chain = True)
+            Iplot.plotCurves(array(sorted(charges[charge])),plotype='xy',chain=True,marker='')
         height = 0.45
         for charge in charges:
             xi = self.probableXi(self.writeIon(elem,charge))
