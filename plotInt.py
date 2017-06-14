@@ -11,8 +11,9 @@ warnings.filterwarnings('ignore')
 SF = ScalarFormatter()
 plt.ion()
 class Iplot(object):
-    markers = sorted((marker for marker in MS.markers.keys() 
-        if marker not in (None,'None'," ","",',')+tuple(range(8))))
+    #markers = sorted((marker for marker in MS.markers.keys() 
+    #    if marker not in (None,'None'," ","",',')+tuple(range(8))))
+    markers = ('o','s','^','v')
     cmarker = cycle(markers)
     xytext  = (-6,20)
     class axis(object):
@@ -146,6 +147,8 @@ class Iplot(object):
         Iplot.axes.yaxis.set_tick_params(width=2)
         Iplot.axes.xaxis.set_tick_params(which='minor',width=2)
         Iplot.axes.yaxis.set_tick_params(which='minor',width=2)
+        Iplot.fillstylecount = 0
+        Iplot.fillstyle      = 'none'
    
     @staticmethod
     def secondAxis(function,axis='x'):
@@ -209,6 +212,11 @@ class Iplot(object):
             if not chain:
                 Iplot.cmarker = cycle(Iplot.markers)
             kwargs['marker'] = Iplot.cmarker.next()
+            if Iplot.fillstylecount == len(Iplot.markers):
+                Iplot.fillstyle = 'none' if Iplot.fillstyle != 'none' else 'full' 
+                Iplot.fillstylecount = 0
+            kwargs['fillstyle'] = Iplot.fillstyle
+            Iplot.fillstylecount += 1
         kwargs['linewidth'] = 2
         if not scatter:
             kwargs['markeredgewidth'] = 2

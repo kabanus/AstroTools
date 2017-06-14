@@ -86,6 +86,7 @@ def transmit(self, table):
     self.transmit_file = table
 
 def group(self,g):
+    self.reset()
     self.data.group(g)
     self.resp.group(g)
     self.plot(user = False)

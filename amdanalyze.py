@@ -377,7 +377,7 @@ class AMD(object):
                 Iplot.plotCurves(array(curve),chain=True,plotype='xydydy')
         Iplot.ylog(True)
         Iplot.legend(*legend, bbox_to_anchor=(1.1,1.1))
-        Iplot.y.label('log $N_H$ $10^{18}$ cm$^{-2}$')
+        Iplot.y.label('log ($N_\mathrm{H}$ / $10^{18}$ cm$^{-2}$)')
         Iplot.x.label('log $\\xi$')
     
     def NI(self,ion,xi,NH):

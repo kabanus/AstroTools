@@ -7,6 +7,7 @@ Created on Mar 15, 2013
 '''
 if True or __name__ == "__main__":
     import os
+    import re
     from sys import argv
     if os.name == 'nt':
         #Windows ctrl-c handling
@@ -152,14 +153,21 @@ if True or __name__ == "__main__":
             init = {}
             fname = getfile('fsess')
             if not fname: return
-            for line in open(fname):
-                index = line.index(':')
-                init[line[:index]] = line[index+1:].strip('\n').strip()
+            try:
+                for line in open(fname):
+                    index = line.index(':')
+                    init[line[:index]] = line[index+1:].strip('\n').strip()
+            except ValueError:
+                messagebox.showerror("Failed to load session!",'Bad format, wrong file?')
+                if self.debug: raise
+                return
 
+            root = os.path.dirname(fname) 
+            root = root + '/' if root else './'
             for k,action in (
-                    ('data' ,lambda: self.load(self.fitter.loadData,init['data'])),
-                    ('resp' ,lambda: self.load(self.fitter.loadResp,init['resp'])),
-                    ('tran' ,lambda: self.load(self.fitter.transmit,init['tran'])),
+                    ('data' ,lambda: self.load(self.fitter.loadData,root+init['data'])),
+                    ('resp' ,lambda: self.load(self.fitter.loadResp,root+init['resp'])),
+                    ('tran' ,lambda: self.load(self.fitter.transmit,root+init['tran'])),
                     ('ptype',lambda: self.fitter.setplot(int(init['ptype'])))
                 ):
                 try: 
@@ -196,6 +204,7 @@ if True or __name__ == "__main__":
             if keyword is None or keyword == "model":
                 try: 
                     model     = modelReader(self,False)
+                    init['model'] = re.sub('Table\("[^/]','Table("'+root,init['model'])
                     model.parse(init['model'])
                     self.commandline.parseCmd(init['param'])
                     e = init['errors'].split(',')

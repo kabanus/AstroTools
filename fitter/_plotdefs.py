@@ -1,5 +1,5 @@
 from plotInt     import Iplot,plt
-from numpy       import array
+from numpy       import array, concatenate
 from numpy       import append as ndappend
 from itertools   import izip
 from fitshandler import Data
@@ -60,6 +60,8 @@ def unlabelAxis(self):
 def setplot(self, plotType,plot = False):
     if plotType not in [self.ENERGY, self.CHANNEL, self.WAVE]: 
         raise self.badPlotType(plotType)
+    if plotType != self.ptype:
+        self.reset(ignore=False)
     self.ptype = plotType
     try: self.ionlabs.sort(key = lambda x: x[plotType])
     except AttributeError: pass
@@ -108,10 +110,6 @@ def toggle_area(self):
             self.area = array(())
     else: self.area = self.resp.eff
     self.plot(user = False)
-
-def _shiftlist(l,z,ptype):
-    shift = _embedz(z,ptype)
-    return ([shift(x[0])]+x[1:] if shift(x[0]) != '' else x for x in l)
 
 def _labelaxes(self, model):
     add = ''
@@ -163,10 +161,10 @@ def _plotOrSave(save = None,model = None, data = None):
         table = []
         if data is not None: 
             if model is not None:
-                fd.write(_writePlot((d+m[1:] for d,m in zip(data,model))))
+                fd.write(_writePlot(concatenate((data,model[:,1:]),axis=1)))
             else:
                 fd.write(_writePlot(data))
-        if model is not None: 
+        elif model is not None: 
                 fd.write(_writePlot(model))
         fd.close()
 
@@ -193,9 +191,9 @@ def plot(self, save = None, user = True, keepannotations = False):
             if self.ptype == self.WAVE:
                 plots[i] = self.resp.wl(plot)
             if self.dataz != None:
-                plots[i] = _shiftlist(plot,self.dataz,self.ptype)
-        if self.labelions:
-            plots[0] = list(plots[0])
+                shifter = _embedz(self.dataz,self.ptype)
+                if shifter is not None: 
+                    plot[:,0] = shifter(plot[:,0])
         if len(plots) == 1:
             _plotOrSave(save,data=plots[0])
         else:
@@ -228,6 +226,7 @@ def plot(self, save = None, user = True, keepannotations = False):
     Iplot.y.resize(y,self.ystop)
    
     if not keepannotations and self.labelions > 0:
+        plots[0] = list(plots[0])
         while True:
             labels      = []
             posits      = []
@@ -241,7 +240,7 @@ def plot(self, save = None, user = True, keepannotations = False):
                 if label[-1] > self.labelions: continue
                 if label[self.ptype] > stop : break
                 if label[self.ptype] < start or label[3] < 0: continue
-                xindex = label[3]//self.binfactor
+                xindex = label[3]//(self.binfactor*self.data.grouping)
                 if plots[0][xindex][yindex+1]  == float('inf'): continue
                 yoffset = plots[0][xindex][yindex+1]
                 if yoffset*(offsetfac+1)+plots[0][xindex][yindex] >= ymax: continue

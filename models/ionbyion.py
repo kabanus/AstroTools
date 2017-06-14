@@ -1,6 +1,7 @@
 from glob import glob
 import os.path
 from model import _singleModel,modelExport
+from sys import getsizeof
 
 #Constants
 from numpy import pi,exp
@@ -172,7 +173,7 @@ class ibifit(_singleModel):
                                                     str(kT) +','+
                                                     str(vturb)+')') in locals(), globals()
          
-        if globalVHash == vturb and globalkTHash == kT: 
+        if globalVHash == vturb and globalkTHash == kT and getsizeof(self.wlhash) < 2**32:
             self.wlhash   = globalIBIHash 
         else:
             self.wlhash   = {}
@@ -204,6 +205,8 @@ class ibifit(_singleModel):
                 for ion in Nions:
                     if ion not in self.wlhash[wl]: self.wlhash[wl][ion] = self.ions[ion].t(wl)
             else:
+                if getsizeof(self.wlhash)  > 2**32:
+                    self.wlhash = {}
                 self.wlhash[wl] = {}
                 for ion in self.nzeroions:
                     self.wlhash[wl][ion] = self.ions[ion].t(wl)
