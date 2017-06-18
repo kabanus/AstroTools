@@ -1,7 +1,7 @@
-from Tkinter import Label, Entry, LEFT, W, N, S, E, IntVar, Checkbutton,StringVar,Button,END,Menu
-from simplewindows import errorLog
-from entrywindows import paramReader
-import tkMessageBox as messagebox
+from tkinter import Label, Entry, LEFT, W, N, S, E, IntVar, Checkbutton,StringVar,Button,END,Menu
+import tkinter.messagebox as messagebox
+from .simplewindows import errorLog
+from .entrywindows import paramReader
 ALL = W+N+S+E
 
 class parameterFrame(object):
@@ -30,7 +30,7 @@ class parameterFrame(object):
     def errorVisible(self):
         #x[0] is the iparam
         #x[1] is the label
-        self.parent.getError(*map(lambda x: x[0],filter(lambda x: x[1][0].grid_info(),self.parent.paramLabels.items())))
+        self.parent.getError(*[x[0] for x in [x for x in list(self.parent.paramLabels.items()) if x[1][0].grid_info()]])
 
     def hideall(self):
         row = self.parent.cmdFrame.grid_info()['row']
@@ -55,22 +55,22 @@ class parameterFrame(object):
         self.menu.tk_popup(event.x_root,event.y_root)
 
     def show(self):
-        for iparam,labels in  self.parent.paramLabels.items():
+        for iparam,labels in  list(self.parent.paramLabels.items()):
             for label in labels: label.grid()
     
     def showthawed(self):
-        for iparam,labels in self.parent.paramLabels.items():
+        for iparam,labels in list(self.parent.paramLabels.items()):
             if self.parent.thawedDict[iparam][0].get(): 
                 for label in labels: label.grid()
 
     def toggleVisibleThaw(self,thaw):
-        for iparam,labels in self.parent.paramLabels.items():
+        for iparam,labels in list(self.parent.paramLabels.items()):
            if labels[0].grid_info():
                self.parent.thawedDict[iparam][0].set(thaw)
                self.parent.toggleParam(*iparam)
 
     def hide(self):
-        for iparam,labels in  self.parent.paramLabels.items():
+        for iparam,labels in  list(self.parent.paramLabels.items()):
             if not self.parent.thawedDict[iparam][0].get():
                 for label in labels: label.grid_remove()
 
@@ -132,7 +132,7 @@ class parameterFrame(object):
             self.parent.calc()
 
     def resetErrors(self):
-        for _,_,l3,_ in self.parent.paramLabels.values():
+        for _,_,l3,_ in list(self.parent.paramLabels.values()):
             l3.configure(relief='raised',state='normal')
         self.parent.errors = {}
 
@@ -147,7 +147,7 @@ class parameterFrame(object):
             entry.insert(0,tied+str(value))
         self.parent.dataCanvas.update_idletasks()
         try: 
-            self.parent.statistic.set(u"Reduced \u03C7\u00B2: " + str(self.parent.fitter.reduced_chisq()))
+            self.parent.statistic.set("Reduced \u03C7\u00B2: " + str(self.parent.fitter.reduced_chisq()))
         except (AttributeError,IndexError): pass
 
     def draw(self):
@@ -165,19 +165,19 @@ class parameterFrame(object):
             l2 = Entry(self.frame,justify = LEFT, font = ('courier',12),bg='aliceblue',width=7)
             l2.insert(0,str(value))
             l2.grid(sticky=ALL,row=count, column=1)
-            exec('l2.bind("<FocusOut>",lambda event: self.entryOut(event,'+str(index)+',"'+param+'"))') in locals(), globals()
+            exec(('l2.bind("<FocusOut>",lambda event: self.entryOut(event,'+str(index)+',"'+param+'"))'), locals(), globals())
             l2.bind("<FocusIn>",self.entryIn)
             l2.bind("<Key>",self.entryColor)
-            exec('l2.bind("<Return>",lambda event: self.entryOut(event,'+str(index)+',"'+param+'"))') in locals(), globals()
+            exec(('l2.bind("<Return>",lambda event: self.entryOut(event,'+str(index)+',"'+param+'"))'), locals(), globals())
             i = StringVar()
             i.set("")
-            exec("l3 = Button(self.frame,textvariable=i,justify = LEFT, command = lambda: self.parent.getError(("+str(index)+",'"+param+
+            exec(("l3 = Button(self.frame,textvariable=i,justify = LEFT, command = lambda: self.parent.getError(("+str(index)+",'"+param+
                              "')),"+"font = ('courier',12),bg='aliceblue',anchor=W,width=10,height=1,"+
-                             "padx=0,disabledforeground='black',foreground='purple',takefocus = False)") in locals(), globals()
+                             "padx=0,disabledforeground='black',foreground='purple',takefocus = False)"), locals(), globals())
             l3.grid(sticky=ALL,row=count,column=2)
             v = IntVar()
-            exec('l4 = Checkbutton(self.frame,variable=v, text="thawed", command=lambda: self.parent.toggleParam('+str(index)+',"'+param+
-                            '"),takefocus = False)') in locals(), globals()
+            exec(('l4 = Checkbutton(self.frame,variable=v, text="thawed", command=lambda: self.parent.toggleParam('+str(index)+',"'+param+
+                            '"),takefocus = False)'), locals(), globals())
             l4.grid(sticky=ALL,row=count,column=3)
             self.parent.thawedDict[(index,param)] = [v,i]
             self.parent.paramLabels[(index,param)]=(l1,l2,l3,l4)
@@ -187,6 +187,6 @@ class parameterFrame(object):
         self.parent.dataCanvas.update_idletasks()
         self.parent.dataCanvas.configure(scrollregion = self.parent.dataCanvas.bbox('all'))
         try: 
-            self.parent.statistic.set(u"Reduced \u03C7\u00B2: " + str(self.parent.fitter.reduced_chisq()))
+            self.parent.statistic.set("Reduced \u03C7\u00B2: " + str(self.parent.fitter.reduced_chisq()))
         except (AttributeError,IndexError): pass
 

@@ -22,19 +22,19 @@ def updateIonLabels(self, shift = None):
     self.ionlabs = []
     ions         = iter(self.ionlocations)
     emin,emax    = self.resp.minebounds,self.resp.maxebounds
-    channeliter  = iter(range(len(emin)))
+    channeliter  = iter(list(range(len(emin))))
     try:
         while True:
-            channel    = channeliter.next()
-            ion        = ions.next()
+            channel    = next(channeliter)
+            ion        = next(ions)
             wl = shift(ion[0]) if shift is not None else ion[0]
             energy     = Response.keVAfac/wl
             while energy > emax[channel]:
-                ion    = ions.next()
+                ion    = next(ions)
                 wl = shift(ion[0]) if shift is not None else ion[0]
                 energy = Response.keVAfac/wl
             while energy < emin[channel]:
-                channel= channeliter.next()
+                channel= next(channeliter)
             self.ionlabs.append([channel+1,energy,wl,channel,ion[1],ion[-1]])
     except StopIteration: pass
 

@@ -13,29 +13,29 @@ if True or __name__ == "__main__":
         #Windows ctrl-c handling
         try:
             import win32api
-            import thread
+            import _thread
             import ctypes
             import imp
             
             basepath = imp.find_module('numpy')[1]
             ctypes.CDLL(os.path.join(basepath,'core','libmmd.dll'))
             ctypes.CDLL(os.path.join(basepath,'core','libifcoremd.dll'))
-            def handler(dwCtrlType, hook_sigint = thread.interrupt_main):
+            def handler(dwCtrlType, hook_sigint = _thread.interrupt_main):
                 if dwCtrlType == 0: # CTRL_C_EVENT
                     hook_sigint()
                     return 1
                 return 0 # chain to the next handler
             win32api.SetConsoleCtrlHandler(handler, 1)
         except (ImportError,WindowsError):
-            print("Warning: win32api  module  not found, you will  not be able to Ctlr-C  calculations. To fix\n" +
+            print(("Warning: win32api  module  not found, you will  not be able to Ctlr-C  calculations. To fix\n" +
                   "this try 'pip installPyWin32'  from  any   terminal,  or download and  install binary  from\n" +
                   "https://sourceforge.net/projects/pywin32/files/pywin32/. This warning may also be generated\n"+
-                  "on Windows machines if numpy or something close is missing.")
+                  "on Windows machines if numpy or something close is missing."))
 
-    import tkMessageBox as messagebox
+    import tkinter.messagebox as messagebox
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
-    from Tkinter             import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
-    from tkMessageBox        import askquestion 
+    from tkinter             import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
+    from tkinter.messagebox        import askquestion 
     from fitter              import Fitter
     from fitshandler         import Data
     from plotInt             import Iplot,plt
@@ -263,14 +263,14 @@ if True or __name__ == "__main__":
                     try:
                         #Look for measured error
                         err = self.errors[(index,param)]
-                        params[i] = u'%3d %10s = %s (%.3E,+%.3E)'%(index,param,params[i][1],err[0],err[1])
+                        params[i] = '%3d %10s = %s (%.3E,+%.3E)'%(index,param,params[i][1],err[0],err[1])
                     except KeyError:
                         #Settle for standard error
                         err = self.fitter.stderr[(index,param)]
-                        params[i] = u'%3d %10s = %s \u00B1 %.3E'%(index,param,params[i][1],err)
+                        params[i] = '%3d %10s = %s \u00B1 %.3E'%(index,param,params[i][1],err)
                 except (KeyError,AttributeError): 
                     #Guess this has no error
-                    params[i] = u'%3d %10s = %s'%(index,param,params[i][1])
+                    params[i] = '%3d %10s = %s'%(index,param,params[i][1])
 
             params.append(  self.statistic.get())
             params.append(  self.ignored.get())
@@ -359,7 +359,7 @@ if True or __name__ == "__main__":
             #Windows
             self.root.bell() 
             #Anywhere else
-            print "\a"
+            print("\a")
 
         def calc(self):
             m = runMsg(self)

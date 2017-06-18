@@ -1,5 +1,5 @@
-from Tkinter import Entry,END,LEFT
-import tkMessageBox as messagebox
+from tkinter import Entry,END,LEFT
+import tkinter.messagebox as messagebox
 
 class commandLine(object):
     class noModelWithParam(KeyError): pass

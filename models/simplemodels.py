@@ -16,12 +16,12 @@ class Function(simple):
         simple.__init__(self)
         #Check
         try:
-            params.keys()
+            list(params.keys())
         except AttributeError:
             raise self.paramsMustBeDict()
         self.params = params
         self.expression = expression
-        exec('self.func = lambda x,'+','.join(params.keys())+': '+expression) in dict(locals(), **globals())
+        exec(('self.func = lambda x,'+','.join(list(params.keys()))+': '+expression), dict(locals(), **globals()))
    
     def __call__(self,x):
         return self.func(x,**self.params)

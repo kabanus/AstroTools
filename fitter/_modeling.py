@@ -1,5 +1,5 @@
 from scipy.optimize import curve_fit
-from itertools      import izip
+
 
 class NotAModel(Exception): pass
 
@@ -50,8 +50,8 @@ def fit(self):
     bestfit,self.errs = curve_fit(self.tofit,self.energies(),self.data.cts(row = True),
                                   p0=args,sigma=self.data.errors(row = True))
 
-    self.stderr  = dict(izip(model.getThawed(),
+    self.stderr  = dict(zip(model.getThawed(),
                     [self.errs[j][j]**0.5 for j in range(len(self.errs))]))
    
-    self.calc(dict(izip(model.getThawed(),bestfit)))
+    self.calc(dict(zip(model.getThawed(),bestfit)))
 

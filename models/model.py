@@ -2,7 +2,7 @@ from inspect import getargspec
 from copy import deepcopy
 from copy import Error as copyError
 import operator
-from itertools import izip
+
 from numpy import zeros
 from parameters import Parameters
 
@@ -16,13 +16,12 @@ class prettyClass(type):
     def __str__(self):
         return self.__name__
     
-class Model(object):
-    __metaclass__ = prettyClass
+class Model(object, metaclass=prettyClass):
     class NoSuchParam(Exception): pass
     class VirtualMethod(Exception): pass
     
     def tofit(self,xlist,*args):
-        self.setp(dict(izip(self.getThawed(),args)))
+        self.setp(dict(zip(self.getThawed(),args)))
         return self.calculate(xlist)
 
     def initArgs(self):
@@ -37,7 +36,7 @@ class Model(object):
     
     def getParams(self):
         return [((index,param),val) for index,params in enumerate(self.__params__,1)
-                                            for param,val in params.items()]
+                                            for param,val in list(params.items())]
     
     def getThawed(self):
         return sum(self.thawed,[])            
@@ -88,7 +87,7 @@ class Model(object):
                     self._changed[index-1].add(key)
 
     def setp(self, pDict = {}, **kwargs):
-        if pDict.keys() == ['*']:
+        if list(pDict.keys()) == ['*']:
             for index in range(1,len(self.__params__)+1):
                 for p in self.__params__[index-1]:
                     self._setp(index,p,pDict['*'])
@@ -101,12 +100,12 @@ class Model(object):
     def paramString(self):
         for index,params in enumerate(self.__params__,1):
             res  = self.__class__.__name__+ " " + str(index) + ":\n"
-            for k,v in params.items():
+            for k,v in list(params.items()):
                 res += ("    "+k+": "+str(v)) + '\n'
         return res
     
     def printParams(self):
-        print self.paramString()
+        print(self.paramString())
         
     def __getitem__(self,iparam):
         index, param = iparam

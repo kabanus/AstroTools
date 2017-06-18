@@ -1,5 +1,5 @@
 from time import clock
-from itertools import tee,izip
+from itertools import tee
 from inspect import getsourcelines
 
 class ArgLess(object):
@@ -15,20 +15,20 @@ def printlist(lst, width = None, delim = "\n"):
     try:
         if width is not None:
             form = ('{:<'+str(width)+'}')*len(lst[0])
-            print delim.join(form.format(*y) for y in lst)
+            print(delim.join(form.format(*y) for y in lst))
         else: 
-            print delim.join((" ".join((str(x) for x in y)) for y in lst))
+            print(delim.join((" ".join((str(x) for x in y)) for y in lst)))
     except TypeError:
-        print delim.join((str(y) for y in lst))
+        print(delim.join((str(y) for y in lst)))
 
 def printfunc(func):
-    print ''.join(getsourcelines(func)[0])
+    print(''.join(getsourcelines(func)[0]))
 
 def lookin(module,string,nodir = False):
     lst = dir(module)
     if nodir: lst = module
     for x in lst:
-        if string.lower() in x.lower(): print x
+        if string.lower() in x.lower(): print(x)
 
 def frange(stop,start=None,step=1):
     if start != None:
@@ -80,11 +80,11 @@ class RomanConversion(object):
         result = ''
         for index,(numeral,value) in enumerate(numerals):
             div = 5 if div ==2 else 2
-            amount = num/value
+            amount = num//value
             if div == 2 and amount == 4 and numeral != 'M': 
                 #If amount > 4 we have a problem
                 result += numeral + numerals[index-1][0]
-            elif (div == 5 and numeral != 'I' and num/numerals[index+1][1] == 9
+            elif (div == 5 and numeral != 'I' and num//numerals[index+1][1] == 9
                            and numeral != 'M'):
                 result += numerals[index+1][0] + numerals[index-1][0]
                 value = numerals[index+1][1]
@@ -131,6 +131,6 @@ def nwise(iterable, n = 2, overlap = True):
         for i in range(len(iterators)):
             for j in range(i):
                 next(iterators[i], None)
-        return izip(*iterators)
-    return izip(*[iter(iterable)]*n)
+        return zip(*iterators)
+    return zip(*[iter(iterable)]*n)
 

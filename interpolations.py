@@ -38,7 +38,7 @@ class Curve:
         self.count += 1
         if self.count > len(self.vector):
             raise StopIteration
-        return self.vector.next()
+        return next(self.vector)
 
     def __getitem__(self, index):            
         try:
@@ -88,12 +88,12 @@ class Interpolation:
             if t < self.vector[start][0]: return start-1
             return start
         rng = end - start
-        if t == self.vector[rng/2+start][0]: return rng/2+start
-        if t < self.vector[rng/2+start][0]:
-            if t >= self.vector[rng/2+start-1][0]:
-                return start+rng/2-1
-            return self.find(t,start,start+rng/2)
-        return self.find(t,start+rng/2+1,end)
+        if t == self.vector[rng//2+start][0]: return rng//2+start
+        if t < self.vector[rng//2+start][0]:
+            if t >= self.vector[rng//2+start-1][0]:
+                return start+rng//2-1
+            return self.find(t,start,start+rng//2)
+        return self.find(t,start+rng//2+1,end)
         
 
 class linear(Interpolation):

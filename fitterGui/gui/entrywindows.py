@@ -1,7 +1,7 @@
-from Tkinter import Entry,LEFT,Label
-import tkMessageBox as messagebox
+from tkinter import Entry,LEFT,Label
+import tkinter.messagebox as messagebox
 from plotInt import Iplot
-from simplewindows import simpleWindow
+from .simplewindows import simpleWindow
 
 class entryWindow(simpleWindow):
     def __init__(self,parent,check,field,title,width = 20):

@@ -1,7 +1,7 @@
 from plotInt     import Iplot,plt
 from numpy       import array, concatenate
 from numpy       import append as ndappend
-from itertools   import izip
+
 from fitshandler import Data
 from models      import ibifit #For labeling
 
@@ -27,7 +27,7 @@ def loadIonPositions(self):
     ions = ibifit(ncut=3).ions
     suffix = ['$\\alpha$','$\\beta$','$\\gamma$']
     self.ionlocations = sorted(sum([[[t[0],ion+a,i] if i > 0.5 else [1000*keVAfac/t[0],ion,i]
-        for i,a,t in zip(range(1,len(ions[ion].l)+1) + [0.5,]*len(ions[ion].e),
+        for i,a,t in zip(list(range(1,len(ions[ion].l)+1)) + [0.5,]*len(ions[ion].e),
                          suffix[:len(ions[ion].l)]   + ['' ,]*len(ions[ion].e),
                          ions[ion].l                 + ions[ion].e)]
             for ion in ions],[]))
@@ -75,9 +75,9 @@ def setplot(self, plotType,plot = False):
 def _embedz(z,ptype):
     if z is None: return None
     if ptype == WAVE:
-        exec('shift = lambda x: x/(1.0+'+str(z)+')')
+        shift = eval('lambda x: x/(1.0+'+str(z)+')')
     elif ptype == ENERGY:
-        exec('shift = lambda x: x*(1.0+'+str(z)+')')
+        shift = eval('lambda x: x*(1.0+'+str(z)+')')
     else:
         shift = None
     return shift
@@ -134,12 +134,12 @@ def plotModel(self,start = None,stop = None,delta = None):
     energies = array(
         [start+i*delta for i in range(1+int((stop-start)/delta))])
     model = self.current.tofit(energies)
-    self.plotmodel = zip(energies,model)
+    self.plotmodel = list(zip(energies,model))
     self.plot(user = False)
 
 def plotEff(self):
     Iplot.clearPlots()
-    Iplot.plotCurves(zip(self.resp.ebinAvg,self.resp.reff),plotype="xy")
+    Iplot.plotCurves(list(zip(self.resp.ebinAvg,self.resp.reff)),plotype="xy")
     Iplot.x.label('KeV')
     Iplot.y.label('cm$^2$')
 

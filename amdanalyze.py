@@ -68,7 +68,7 @@ class AMD(object):
                     elem,charge = ion.split('_')
                 except ValueError: continue
                 self.fractions[xi][elem][charge] = xiline[self.ind[ion]]
-        self.fractions = dict(((k,dict(v)) for k,v in self.fractions.items()))
+        self.fractions = dict(((k,dict(v)) for k,v in list(self.fractions.items())))
         self.xiOrder   = array(sorted(self.fractions))
         if params is not None: self.readParams(params)
                
@@ -83,7 +83,7 @@ class AMD(object):
                 component = int(line[0])
             except KeyError: continue
             self.data[component][ion] = float(line[3])
-            exec('self.errors[component][ion] = abs(array('+line[4]+'))') in locals(),globals()
+            exec(('self.errors[component][ion] = abs(array('+line[4]+'))'), locals(),globals())
         self.errors = dict(self.errors)
         self.data   = dict(self.data)
         self.params = dict()
@@ -137,7 +137,7 @@ class AMD(object):
             row = 0           
             for i,ion in enumerate(self.data[c]):
                 #if not self.nhMaps[c][ion]: continue
-                self.nhMaps[c][i]   = array(map(lambda x: self.xilist[c].index(x),self.nhMaps[c][i]))
+                self.nhMaps[c][i]   = array([self.xilist[c].index(x) for x in self.nhMaps[c][i]])
                 self._coeff[c][ion] = array(self._coeff[c][ion])
                 self._cMat[c][row,self.nhMaps[c][i]] = self._coeff[c][ion]
                 self._rVec[c].append(self.data[c][ion])
@@ -148,26 +148,26 @@ class AMD(object):
                
     def contributions(self,component,ion=None,xiMin=None,xiMax=None):
         c = component
-        ions = self.data[c].keys() if ion is None else [ion]
+        ions = list(self.data[c].keys()) if ion is None else [ion]
         header = ion is None
         if header:
-            print "%-8s %-4s %-8s %-8s %-8s %-8s"%('ion','xi','NI','Fraction','Abund','Product')
+            print("%-8s %-4s %-8s %-8s %-8s %-8s"%('ion','xi','NI','Fraction','Abund','Product'))
         for i,ion in enumerate(ions):
             ion = self.getIon(ion)
             try:
                 if not header: 
-                    print ion,'contributions:'
-                    print "%-4s %-8s %-8s %-8s %-8s"%('xi','NI','Fraction','Abund','Product')                   
+                    print(ion,'contributions:')
+                    print("%-4s %-8s %-8s %-8s %-8s"%('xi','NI','Fraction','Abund','Product'))                   
                 for ind in self.nhMaps[c][i]:
                     xi = self.xilist[c][ind]
                     if (xiMin is None or xi >= xiMin) and (xiMax is None or xi <= xiMax):
                         elem,charge = self.getIon(ion,split=True)
-                        if header: print '%-8s'%(ion),
-                        print "%.2f %.2e %.2e %.2e %.2e"%(
+                        if header: print('%-8s'%(ion))
+                        print("%.2f %.2e %.2e %.2e %.2e"%(
                                         xi,self.data[c][ion],self.fractions[xi][elem][charge],abundances[elem],
-                                        self.fractions[xi][elem][charge]*abundances[elem])
+                                        self.fractions[xi][elem][charge]*abundances[elem]))
             except KeyError: 
-                if not header: print None
+                if not header: print(None)
     
     def relaventXis(self,ion,epsilon,amount):
         elem,charge = self.getIon(ion,split=True)
@@ -194,12 +194,12 @@ class AMD(object):
                                        save+self._eVec[c][:,1])
             kwargs["screen"] = False
             try:
-                res   = array(map(lambda x: x[0],self.converge(component,**kwargs)))
+                res   = array([x[0] for x in self.converge(component,**kwargs)])
             except Exception as e:
-                print "-E- failed with",e
-                print "-E- Last array attempted:"
-                print res
-                print "-E- Current bounds returned, managed",i,"iterations"
+                print("-E- failed with",e)
+                print("-E- Last array attempted:")
+                print(res)
+                print("-E- Current bounds returned, managed",i,"iterations")
                 break
             lower = minimum(lower,res)
             upper = maximum(upper,res)
@@ -219,12 +219,12 @@ class AMD(object):
         kwargs['guess']   = guess
         kwargs['maxiter'] = maxiter
         while True:
-            if verbose: print 'Iteration :',maxiter
+            if verbose: print('Iteration :',maxiter)
             try: 
                 res = self.AMD(component,**kwargs) 
-                err = self.error(*range(len(guess)),throw=True)
+                err = self.error(*list(range(len(guess))),throw=True)
             except staterr.newBestFitFound as e:
-                if verbose: print 'Got :',self._last
+                if verbose: print('Got :',self._last)
                 kwargs['guess'] = e.new
                 maxiter -= 1
                 if not maxiter: raise ValueError("Exceeded maximum iteration limit")
@@ -232,19 +232,19 @@ class AMD(object):
             break
         
         if not screen:
-            return zip(res,err)
+            return list(zip(res,err))
 
         if qdp:
             dxis = ((array(self.xilist[component][1:]) - array(self.xilist[component][:-1]))/2.0).reshape(-1,1)
             dxis = ndappend(-dxis[:-1],dxis[1:],axis=1)
         else:
-            print '{0:4} {1:4} {2:8} {3[0]:9} {3[1]:9}'.format('xi','dxi','nh',('low','high'))
+            print('{0:4} {1:4} {2:8} {3[0]:9} {3[1]:9}'.format('xi','dxi','nh',('low','high')))
             dxis = self.dxilist[component][1:-1]
         for xi,dxi,x,xe in zip(self.xilist[component][1:-1],dxis,res,err):
             if not qdp:
-                print '{0:<4.2f} {1:<4.2f} {2:<8.2e} {3[0]:<9.2e} {3[1]:<9.2e}'.format(xi,dxi,x,xe)
+                print('{0:<4.2f} {1:<4.2f} {2:<8.2e} {3[0]:<9.2e} {3[1]:<9.2e}'.format(xi,dxi,x,xe))
             else:
-                print '{0:<4.2f} {1[0]:<4.2f} {1[1]:<4.2f} {2:<8.2e} {3[0]:<9.2e} {3[1]:<9.2e}'.format(xi,dxi,x,xe)
+                print('{0:<4.2f} {1[0]:<4.2f} {1[1]:<4.2f} {2:<8.2e} {3[0]:<9.2e} {3[1]:<9.2e}'.format(xi,dxi,x,xe))
 
     def estimateNH(self,c,index,val,nh,**kwargs):
         if val < 0: return inf
@@ -277,7 +277,7 @@ class AMD(object):
                 if 'throw' in kwargs:
                     e.new = res
                     raise
-                print "New best fit found:",e
+                print("New best fit found:",e)
             finally:
                 self._last  = last
                 self._error = lasterr
@@ -303,11 +303,9 @@ class AMD(object):
         if estimate is not None:
             if estimate == 0:
                 if not pretty: return predicted
-                ions = map(lambda x: (x[0],RomanConversion.toInt(x[1])),
-                                        [ion.split('_') for ion in self.data[c]])
-                return map(lambda x: (x[0][0].title()+'_'+RomanConversion.toRoman(x[0][1]),
-                                x[1],x[2]),
-                            sorted(zip(ions,predicted,self._rVec[c])))
+                ions = [(x[0],RomanConversion.toInt(x[1])) for x in [ion.split('_') for ion in self.data[c]]]
+                return [(x[0][0].title()+'_'+RomanConversion.toRoman(x[0][1]),
+                                x[1],x[2]) for x in sorted(zip(ions,predicted,self._rVec[c]))]
             if estimate == 1:
                 return objective
             return objNormed
@@ -352,11 +350,11 @@ class AMD(object):
             self._last.bins = len(self._rVec[c])
             self._last.pars = len(guess)
             if verbose: 
-                print u"{0} parameters, {1} bins, {2} d.o.f, \u03C7\u00B2 = {3},and reduced {4}".format(
-                    len(guess),len(self._rVec[c]),dof,self._last['fun'],red).encode('utf8')
+                print("{0} parameters, {1} bins, {2} d.o.f, \u03C7\u00B2 = {3},and reduced {4}".format(
+                    len(guess),len(self._rVec[c]),dof,self._last['fun'],red).encode('utf8'))
             return NH
         if verbose: 
-            print 'Failed with '+ result.message
+            print('Failed with '+ result.message)
             return None
         raise ValueError("Failed with " + result.message)
 
@@ -376,7 +374,7 @@ class AMD(object):
                                               if nh(ion) > 1])
                 Iplot.plotCurves(array(curve),chain=True,plotype='xydydy')
         Iplot.ylog(True)
-        Iplot.legend(*legend, bbox_to_anchor=(1.1,1.1))
+        Iplot.legend(*legend, bbox_to_anchor=(0.9,0.9))
         Iplot.y.label('log ($N_\mathrm{H}$ / $10^{18}$ cm$^{-2}$)')
         Iplot.x.label('log $\\xi$')
     
@@ -420,7 +418,7 @@ class AMD(object):
                 except ValueError:
                     elem,charge,_ = re.split('([0-9]+)',ion)
                     charge = RomanConversion.toRoman(int(charge)+1).lower()
-                ion    = self.writeIon(elem,charge)
+                ion = self.writeIon(elem,charge)
                 if ion not in self.ind: raise ValueError
             except ValueError:
                 raise KeyError('No such Ion ('+ion+')!')

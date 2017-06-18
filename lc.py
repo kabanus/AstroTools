@@ -49,12 +49,12 @@ class lightCurve:
                     current = getattr(self,action)()
                     self.resetzoom()
                     if verbose:
-                        print "-I- Window [",start,"=",self.table[start][0],"-",stop,"=",self.table[stop][0],"] got",action,"of",current
+                        print("-I- Window [",start,"=",self.table[start][0],"-",stop,"=",self.table[stop][0],"] got",action,"of",current)
                     res   += current
                     count += 1
             except lightCurve.lcOutOfBound: pass
             if verbose:
-                print "-I- Got",count,"windows."
+                print("-I- Got",count,"windows.")
             return res/count
         else: 
             print("-E- Got bad action! use dir() to see availble actions (no parameter functions).")

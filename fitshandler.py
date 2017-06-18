@@ -7,7 +7,7 @@ from numpy             import append as ndappend
 from numpy             import concatenate as ndconc
 from numpy             import array,dot,inf,delete,sort,zeros,where,arange
 from numpy             import unravel_index,argmax,isnan,ones,fromfile
-from itertools         import izip
+
 from matplotlib.pyplot import show,figure
 import re
 
@@ -28,8 +28,8 @@ class fitsHandler(object):
     @staticmethod
     def ndrebin(arr, rebin, function = 'mean'):
         if rebin <= 1: return arr
-        start = arr[:(arr.shape[0]/rebin)*rebin].reshape(arr.shape[0]//rebin,-1,*arr.shape[1:])
-        final = arr[(arr.shape[0]/rebin)*rebin:]
+        start = arr[:(arr.shape[0]//rebin)*rebin].reshape(arr.shape[0]//rebin,-1,*arr.shape[1:])
+        final = arr[(arr.shape[0]//rebin)*rebin:]
         
         arr = npdict[function](start,axis=1)
         if final.any():
@@ -75,7 +75,7 @@ class Response(fitsHandler):
             #Speed things up!!! Also - while kills speed for some reason.
             matrow = list(record[row])
             energies.append([])
-            for start_channel,nchannel in izip(record[fch][:grps],record[nch][:grps]):
+            for start_channel,nchannel in zip(record[fch][:grps],record[nch][:grps]):
                 for _ in range(channel,start_channel):
                     energies[-1].append(0)
                     channel += 1
@@ -354,7 +354,7 @@ class Data(fitsHandler):
 
         result  = me/you
         eresult = ((eme/you)**2+(me*eyou/you**2)**2)**0.5
-        return zip(Data.ndrebin(self.channels,self.grouping),result,eresult)
+        return list(zip(Data.ndrebin(self.channels,self.grouping),result,eresult))
 
     def reset(self):
         self.deleted  = set()
@@ -500,7 +500,7 @@ class Events(fitsHandler):
         self.iter = 0
         return self
 
-    def next(self):
+    def __next__(self):
         if self.iter == len(self.events): raise StopIteration()
         self.iter += 1
         return self.events[self.iter - 1]

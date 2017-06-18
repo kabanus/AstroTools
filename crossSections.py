@@ -13,7 +13,7 @@ class Verner(object):
                 name = line[0]
                 current = 1
             ion = name + " " + RomanConversion.toRoman(current)
-            self.cs[ion] = Verner.genCS(*map(lambda p: float(p),line[4:]))
+            self.cs[ion] = Verner.genCS(*[float(p) for p in line[4:]])
             current += 1
 
     @classmethod

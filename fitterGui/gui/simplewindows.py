@@ -1,6 +1,6 @@
-from Tkinter import Toplevel,Frame,Button,TOP,Label,LEFT,BOTH,Canvas,N,S,W,TclError
-import tkMessageBox as messagebox
-from helperfunctions import updateFrame,genScrollCanvas
+from tkinter import Toplevel,Frame,Button,TOP,Label,LEFT,BOTH,Canvas,N,S,W,TclError
+import tkinter.messagebox as messagebox
+from .helperfunctions import updateFrame,genScrollCanvas
 
 class simpleWindow(object):
     def __init__(self,parent,check,field,title):
@@ -13,7 +13,7 @@ class simpleWindow(object):
             raise
 
         try: 
-            exec('fld=parent.'+field) in locals(),globals()
+            exec(('fld=parent.'+field), locals(),globals())
             fld.focus_set()
             fld.lift()
             return
@@ -21,7 +21,7 @@ class simpleWindow(object):
 
         self.parent = parent
         self.root = Toplevel(self.parent.root)
-        exec('parent.'+field+' = self.root') in locals(),globals()
+        exec(('parent.'+field+' = self.root'), locals(),globals())
         self.root.transient(self.parent.root)
         self.root.wm_geometry("+%d+%d" %(parent.root.winfo_rootx()+parent.root.winfo_width()/3.0, parent.root.winfo_rooty()+parent.root.winfo_height()/2.0))
         self.root.wm_title(title)
@@ -81,7 +81,7 @@ class Help(ScrollingCanvas):
         self.helplabel("1. Current model loaded")
         self.helplabel("2. index:parameter, then current value, then the error (see later), and finally" +
                            " wether it is thawed or not.","   ")
-        self.helplabel(u"3. The current \u03C7\u00B2/d.o.f and ignored channels in the current axis' units.\n\n","   ")
+        self.helplabel("3. The current \u03C7\u00B2/d.o.f and ignored channels in the current axis' units.\n\n","   ")
         self.helplabel("Right clicking gives some options such as hiding/showing frozen parameters and hiding the "+
                        "window all together. Ctrl-F allows jumping to parameters if list is long, format is index:param.","")
         self.helplabel("\n")
@@ -89,7 +89,7 @@ class Help(ScrollingCanvas):
         self.helplabel("Errors","",16)
         self.helplabel("Errors will be appear once a fit is performed - initial values, marked in a redish tint, "+
                        "and appearing on a raised button are the standard error, and shouldn't be quoted in anything." + 
-                       u"Once a fit is performed you can press these buttons to compute the \u03C7\u00B2 "+
+                       "Once a fit is performed you can press these buttons to compute the \u03C7\u00B2 "+
                        "based proper errors, though this may take a while depending on the amount of thawed parameters."+
                        " Once this is done the errors will be black and the button flattened (until you change "+
                        "somthing/fit). Note if a new best fit is found this will reflect in the parameter window.\n\n","")

@@ -22,9 +22,9 @@ class ICCF:
                     else: 
                         if i and not LC1 and not sys.stdin.isatty(): 
                             print("-I- Only got first curve!")
-                        LCfile = str(raw_input('-->' + names[i] + ' light curve: '))
+                        LCfile = str(input('-->' + names[i] + ' light curve: '))
                         if not sys.stdin.isatty():
-                            print("Getting curve from file: " + LCfile) 
+                            print(("Getting curve from file: " + LCfile)) 
                     LC = Curve([[float(x) for x in y.split(" ")] 
                                 for y in open(LCfile).read().strip('\n').split("\n")],3)
                     LCs.append(sorted(LC,key = lambda x: x[0]))
@@ -33,9 +33,9 @@ class ICCF:
                     raise
                 except (IOError, Curve.LengthError) as e:
                     if not sys.stdin.isatty(): sys.stdin = open("/dev/tty") 
-                    print("-E- Got error: %s"%e)
-                    print("-E- Bad LC file. Please make sure file exists and has " +
-                          "3 space delimited floating point columns.")
+                    print(("-E- Got error: %s"%e))
+                    print(("-E- Bad LC file. Please make sure file exists and has " +
+                          "3 space delimited floating point columns."))
                     curve = None
                     raise
         self.LCS = LCs
@@ -199,13 +199,13 @@ class ICCF:
 INTERACT = False
 if not sys.stdin.isatty():
     try:
-        param = raw_input()
+        param = input()
         while param != '':
             if param == "force_interact":
                INTERACT = True
             else:
                 sys.argv.append(param)
-            param = raw_input()
+            param = input()
     except EOFError: pass
 
 #Non-interactive run
@@ -222,7 +222,7 @@ if sys.argv[0]:
             except IndexError: 
                 Iccf = ICCF()
     except BaseException as e:
-        print("\n\n-E- Failed to create iccf object, please do so yourself (see help). To see help use ICCF.help() - failed with error:\n-E- '" + str(e) +"'")
+        print(("\n\n-E- Failed to create iccf object, please do so yourself (see help). To see help use ICCF.help() - failed with error:\n-E- '" + str(e) +"'"))
         print("-I- Usage: iccf.py [LC1 LC2 [PeakStart PeakEnd binsize [samplesize] [tablestep]]]")
         err = True
     else:
@@ -238,10 +238,10 @@ if sys.argv[0]:
         except IndexError: Iccf.makeTables()
         errp = [float(arg) for arg in sys.argv[3:6]]
         Best,sigma,length = Iccf.calcError(*errp)
-        print '-I- Result:',
-        print '-I- Best guess:',Best
-        print '-I- Confidence interval:',sigma
-        print '-I- Number of bins used:',length
+        print('-I- Result:', end=' ')
+        print('-I- Best guess:',Best)
+        print('-I- Confidence interval:',sigma)
+        print('-I- Number of bins used:',length)
         Iccf.exportAllPlots(errorp=errp,ptype='pdf')
     else:
         INTERACT = True

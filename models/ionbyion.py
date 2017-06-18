@@ -75,7 +75,7 @@ class ibifit(_singleModel):
         wl  = 4; AAa = 6; f = 8; en = 2; a2 = 5; title = 1;
         if edge:
             #en, a0, a1, a2
-            ind = range(en,a2+1)
+            ind = list(range(en,a2+1))
             title += 1
         else:
             ind = [wl,AAa,f]
@@ -168,10 +168,10 @@ class ibifit(_singleModel):
         kT       = self.params['~kT']
         vturb    = self.params['~vturb']
         for ion in self.ions:
-            exec('self.ions[ion].t = lambda wl: self.taumodel(wl,"'+
+            exec(('self.ions[ion].t = lambda wl: self.taumodel(wl,"'+
                                                     str(ion)+'",'+
                                                     str(kT) +','+
-                                                    str(vturb)+')') in locals(), globals()
+                                                    str(vturb)+')'), locals(), globals())
          
         if globalVHash == vturb and globalkTHash == kT and getsizeof(self.wlhash) < 2**32:
             self.wlhash   = globalIBIHash 

@@ -1,4 +1,4 @@
-from itertools import izip
+
 
 class errorNotConverging(Exception): pass
 class newBestFitFound(Exception): pass
@@ -17,7 +17,7 @@ def oneSidedError(self, index, param, direction, epsilon,v0):
     iparam  = (index,param)
     thawed  = iparam in self.getThawed()
     self.thaw(iparam)
-    save    = dict(izip(self.getThawed(),self.initArgs()))
+    save    = dict(zip(self.getThawed(),self.initArgs()))
     self.freeze(iparam)
     bestchi = self.chisq()
     initial = self.current[iparam]

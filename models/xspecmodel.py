@@ -19,7 +19,7 @@ try:
             self.params   = dict(((str(i)+':'+self.model(i).name,self.model(i).values[0]) 
                                     for i in range(1,self.model.nParameters+1)))
             params        = [str(i)+':'+self.model(i).name for i in range(1,self.model.nParameters+1)]
-            self.paramMap = map(lambda x: self.params.keys().index(x),params)
+            self.paramMap = [list(self.params.keys()).index(x) for x in params]
             self.energies = ()
             self.efile    = 'fitterModel.Energies'
             self.plot('model')
@@ -59,12 +59,12 @@ try:
             return self.ehash
 
         def sethook(self, index, key):
-            values = [x.val for x in self.params.values()]
+            values = [x.val for x in list(self.params.values())]
             self.model.setPars(*[values[k] for k in self.paramMap])
     
         def __str__(self):
             return 'Xspec("'+self.string+'")'
 
 except ImportError:
-    print "Warning: No XSPEC module found, won't be able to use XSPEC models. If this is unexpected, make sure you're in an HEADAS environemnt."
+    print("Warning: No XSPEC module found, won't be able to use XSPEC models. If this is unexpected, make sure you're in an HEADAS environemnt.")
 

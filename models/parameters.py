@@ -3,7 +3,7 @@ Created on 15-Oct-2016
 
 @author: kabanus
 '''
-from UserDict import UserDict
+from collections import UserDict
 
 class Primitive(object):
     def __eq__(self,other):
@@ -33,11 +33,11 @@ class Parameters(UserDict):
     def __init__(self, args, clone = False):
         UserDict.__init__(self)
         dictionary = dict(args)
-        for k,v in dictionary.items():
+        for k,v in list(dictionary.items()):
             if clone: self.clone_item(k, v)
             else:     self[k] = v      
     def update(self,other):
-        for k,v in other.items():
+        for k,v in map(lambda ko: (ko,UserDict.__getitem__(other,ko)),other):
             self.clone_item(k,v)         
     def clone_item(self,key,val):      
         UserDict.__setitem__(self,key,val)
@@ -50,12 +50,10 @@ class Parameters(UserDict):
     def pointer_to(self,index,key):
         return View(UserDict.__getitem__(self,key),index,key)
     def view(self):
-        return dict([(key,View(val)) for key,val in self.items()])
+        return dict([(key,View(val)) for key,val in list(self.items())])
     def __setitem__(self,key,value):
-        try:                              UserDict.__getitem__(self,key).val = value
+        try:               UserDict.__getitem__(self,key).val = value
         except (KeyError): UserDict.__setitem__(self,key,Value(value))
     def __getitem__(self,key):
         return UserDict.__getitem__(self,key).val
-    def __iter__(self):
-        for k in self.iterkeys(): yield k
     

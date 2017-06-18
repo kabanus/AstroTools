@@ -26,8 +26,8 @@ class Iplot(object):
             else:
                 raise noSuchAxis(axis)
             self.axis = axis
-            exec("self.sizer  = Iplot.axes.set_"+axis+"lim") 
-            exec("self.labelr = Iplot.axes.set_"+axis+"label")
+            self.sizer  = eval("Iplot.axes.set_"+axis+"lim") 
+            self.labelr = eval("Iplot.axes.set_"+axis+"label")
             self.sizer2    = None
             self.labelr2   = None
             self.transform = None
@@ -35,24 +35,22 @@ class Iplot(object):
             op = 'y'
             if self.sizer2 is None:
                 if self.ind: op = 'x'
-                exec(
-                    'self.second    = Iplot.axes.twin'+op+'();'+
-                    'self.sizer2    = self.second.set_'+self.axis+'lim;'
-                    )
+                self.second = eval('Iplot.axes.twin'+op+'()')
+                self.sizer2 = eval('self.second.set_'+self.axis+'lim')
                 plt.gcf().delaxes(Iplot.axes)
                 plt.gcf().add_axes(Iplot.axes)
             self.transform = function
             if function is not None:
-                exec("self.second."+self.axis+
+                eval("self.second."+self.axis+
                     "axis.set_major_formatter(FuncFormatter"+
                     "(lambda c,p,t=self.transform: SF.format_data_short(t(c))))")
             else:
-                exec("self.second."+self.axis+"axis.set_major_formatter(NullFormatter())")
+                eval("self.second."+self.axis+"axis.set_major_formatter(NullFormatter())")
                 self.second.minorticks_on()
             self.resize()
 
         def scale(self,stype):
-            exec("Iplot.axes.set_"+self.axis+"scale('"+stype+"')")
+            eval("Iplot.axes.set_"+self.axis+"scale('"+stype+"')")
     
         def resize(self,start = None,stop = None):
             if stop == None:
@@ -74,7 +72,7 @@ class Iplot(object):
     def _log(axis,on):
         if Iplot.plots and axis.get_bounds()[0] <= 0:
             index = 0 if axis is Iplot.x else 1
-            minimum = min(map(lambda p: min(p[0].get_xydata()[:,index]),Iplot.plots))
+            minimum = min([min(p[0].get_xydata()[:,index]) for p in Iplot.plots])
             if minimum <= 0:
                 axis.resize(start=1e-10)
         if on:
@@ -152,12 +150,12 @@ class Iplot(object):
    
     @staticmethod
     def secondAxis(function,axis='x'):
-        exec('axis=Iplot.'+axis)
+        axis = eval('Iplot.'+axis)
         axis.twin(function)
         plt.draw()
     @staticmethod
     def hideSecondAxis(axis='x'):
-        exec('axis=Iplot.'+axis)
+        axis = eval('Iplot.'+axis)
         if axis.transform != None:
             axis.twin(None)
             plt.draw()
@@ -211,7 +209,7 @@ class Iplot(object):
         if 'marker' not in kwargs:
             if not chain:
                 Iplot.cmarker = cycle(Iplot.markers)
-            kwargs['marker'] = Iplot.cmarker.next()
+            kwargs['marker'] = next(Iplot.cmarker)
             if Iplot.fillstylecount == len(Iplot.markers):
                 Iplot.fillstyle = 'none' if Iplot.fillstyle != 'none' else 'full' 
                 Iplot.fillstylecount = 0
@@ -259,7 +257,7 @@ class Iplot(object):
                     else:
                         if   letter == 'x': xdata = c[:,index]
                         elif letter == 'y': ydata = c[:,index]
-                        else: raise KeyError();
+                        else: raise KeyError()
                     index += 1
             except KeyError:
                 raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")

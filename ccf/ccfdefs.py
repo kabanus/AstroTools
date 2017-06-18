@@ -102,13 +102,13 @@ class CCF:
     #Calculate minimum time step in both lcs.
     def minStep( self, interactive = False ):
         delta = min(self.interpolated.vector.defaultStep(), self.vector.defaultStep())
-        print("Got a minimum delta value of: " + str(delta) + ". Will " +
-              "use as a step delta/10="+str(delta/10.0)+".")
+        print(("Got a minimum delta value of: " + str(delta) + ". Will " +
+              "use as a step delta/10="+str(delta/10.0)+"."))
         if interactive:
             try:
-                print ("To change this enter new step (any none floating " +
-                       "input will be treated as accepting this value): ")
-                return float(raw_input())
+                print(("To change this enter new step (any none floating " +
+                       "input will be treated as accepting this value): "))
+                return float(input())
             except:
                 pass     
         return delta/10.0

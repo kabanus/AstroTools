@@ -4,13 +4,13 @@ Created on Mar 15, 2013
 @author: kabanus
 '''
 
-from Tkinter import LEFT,N,S,E,W,Button,Toplevel,Frame,Entry,Label
-from tkFont import Font
-from re import finditer
-from helperfunctions import getfile
-from entrywindows import strReader
+from tkinter          import LEFT,N,S,E,W,Button,Toplevel,Frame,Entry,Label
+from tkinter.font     import Font
+from re               import finditer
+from .helperfunctions import getfile
+from .entrywindows    import strReader
 import models
-import tkMessageBox as messagebox
+import tkinter.messagebox as messagebox
 ALL = N+S+W+E
 
 currentReader = None
@@ -34,7 +34,7 @@ class XspecLoader(strReader):
             self.model = models.Xspec(self.string)
             self.good = True
         except Exception as e:
-            print '-'+str(e)+'-'
+            print('-'+str(e)+'-')
             if str(e) == 'Model Command Error' or str(e):
                 messagebox.showerror("Bad XSPEC string",'Consult XSPEC manual')
                 return
@@ -101,7 +101,7 @@ class getFunc(object):
         self.root.destroy()
         currentGetfun = None
 
-MODELS = dict(((str(m),(m.description,m)) for m in models.exported.values()))
+MODELS = dict(((str(m),(m.description,m)) for m in list(models.exported.values())))
 for m in models.exported:
     exec(m+' = MODELS["'+m+'"][1]')
 
@@ -224,7 +224,7 @@ class modelReader(object):
                             rng[1] += len(args)
                     model = model[:padded+p.end()] + args + model[padded+p.end():]
                     padded += len(args)
-            exec('model = ' + model)
+            model = eval(model) 
         except TypeError:
             messagebox.showerror("Failed to build model!","Perhaps you forgot '*' for multiplication?")
             if self.parent.debug: raise

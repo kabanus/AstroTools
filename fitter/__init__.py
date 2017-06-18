@@ -2,7 +2,7 @@ import re
 from numpy import array
 
 class Fitter(object):
-    from _plotdefs import CHANNEL,ENERGY,WAVE
+    from ._plotdefs import CHANNEL,ENERGY,WAVE
     def __init__(self, data = None, resp = None, noinit = False, text = None):
         self.axisz     = None
         self.dataz     = None
@@ -26,21 +26,21 @@ class Fitter(object):
             self.loadResp(resp)
 
     #Exceptions
-    from _datadefs import dataResponseMismatch, noIgnoreBeforeLoad
-    from _modeling import NotAModel
-    from _error    import errorNotConverging, newBestFitFound
-    from _plotdefs import badPlotType, badZoomRange, labelAxis,toggleLog
-    from _plotdefs import unlabelAxis, toggleIonLabels, plotEff
+    from ._datadefs import dataResponseMismatch, noIgnoreBeforeLoad
+    from ._modeling import NotAModel
+    from ._error    import errorNotConverging, newBestFitFound
+    from ._plotdefs import badPlotType, badZoomRange, labelAxis,toggleLog
+    from ._plotdefs import unlabelAxis, toggleIonLabels, plotEff
 
     #Methods
-    from _datadefs import loadResp, loadData, loadBack, loadAncr
-    from _datadefs import checkLoaded, transmit, ignore, reset
-    from _datadefs import untransmit, div, group, updateIonLabels
-    from _modeling import chisq,reduced_chisq,append,delete
-    from _modeling import activate,nameModel,energies,tofit,fit
-    from _error    import error
-    from _plotdefs import zoomto,rebin,setplot,plot,shift,removeShift
-    from _plotdefs import initplot,plotModel, plotDiv, toggle_area
+    from ._datadefs import loadResp, loadData, loadBack, loadAncr
+    from ._datadefs import checkLoaded, transmit, ignore, reset
+    from ._datadefs import untransmit, div, group, updateIonLabels
+    from ._modeling import chisq,reduced_chisq,append,delete
+    from ._modeling import activate,nameModel,energies,tofit,fit
+    from ._error    import error
+    from ._plotdefs import zoomto,rebin,setplot,plot,shift,removeShift
+    from ._plotdefs import initplot,plotModel, plotDiv, toggle_area
 
     #utility
     @staticmethod

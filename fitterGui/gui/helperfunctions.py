@@ -1,6 +1,6 @@
-from Tkinter import Frame,N,S,E,W,Button,Label,BOTH,TOP,Canvas,Scrollbar
-from tkFileDialog import askopenfilename
-from commandline import commandLine
+from tkinter import Frame,N,S,E,W,Button,Label,BOTH,TOP,Canvas,Scrollbar
+from tkinter.filedialog import askopenfilename
+from .commandline import commandLine
 from os import path
 ALL = N+S+E+W
 
