@@ -1,15 +1,28 @@
-from time import clock
+from time      import clock
 from itertools import tee
-from inspect import getsourcelines
+from inspect   import getsourcelines
+from importlib import reload
+import readline as rl
 
 class ArgLess(object):
-    def __init__(self,func):
+    def __init__(self,func,doneStr = ''):
         self.f = func
+        self.d = doneStr
     def __call__(self): 
         self.f()
     def __repr__(self):
         self()
-        return ''
+        return self.d
+
+def history(start = 0, end = None):
+    if end is None:
+        end = rl.get_current_history_length()
+    if start < 0:
+        start += rl.get_current_history_length()
+    for i in range(start,end):
+        print(str(i+1)+":",rl.get_history_item(i+1))
+
+hist = ArgLess(history)
 
 def printlist(lst, width = None, delim = "\n"):
     try:

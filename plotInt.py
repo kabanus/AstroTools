@@ -93,6 +93,10 @@ class Iplot(object):
         if on is None: on = not Iplot.ylogon
         Iplot.ylogon = on
         Iplot._log(Iplot.y,on)
+    @staticmethod
+    def log(on=None):
+        Iplot.xlog(on)
+        Iplot.ylog(on)
 
     pickstate = None
     @staticmethod
@@ -132,6 +136,7 @@ class Iplot(object):
         global Iplot
         Iplot.axes = plt.gca()
         Iplot.axes.minorticks_on()
+        Iplot.axes.tick_params(which='both', direction='in')
         Iplot.x = Iplot.axis('x') 
         Iplot.y = Iplot.axis('y')
         Iplot.col = 0
@@ -189,6 +194,9 @@ class Iplot(object):
     #scatter makes scatter plots.
     @staticmethod
     def plotCurves(*args,**kwargs):
+        if 'help' in kwargs:
+            print('Options not passed to matplotlib: plotype, scatter,autosize,chain,stepx,stepy,histogram,marker')
+            args = None
         if not args: return
 
         try: plotype = kwargs.pop('plotype')

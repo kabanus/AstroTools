@@ -1,15 +1,15 @@
-#A few tools to help me with my astronomy
+# A few tools to help me with my astronomy
 
-This package introduces a few odds and adds to simplify stuff. Contributions and suggestion our welcome.
+This package introduces a few odds and ends to simplify stuff. Contributions and suggestions are welcome.
 
-##Listing
+## Directory listing
 
-1. `amdanlyze.py`      - Class for dealing analyzing Absorption Measure Distributions. It accept a fit result output from the `fitter`, and the output of `genXstarGrid` for ionic fraction modeling in a thin shell model.
-2. `appdata`           - Directory containing physics for apps, like oscillator strength s and cross sections.
+1. `amdanlyze.py`      - Class for analyzing Absorption Measure Distributions. It accepts a fit result output from the `fitter`, and the output of `genXstarGrid` for ionic fraction modeling in a thin shell model.
+2. `appdata`           - Directory containing physics for apps, like oscillator strengths and cross sections.
 3. `binpeak`           - Utility function for creating and anlyzing histograms generated.
 4. `ccf`               - Use executeable `iccf.py` inside. Utility for calculating and analyzing cross correlations.
 5. `crossSections.py`  - Not really done as I moved to `Chianti`. Class for dealing with cross sections.
-6. `fitshandler.py`    - Handler for common X-rays FITS files. Tested only with Chandra and XMM FITS files, though should work with any compliant FITS files.
+6. `fitshandler.py`    - Handler for common X-rays FITS files. Tested only with Chandra and XMM FITS files, though should work with any compliant FITS files. Should in general handle pure text ('ascii') transparently.
 7. `fitter`            - Package for fitting data, plotting, error calculation and so forth. Currently needs mainly parallelaztion. Currently support XSPEC basically through the Python interface (if you have both), but that needs work as well for faster integration.
 8. `fitterGui`         - A graphical suite for interacting with the fitter, so can use XSPEC and any other model. Run with `fitter_gui.py`.
 9. `genXstarGrid`      - Generate a Xi grid of thin shell models with XSTAR, to use for ionic fraction calculations in plasma.
