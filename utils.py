@@ -23,6 +23,24 @@ def history(start = 0, end = None):
         print(str(i+1)+":",rl.get_history_item(i+1))
 
 hist = ArgLess(history)
+def whist(fname): rl.write_history_file(fname)
+def rhist(fname): 
+    code = []
+    with open(fname) as fd:
+        for line in fd:
+            if not line.strip(): continue
+            code.append('try:')
+            code.append(' '+line.strip())
+            code.append(' rl.add_history("'+line.strip().replace('"','\\"')+'")')
+            code.append('except: pass')
+    while True:
+        try:
+            exec("\n".join(code).encode(),globals())
+            break
+        except SyntaxError as e:
+            print(e,code[e.lineno-1])
+            for _ in range(4): del code[e.lineno-2]
+    return a,b,code,skip
 
 def printlist(lst, width = None, delim = "\n"):
     try:

@@ -120,6 +120,10 @@ class Response(fitsHandler):
         self.minebounds = fitsHandler.ndrebin(self.ominebounds,self.grouping,'min')
         self.maxebounds = fitsHandler.ndrebin(self.omaxebounds,self.grouping,'max')
 
+    def loadancr(self,ancr):
+        if not ancr: return
+        print("-E- Ancr support not implemented. Implement or make sure it's OK. Didn't load:"+ancr+".")
+
     def convolve_channels(self,vector):
         return dot(self.matrix,vector*self.ebins)
 

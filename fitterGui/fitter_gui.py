@@ -222,31 +222,33 @@ if True or __name__ == "__main__":
             self.refreshPlot()
 
         def saveSession(self, name, extension):
-            fd = open(name+'.'+extension,'w')
-            writeline = lambda string: fd.write(string+'\n')
-            
-            try: writeline('data:' +self.fitter.data_file)
-            except AttributeError: pass
-            try: writeline('resp:' +self.fitter.resp_file)
-            except AttributeError: pass
-            try: writeline('tran:' +self.fitter.transmit_file)
-            except AttributeError: pass
-            try: writeline('ptype:'+str(self.fitter.ptype))
-            except AttributeError: pass
-            try: writeline(self.ignored.get())
-            except AttributeError: pass
-            try: writeline(self.grouped.get())
-            except AttributeError: pass
-            try: writeline('model:'+self.fitter.current.__str__())
-            except AttributeError: pass
-            try: writeline('param:'+self.dumpParams())
-            except AttributeError: pass
-            if self.errors:
-                writeline('errors:'+str(self.errors).translate(None,"(){} '").replace(':',','))
-            if self.xspec_packages:
-                writeline('xspecpackages:'+str(self.xspec_packages).translate(None,"[] '"))
-           
-            fd.close()
+            with open(name+'.'+extension,'w') as fd:
+                writeline = lambda string: fd.write(string+'\n')
+                
+                try: writeline('data:' +self.fitter.data_file)
+                except AttributeError: pass
+                try: writeline('resp:' +self.fitter.resp_file)
+                except AttributeError: pass
+                try: writeline('tran:' +self.fitter.transmit_file)
+                except AttributeError: pass
+                try: writeline('ptype:'+str(self.fitter.ptype))
+                except AttributeError: pass
+                try: writeline(self.ignored.get())
+                except AttributeError: pass
+                try: writeline(self.grouped.get())
+                except AttributeError: pass
+                try: writeline('model:'+self.fitter.current.__str__())
+                except AttributeError: pass
+                try: writeline('param:'+self.dumpParams())
+                except AttributeError: pass
+                if self.errors:
+                    writeline(
+                        'errors:'+str(self.errors).translate(str.maketrans(
+                                                '','',"(){} '")).replace(':',','))
+                if self.xspec_packages:
+                    writeline(
+                        'xspecpackages:'+str(self.xspec_packages).translate(str.maketrans(
+                                                '','',"[] '")))
 
         def saveParams(self, name, extension):
             if extension:
@@ -277,10 +279,9 @@ if True or __name__ == "__main__":
             params.append(  self.grouped.get())
             params.insert(0,self.datatitle.get())
 
-            paramFile = open(name,'w')
-            for p in params:
-                paramFile.write(p.encode('utf-8')+'\n')
-            paramFile.close
+            with open(name,'w') as paramFile:
+                for p in params:
+                    paramFile.write(p+'\n')
     
         def load(self, what, res = None, user = True):
             if res == None: res = getfile('FTZ','FIT','ds','dat','RMF','RSP')
