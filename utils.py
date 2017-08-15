@@ -165,3 +165,6 @@ def nwise(iterable, n = 2, overlap = True):
         return zip(*iterators)
     return zip(*[iter(iterable)]*n)
 
+def lmap(a,b):
+    return list(map(a,b))
+

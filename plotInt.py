@@ -224,7 +224,7 @@ class Iplot(object):
             kwargs['fillstyle'] = Iplot.fillstyle
             Iplot.fillstylecount += 1
         kwargs['linewidth'] = 2
-        if not scatter:
+        if not scatter and not histogram:
             kwargs['markeredgewidth'] = 2
             kwargs['markersize'] = 8
 
@@ -271,8 +271,14 @@ class Iplot(object):
                 raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
             
             color = [Iplot.col,0,1-Iplot.col]
-            plot = Iplot.axes.errorbar(xdata,ydata,xerr=errs['x'],yerr=errs['y'],capsize = 0,
-                            elinewidth=kwargs['linewidth'],ecolor=color,color=color,**kwargs)
+            if not histogram:
+                plot = Iplot.axes.errorbar(xdata,ydata,xerr=errs['x'],yerr=errs['y'],capsize = 0,
+                                elinewidth=kwargs['linewidth'],ecolor=color,color=color,**kwargs)
+            else:
+                kwargs.pop('marker')
+                kwargs.pop('fillstyle')
+                kwargs['fill'] = False
+                plot = Iplot.axes.bar(xdata,ydata,**kwargs)
             Iplot.plots.append(plot)
             if scatter: plot[0].set_linestyle("")
             xv = xdata
