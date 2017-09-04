@@ -139,7 +139,7 @@ def plotModel(self,start = None,stop = None,delta = None):
 
 def plotEff(self):
     Iplot.clearPlots()
-    Iplot.plotCurves(list(zip(self.resp.ebinAvg,self.resp.reff)),plotype="xy")
+    Iplot.plotCurves(concatenate((self.resp.ebinAvg.reshape(-1,1),self.resp.reff.reshape(-1,1)),axis=1),plotype="xy",markersize=1,marker='.')
     Iplot.x.label('KeV')
     Iplot.y.label('cm$^2$')
 

@@ -95,15 +95,13 @@ class Response(fitsHandler):
     def calcEff(self):
         oeff       = self.omatrix.sum(axis=0)
         self.roeff = oeff
-        self.oeff  = oeff[argmax(self.omatrix,axis=1)]
+        self.oeff  = self.omatrix.sum(axis=1)
 
     def ignore(self, channels):
         self.group(self.grouping,reset = False)
         self.deleted.update([c-1 for c in channels if c > 0 and c <= len(self.matrix)])
         self.matrix     = delete(self.matrix     ,list(self.deleted), axis = 0)
         self.eff        = delete(self.eff        ,list(self.deleted))
-        #self.minebounds = delete(self.minebounds,list(self.deleted))
-        #self.maxebounds = delete(self.maxebounds,list(self.deleted))
 
     def reset(self):
         self.deleted    = set()
