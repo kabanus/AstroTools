@@ -1,14 +1,15 @@
-from astropy.io        import fits
-from astropy.table     import Table
-from numpy             import __dict__ as npdict
-from numpy             import int    as ndint
-from numpy             import max    as ndmax
-from numpy             import append as ndappend
-from numpy             import concatenate as ndconc
-from numpy             import array,dot,inf,delete,sort,zeros,where,arange
-from numpy             import unravel_index,argmax,isnan,ones,fromfile
-
-from matplotlib.pyplot import show,figure
+from astropy.io          import fits
+from astropy.wcs         import WCS
+from astropy.table       import Table
+from astropy.coordinates import SkyCoord
+from numpy               import __dict__ as npdict
+from numpy               import int    as ndint
+from numpy               import max    as ndmax
+from numpy               import append as ndappend
+from numpy               import concatenate as ndconc
+from numpy               import array,dot,inf,delete,sort,zeros,where,arange,indices
+from numpy               import unravel_index,argmax,isnan,ones,fromfile
+from matplotlib.pyplot   import show,figure,Circle
 import re
 
 class fitsHandler(object):
@@ -114,7 +115,7 @@ class Response(fitsHandler):
     def group(self, binfactor = None, reset = True):
         fitsHandler.group(self,binfactor,reset)
         self.matrix     = fitsHandler.ndrebin(self.omatrix,self.grouping,'sum')
-        self.eff        = fitsHandler.ndrebin(self.oeff,self.grouping,'sum')
+        self.eff        = fitsHandler.ndrebin(self.oeff,self.grouping,'mean')
         self.minebounds = fitsHandler.ndrebin(self.ominebounds,self.grouping,'min')
         self.maxebounds = fitsHandler.ndrebin(self.omaxebounds,self.grouping,'max')
 
@@ -417,18 +418,30 @@ class Data(fitsHandler):
 
 class Events(fitsHandler):
     def __init__(self, event_file):
-        fitsio      = Table.read(event_file,hdu=1)
-        self.events = sort(fitsio['X','Y'])
-        xmax        = self.events[-1][0]
-        ymax        = max((a[1] for a in self.events))
-        self.map    = zeros((ymax,xmax),dtype=ndint)
+        try: 
+            fitsio      = Table.read(event_file,hdu=1)
+            self.events = sort(fitsio['X','Y'])
+            xmax        = self.events[-1][0]
+            ymax        = max((a[1] for a in self.events))
+            self.map    = zeros((ymax,xmax),dtype=ndint)
 
-        X = 0
-        Y = 1
-        maximum = 0
-        for event in self.events:
-            self.map[event[Y]-1][event[X]-1] += 1
+            X = 0
+            Y = 1
+            maximum = 0
+            for event in self.events:
+                self.map[event[Y]-1][event[X]-1] += 1
+        except ValueError: 
+            fitsio = fits.open(event_file,hdu=1)[0]
+            self.events = fitsio.data
+            xmax        = len(self.events[0])+1
+            ymax        = len(self.events)+1
+            self.map    = self.events
+
         self.xl,self.xr,self.yb,self.yt = (1,len(self.map[0]),1,len(self.map))
+        self.wcs = WCS(fitsio)
+        self.pixels = indices(self.map.shape)
+        self.pixel_per_arc_second = 1/(SkyCoord(*self.wcs.wcs_pix2world(0,1,1),frame='fk5',unit='deg'
+                        ).separation(SkyCoord(*self.wcs.wcs_pix2world(0,0,1),frame='fk5',unit='deg')).dms.s)
       
     def outOfBound(self,x,y):
         return x < self.xl or x > self.xr or y < self.yb or y > self.yt
@@ -438,11 +451,11 @@ class Events(fitsHandler):
         y = int(y+1)
         try:
             if self.outOfBound(x,y): return 'Out'
-            return str(self[x,y])
+            return str(self.map[x,y])
         except IndexError: 
             return 'Out'
 
-    def plot(self):
+    def plot(self,obj=None,coord='pixel'):
         fig  = figure()
         axes = fig.add_subplot(111)
         vals = lambda x,y: 'x=%d, y=%d, z=%s'%(x+1,y+1,self._plotval(x,y))
@@ -456,45 +469,68 @@ class Events(fitsHandler):
         axes.set_yticks(a)
         img.set_extent((0.5,len(self.map[0]+0.5),0.5,len(self.map)+0.5))
         axes.format_coord = vals
+
+        if obj is not None:
+            x,y,R = self.coord_transform(obj[:2],obj[2],coord)
+            axes.add_artist(Circle((x,y),R,color='green',fill=False))
+            if len(obj) > 3:
+                x,y,R,RM = self.coord_transform(obj[:2],obj[3],coord)
+                axes.add_artist(Circle((x,y),RM,color='green',fill=False))
         show(block=False)
         return axes
 
     def centroid(self,ignore = ()):
         return tuple((x+1 for x in unravel_index(argmax(self.map),self.map.shape)[::-1]))
 
-    def _validate_pixels(self,pixels,thresh):
-        count = valid = 0
-        for value in pixels:
-            count += 1
-            if value >= thresh: valid += 1
-        return count,valid
-
-    def is_effective_radius(self,center,R, thresh = None):
+    def _is_effective_radius(self,center,R, thresh = None):
         if thresh == None:
-            thresh = self[center]/20.0
+            thresh = 1 
         X,Y = center
         count = valid = 0
-        for pixels in ((self[(X-R,y)] for y in range(Y-R,Y+R+1)),
-            (self[(X+R,y)] for y in range(Y-R,Y+R+1)),
-            (self[(x,Y-R)] for x in range(X-R+1,X+R)),
-            (self[(x,Y+R)] for x in range(X-R+1,X+R))):
-            res = self._validate_pixels(pixels,thresh)
-            count += res[0]
-            valid += res[1]
-        return valid/float(count) >= 0.5
 
-    def object(self, constant = None):
+        for pixels in (self.map[X-R,Y-R:Y+R+1],self.map[X+R,Y-R:Y+R+1],
+                       self.map[Y-R,X-R:X+R+1],self.map[Y+R,X-R:X+R+1]):
+            count += pixels.shape[0]
+            valid += pixels[pixels>thresh].shape[0]
+        return valid/float(count) >= 0.1
+
+    def coord_transform(self,coord,R=None,what='pixel'):
+        if what != 'pixel':
+            if what == 'fk5':
+                coord = array(self.wcs.wcs_world2pix(*coord,1))
+                if R is not None:
+                    coord = ndappend(coord,self.pixel_per_arc_second*R)
+            else:
+                print("-E- Currently only coordinates in pixel or fk5 are supported!")
+                return
+        elif R is not None:
+            return ndappend(array(coord),R).round().astype('int64')
+        return array(coord).round().astype('int64')
+
+    def object(self,center,what='pixel',constant = None):
         R = 0
-        center = self.centroid()
-        if constant != None: return center + (constant,)
-        while self.is_effective_radius(center,R): R += 1
-        return center+(R,)
+        center = self.coord_transform(center,what=what)
+        if constant is not None: 
+            if constant == 0: return center
+            return ndappend(center,constant)
+        while self._is_effective_radius(center,R): R += 1
+        return ndappend(center,R)
     
     def max(self):
         return ndmax(self.map)
 
-    def background(self, outer_coefficient = 2, constant = None):
-        x,y, Rmin = self.object()
+    def counts_around(self,x,y,R,what='pixel',returnMax = False,debug = False):
+        x,y,R = self.coord_transform((x,y),R,what)
+        pixels = (self.pixels[0]-y)**2+(self.pixels[1]-x)**2
+        if debug: return pixels
+        dists = self.map[pixels<=R**2]
+        if returnMax:
+            try: return dists.sum(),dists.max()
+            except ValueError: return 0,0
+        return dists.sum()
+
+    def background(self,center,outer_coefficient = 1.25, constant = None,coord='pixel'):
+        x,y, Rmin = self.object(center,coord=coord)
         if constant != None: return x,y,constant[0],constant[1]
         return x,y,Rmin,Rmin*outer_coefficient
 
@@ -506,7 +542,4 @@ class Events(fitsHandler):
         if self.iter == len(self.events): raise StopIteration()
         self.iter += 1
         return self.events[self.iter - 1]
-
-    def __getitem__(self,coords):
-        return self.map[coords[1]-1][coords[0]-1]
 

@@ -5,13 +5,14 @@ from importlib import reload
 import readline as rl
 
 class ArgLess(object):
-    def __init__(self,func,doneStr = ''):
+    def __init__(self,func,args = [],doneStr = ''):
         self.f = func
         self.d = doneStr
-    def __call__(self): 
-        self.f()
+        self.a = args
+    def __call__(self):
+        return self.f(*self.a)
     def __repr__(self):
-        self()
+        print(self())
         return self.d
 
 def history(start = 0, end = None):

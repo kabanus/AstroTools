@@ -88,6 +88,7 @@ class Gui(object):
         self.parent.canvas.get_tk_widget().bind("<H>",lambda event: Help(self.parent))
         self.parent.canvas.get_tk_widget().bind("<R>",lambda event: rebinReader(self.parent))
         self.parent.canvas.get_tk_widget().bind("<G>",lambda event: rebinReader(self.parent,True))
+        self.parent.canvas.get_tk_widget().bind("<T>",lambda event: self.parent.doAndPlot(lambda: self.parent.fitter.toggle_area()))
         self.parent.canvas.get_tk_widget().bind("<d>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadData)))
         self.parent.canvas.get_tk_widget().bind("<b>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadBack)))
         self.parent.canvas.get_tk_widget().bind("<r>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp))) 
