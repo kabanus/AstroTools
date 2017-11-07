@@ -241,13 +241,6 @@ class Iplot(object):
                     echild.set_color([Iplot.col,0,1-Iplot.col])
                 Iplot.col += col_step
 
-        try:                  
-            plotter = Iplot.axes.plot
-        except AttributeError: 
-            Iplot.init()
-            plotter = Iplot.axes.plot
-        if histogram: 
-            plotter = Iplot.axes.bar
         for c in args:
             iserr = False
             errs  = {'x': None, 'y': None}
