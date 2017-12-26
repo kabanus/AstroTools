@@ -8,6 +8,7 @@ class Fitter(object):
         self.dataz     = None
         self.ptype     = self.CHANNEL
         self.models    = []
+        self.ionlabs   = []
         self.current   = None
         self.binfactor = 1
         self.result    = []
@@ -15,7 +16,7 @@ class Fitter(object):
         self.xstop     = None
         self.ystart    = None
         self.ystop     = None
-        self.plotmodel = False
+        self.plotmodel = array(())
         self.labelions = False
         self.area      = array(())
         self.axisOverride=[None,None]

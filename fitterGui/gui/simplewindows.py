@@ -7,11 +7,14 @@ class simpleWindow(object):
         try:
             if check.find("data")     > -1: parent.fitter.data
             if check.find("response") > -1: parent.fitter.resp
-            if check.find("model") > -1 and parent.fitter.current == None: raise AttributeError()
+            if check.find("model") > -1 and parent.fitter.current == None: 
+                raise AttributeError()
         except AttributeError:
             messagebox.showerror('No '+check+'!','Please load '+check+' first')
             raise
-
+        
+        self.parent = parent
+        self.root = Toplevel(self.parent.root)
         try: 
             exec(('fld=parent.'+field), locals(),globals())
             fld.focus_set()
@@ -19,8 +22,6 @@ class simpleWindow(object):
             return
         except (AttributeError,TclError): pass
 
-        self.parent = parent
-        self.root = Toplevel(self.parent.root)
         exec(('parent.'+field+' = self.root'), locals(),globals())
         self.root.transient(self.parent.root)
         self.root.wm_geometry("+%d+%d" %(parent.root.winfo_rootx()+parent.root.winfo_width()/3.0, parent.root.winfo_rooty()+parent.root.winfo_height()/2.0))

@@ -284,7 +284,7 @@ if True or __name__ == "__main__":
                     paramFile.write(p+'\n')
     
         def load(self, what, res = None, user = True):
-            if res == None: res = getfile('FTZ','FIT','ds','dat','RMF','RSP')
+            if res == None: res = getfile('pha','FTZ','FIT','ds','dat','RMF','RSP')
             if not res: return 
             m = runMsg(self,"Loading data")
             try: 
@@ -365,7 +365,7 @@ if True or __name__ == "__main__":
         def calc(self):
             m = runMsg(self)
             try:
-                if not self.fitter.plotmodel:
+                if not self.fitter.plotmodel.any():
                     self.fitter.checkLoaded()
                     self.fitter.calc()
                 else: self.fitter.plotModel()
@@ -413,7 +413,7 @@ if True or __name__ == "__main__":
                     self.params.relabel()
                     self.params.resetErrors()
                     self.ring()
-                    m.destroy()
+                m.destroy()
             try:
                 for index,param in thawed:
                     self.thawedDict[(index,param)][1].set('(%.2E)'%self.fitter.stderr[(index,param)])

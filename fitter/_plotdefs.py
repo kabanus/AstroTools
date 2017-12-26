@@ -113,18 +113,18 @@ def toggle_area(self):
 
 def _labelaxes(self, model):
     add = ''
-    if model or self.area.any(): add += ' cm$^{-2}$'
+    if model is not None or self.area.any(): add += ' cm$^{-2}$'
     if self.ptype == self.CHANNEL:
         Iplot.x.label('Channel')
-        if not model or len(model[0]) == 2:
+        if model is None or len(model[0]) == 2:
             Iplot.y.label('ph s$^{-1}$ channel$^{-1}$'+add)
     if self.ptype == self.ENERGY:
         Iplot.x.label('keV')
-        if not model or len(model[0]) == 2:
+        if model is None or len(model[0]) == 2:
             Iplot.y.label('ph s$^{-1}$ keV$^{-1}$'+add)
     if self.ptype == self.WAVE:
         Iplot.x.label('$\AA$')
-        if not model or len(model[0]) == 2:
+        if model is None or len(model[0]) == 2:
             Iplot.y.label('ph s$^{-1}$ $\AA^{-1}$'+add)
 
 def plotModel(self,start = None,stop = None,delta = None):
@@ -134,7 +134,7 @@ def plotModel(self,start = None,stop = None,delta = None):
     energies = array(
         [start+i*delta for i in range(1+int((stop-start)/delta))])
     model = self.current.tofit(energies)
-    self.plotmodel = list(zip(energies,model))
+    self.plotmodel = array(list(zip(energies,model)))
     self.plot(user = False)
 
 def plotEff(self):
@@ -155,7 +155,7 @@ def _plotOrSave(save = None,model = None, data = None):
             plotype = "xdxydy" if len(data[0]) == 4 else "xydy"
             Iplot.plotCurves(data,stepx = 0,scatter = True,plotype=plotype,marker="+")
         if model is not None:
-            Iplot.plotCurves(model,chain=True,plotype="xy",marker="+")
+            Iplot.plotCurves(model,chain=True,plotype="xy",scatter=False,marker=None)
     else:
         fd = open(save,'w')
         table = []
@@ -171,9 +171,9 @@ def _plotOrSave(save = None,model = None, data = None):
 def plot(self, save = None, user = True, keepannotations = False):
     Iplot.clearPlots(keepannotations=keepannotations,keepscale = True)
     model = None
-    if not user and self.plotmodel:
-        model = self.plotmodel
-    else: self.plotmodel = False
+    if not user and self.plotmodel.any():
+       model = self.plotmodel
+    else: self.plotmodel = array(())
 
     area = self.area
     if not self.area.any():

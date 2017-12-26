@@ -8,7 +8,7 @@ from numpy               import max    as ndmax
 from numpy               import append as ndappend
 from numpy               import concatenate as ndconc
 from numpy               import array,dot,inf,delete,sort,zeros,where,arange,indices
-from numpy               import unravel_index,argmax,isnan,ones,fromfile
+from numpy               import unravel_index,argmax,isnan,ones,fromfile,array_equal
 from matplotlib.pyplot   import show,figure,Circle
 import re
 
@@ -76,7 +76,12 @@ class Response(fitsHandler):
             #Speed things up!!! Also - while kills speed for some reason.
             matrow = list(record[row])
             energies.append([])
-            for start_channel,nchannel in zip(record[fch][:grps],record[nch][:grps]):
+            try: 
+                channels = zip(record[fch][:grps],record[nch][:grps])
+            except IndexError:
+                if grps > 1: raise
+                channels = (record[fch],record[nch]),
+            for start_channel,nchannel in channels:
                 for _ in range(channel,start_channel):
                     energies[-1].append(0)
                     channel += 1
@@ -94,8 +99,7 @@ class Response(fitsHandler):
         self.ebinAvg = array(self.ebinAvg)
 
     def calcEff(self):
-        oeff       = self.omatrix.sum(axis=0)
-        self.roeff = oeff
+        self.roeff = self.omatrix.sum(axis=0)
         self.oeff  = self.omatrix.sum(axis=1)
 
     def ignore(self, channels):
@@ -121,7 +125,12 @@ class Response(fitsHandler):
 
     def loadancr(self,ancr):
         if not ancr: return
-        print("-E- Ancr support not implemented. Implement or make sure it's OK. Didn't load:"+ancr+".")
+        ancr = array([row for row in list(fits.open(ancr)['SPECRESP'].data)])
+        if not array_equal(ancr[:,:2].sum(axis=1)/2.0,self.ebinAvg):
+            raise ValueError("-E- Energy bins differ between ancr and response file!")
+        self.omatrix *= ancr[:,2]
+        self.calcEff()
+        self.reset()
 
     def convolve_channels(self,vector):
         return dot(self.matrix,vector*self.ebins)
@@ -251,7 +260,7 @@ class Data(fitsHandler):
                 q = record[QUALITY] > 0
             except KeyError:
                 q = 0
-            if q > 0 or counts <= 0:
+            if q > 0:
                 counts = 0
                 self.ocounts.append(0)
                 self.oscales.append(0)
@@ -307,6 +316,7 @@ class Data(fitsHandler):
             error   = ( counts/Data.ndrebin(self. scale(eff),rebin,'sum')**2+
                        bcounts/Data.ndrebin(self.bscale(eff),rebin,'sum')**2)**0.5
         error[isnan(error)] = inf
+        error[error == 0  ] = inf
         return error if row else error.reshape(-1,1)
 
     def scale(self, eff = 1):
@@ -497,7 +507,7 @@ class Events(fitsHandler):
     def coord_transform(self,coord,R=None,what='pixel'):
         if what != 'pixel':
             if what == 'fk5':
-                coord = array(self.wcs.wcs_world2pix(*coord,1))
+                coord = array(self.wcs.wcs_world2pix(coord[0],coord[1],1))
                 if R is not None:
                     coord = ndappend(coord,self.pixel_per_arc_second*R)
             else:

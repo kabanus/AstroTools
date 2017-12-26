@@ -59,7 +59,7 @@ try:
             return self.ehash
 
         def sethook(self, index, key):
-            values = [x.val for x in list(self.params.values())]
+            values = [x for x in list(self.params.values())]
             self.model.setPars(*[values[k] for k in self.paramMap])
     
         def __str__(self):

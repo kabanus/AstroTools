@@ -8,15 +8,17 @@ class noIgnoreBeforeLoad(Exception): pass
 def div(self,other):
     self.division = self.data/other
 
-def loadResp(self,resp):
+def loadResp(self,resp,refresh = True):
     self.resp      = Response(resp)
     self.checkLoaded()
     self.resp_file = resp
     self.updateIonLabels()
+    if refresh: self.plot(user = False)
 
-def loadAncr(self,ancr):
+def loadAncr(self,ancr,refresh = True):
     self.resp.loadancr(ancr)
     self.ancr_file = ancr
+    if refresh: self.plot(user = False)
 
 def updateIonLabels(self, shift = None):
     self.ionlabs = []

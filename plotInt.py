@@ -214,6 +214,8 @@ class Iplot(object):
         except KeyError: stepy = None
         try: histogram = kwargs.pop('histogram')
         except KeyError: histogram = False
+        try: onecolor = kwargs.pop('onecolor')
+        except KeyError: onecolor = False
         if 'marker' not in kwargs:
             if not chain:
                 Iplot.cmarker = cycle(Iplot.markers)
@@ -230,16 +232,17 @@ class Iplot(object):
 
         my = mx = float("Inf")
         My = Mx = float("-Inf")
-        
+       
         Iplot.col = 0
-        col_step = 1.0/len(args)
-        if chain:
-            col_step = 1.0/(len(Iplot.plots)+len(args))
-            for child in Iplot.plots:
-                child[0].set_color([Iplot.col,0,1-Iplot.col])
-                for echild in child[1]+child[2]:
-                    echild.set_color([Iplot.col,0,1-Iplot.col])
-                Iplot.col += col_step
+        if not onecolor:
+            col_step = 1.0/len(args)
+            if chain:
+                col_step = 1.0/(len(Iplot.plots)+len(args))
+                for child in Iplot.plots:
+                    child[0].set_color([Iplot.col,0,1-Iplot.col])
+                    for echild in child[1]+child[2]:
+                        echild.set_color([Iplot.col,0,1-Iplot.col])
+                    Iplot.col += col_step
 
         for c in args:
             iserr = False
@@ -287,7 +290,7 @@ class Iplot(object):
                     if max(xv) > Mx: Mx = max(xv)
                     if min(yv) < my: my = min(yv)
                     if max(yv) > My: My = max(yv)
-            Iplot.col += col_step
+            if not onecolor: Iplot.col += col_step
         if not chain and autosize:
             Iplot.axes.set_xlim(mx-stepx,Mx+stepx)
             Iplot.axes.set_ylim(my-stepy,My+stepy)
