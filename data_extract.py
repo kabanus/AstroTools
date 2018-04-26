@@ -3,11 +3,26 @@ from tkinter import LEFT,RIGHT,BOTH,NW,BOTTOM,TOP,X,Y,END
 from PIL     import Image,ImageTk,ImageDraw
 from sys     import argv
 from time    import time
-from numpy   import log10,array,apply_along_axis,hstack,vstack,lib,where
+from numpy   import log10,array,apply_along_axis,hstack,vstack,lib,where,delete as npdelete
 from tkinter.messagebox import askquestion,showerror
 from tkinter.filedialog import asksaveasfilename
 
 class DataExtraction:
+    @staticmethod
+    def logscale(value,p0,p1):
+        return p0*(p1/p0)**value
+
+    @staticmethod
+    def rolling_window(a, shape):
+        s = ((a.shape[0] - shape[0] + 1,) + (a.shape[1] - shape[1] + 1,) + 
+                (1,) + shape + (a.shape[2],))
+        strides = a.strides + a.strides
+        return lib.stride_tricks.as_strided(a, shape=s, strides=strides)
+
+    @staticmethod
+    def inside(r,x,y):
+        return r[2] >= x >= r[0] and r[3] > y > r[1]
+
     def __init__(self,image,width = 800,height=600):
         self.root = Tk() 
         
@@ -19,9 +34,11 @@ class DataExtraction:
         self.main = Frame(self.root)
         self.main.pack()
 
+        self.circles  = array((),dtype='int16').reshape(0,4)
         self.filename = image
         self.shapex   = -1
         self.im       = Image.open(image)
+        self.original = self.im.copy()
         self.pim      = ImageTk.PhotoImage(self.im)
         self.canvas   = Canvas(self.main,cursor='plus',width=self.im.width,height=self.im.height)
         self.canvas.create_image(0,0,image=self.pim,anchor=NW)
@@ -62,8 +79,17 @@ class DataExtraction:
         bf = Frame(self.gui)
         bf.pack(fill=X)
         Button(bf,text="Fix Scale",command=self.fix,bg='grey').pack(side=LEFT,fill=X,expand=True)
-        Button(bf,text="Find shape",command=self.findShape,bg='grey').pack(side=RIGHT,fill=X,expand=True)
+        c = Button(bf,text="Find shape",command=self.findShape,bg='grey',anchor='w')
+        c.pack(side=RIGHT,fill=X,expand=True)
+        c.pack_propagate(False)
+
+        vcmd = (c.register(lambda val: not len(val) or (len(val) <=2 and val.isdigit())) ,'%P')
+        self.precision = Entry(c,width=2,vcmd=vcmd,validate='key')
+        self.precision.pack(side=RIGHT)
+        self.precision.insert(0,"1")
         self.position = StringVar()
+        Label(c,text="uncertain=0.",bg='white').pack(side=RIGHT)
+
         f = Frame(self.gui) 
         f.pack(fill=X)
         Label(f,text="Plot Coordinates").pack(side=LEFT)
@@ -81,7 +107,7 @@ class DataExtraction:
         c.pack(side=RIGHT,fill=Y)
         self.pop = Button(c,text="Pop" ,command=self.pop)
         self.pop.pack(expand=True,fill=BOTH)
-        Button(c,text="Clear",command=lambda: self.writer.delete(1.0,END)).pack(expand=True,fill=BOTH)
+        Button(c,text="Clear",command=self.clear).pack(expand=True,fill=BOTH)
         Button(c,text="Save",command=self.save).pack(expand=True,fill=BOTH)
 
         c = Canvas(self.gui,bg='grey')
@@ -95,10 +121,14 @@ class DataExtraction:
         c.create_line(w//2-length,h//2,w//2+length,h//2,width=2,fill='blue')
         c.create_line(w//2,h//2-length,w//2,h//2+length,width=2,fill='blue')
         
-
         #For windows
         self.root.focus_force()
         self.root.mainloop()
+
+    def clear(self):
+        self.writer.delete(1.0,END)
+        self.im = Image.open(self.filename)
+        self.pim.paste(self.im)
 
     def save(self):
         f = asksaveasfilename()
@@ -128,13 +158,6 @@ class DataExtraction:
         self.top.bind("<Key-Escape>",self.unpop)
         self.top.protocol('WM_DELETE_WINDOW',self.unpop) 
 
-    @staticmethod
-    def rolling_window(a, shape):
-        s = ((a.shape[0] - shape[0] + 1,) + (a.shape[1] - shape[1] + 1,) + 
-                (1,) + shape + (a.shape[2],))
-        strides = a.strides + a.strides
-        return lib.stride_tricks.as_strided(a, shape=s, strides=strides)
-
     def addCircle(self,draw,x,y,w,h):
         draw.ellipse((x,y,x+w,y+h),outline='red')
 
@@ -143,7 +166,7 @@ class DataExtraction:
             if self.fixed:
                 self.writer.insert(END,"{:.2g} , {:.2g}\n".format(*self.pixToPlot((x0+x1)/2,(y0+y1)/2)))
 
-    def findShape(self,accuracy = 0.1):
+    def findShape(self):
         try: x0,y0,x1,y1 = self.shape
         except AttributeError: return
         if x0 == x1 or y0 == y1: return
@@ -154,7 +177,7 @@ class DataExtraction:
         shape   = array(self.im)[y0:y1,x0:x1]
         a,b,c   = shape.shape
         windows = self.rolling_window(array(self.im),shape.shape[:2])
-        target  = accuracy*a*b*c*255
+        target  = float("0."+self.precision.get())*a*b*c*255
         result  = vstack(where((windows-shape).sum(axis=(2,3,4,5))<target))
         apply_along_axis(lambda r: self.processShape(r[1],r[0],r[1]+b,r[0]+a,draw),0,result)
         
@@ -187,10 +210,6 @@ class DataExtraction:
         self.yy = pixels[3][1]-pixels[2][1]
         self.fixed = True
 
-    @staticmethod
-    def logscale(value,p0,p1):
-        return p0*(p1/p0)**value
-
     def pixToPlot(self,x,y):
         if not self.fixed:
             showerror("Can't calculate xy!","Mapping not fixed yet!")
@@ -209,18 +228,29 @@ class DataExtraction:
             self.position.set("")
             return
         return X,Y
+
+    def removeShapes(self,rows):
+        apply_along_axis(lambda r: self.im.paste(self.original.crop(r),r),1,self.circles[rows])
+        npdelete(self.circles,rows,axis=0)
+        self.pim.paste(self.im)
        
-    def drawCircle(self,x0,y0,x1,y1):
-        self.im     = Image.open(self.filename)
+    def drawCircle(self,x0,y0,x1,y1,clear = False,save = True):
+        if clear: 
+            #self.im.paste(self.oldim.copy().crop((x0-1,y0-1,x1+1,y1+1)),(x0,y0))
+            self.im = self.oldim.copy()
         draw = ImageDraw.Draw(self.im)
         draw.ellipse((x0,y0,x1,y1),outline='red')
         self.pim.paste(self.im)
-        self.shape  = (x0,y0,x1,y1)
+        self.shape   = (x0,y0,x1,y1)
+        if save:
+            width = 1
+            self.circles = vstack((self.circles,(x0-width,y0-width,x1+width,y1+width)))
 
     def initShape(self,x,y):
         self.shapex = x
         self.shapey = y
-        self.drawCircle(x,y,x,y)
+        self.oldim  = self.im.copy()
+        self.drawCircle(x,y,x,y,True,False)
 
     def setShape(self,event):
         self.shapex = -1
@@ -232,7 +262,19 @@ class DataExtraction:
                             coord['lab'].configure(relief='ridge')
                             break
                 else:
-                    self.writer.insert(END,"{:.2g} , {:.2g}\n".format(*self.pixToPlot(event.x,event.y)))
+                    x,y = event.x,event.y
+                    try:
+                        rows = apply_along_axis(lambda r: self.inside(r,x,y),1,self.circles)
+                    except IndexError: rows = array(())
+                    if rows.any():
+                        self.removeShapes(where(rows))
+                    else:
+                        width = 5
+                        self.writer.insert(END,"{:.2g} , {:.2g}\n".format(*self.pixToPlot(x,y)))
+                        self.drawCircle(x-width,y-width,x+width,y+width)
+                    self.getZoom(x,y) 
+                    return
+        self.im     = self.oldim.copy()
 
     def getZoom(self,x,y):
         try:
@@ -264,7 +306,7 @@ class DataExtraction:
         
         if self.shapex > -1:
             dx,dy = abs(self.shapex-x),abs(self.shapey-y)
-            self.drawCircle(x-dx,y-dy,x+dx,y+dy)
+            self.drawCircle(x-dx,y-dy,x+dx,y+dy,True,False)
         elif not self.fixed:
             for coord in self.coords:
                 if not coord['lab'].set:

@@ -6,7 +6,10 @@ from   matplotlib.markers import MarkerStyle as MS
 from   itertools          import cycle
 from   numpy              import array
 import numpy as np
+import matplotlib
 warnings.filterwarnings('ignore')
+matplotlib.rc('text', usetex=True)
+matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
 
 SF = ScalarFormatter()
 plt.ion()
@@ -65,7 +68,7 @@ class Iplot(object):
         def get_bounds(self):
             return Iplot.axes.axis()[self.ind*2:self.ind*2+2]
         def label(self,title):
-            self.labelr(title)
+            self.labelr(r'\textbf{'+title+'}')
             plt.draw()
 
     @staticmethod
@@ -267,6 +270,9 @@ class Iplot(object):
                 raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
             
             color = [Iplot.col,0,1-Iplot.col]
+            try:
+                color = kwargs.pop('color')
+            except KeyError: pass
             if not histogram:
                 plot = Iplot.axes.errorbar(xdata,ydata,xerr=errs['x'],yerr=errs['y'],capsize = 0,
                                 elinewidth=kwargs['linewidth'],ecolor=color,color=color,**kwargs)
@@ -331,7 +337,7 @@ class Iplot(object):
                 
             try:
                 loc = [d+o for d,o in zip(data[i],offset)]
-                a = Iplot.axes.annotate(labels[i],xy=loc,textcoords='offset pixels',
+                a = Iplot.axes.annotate(r'\textbf{'+labels[i]+'}',xy=loc,textcoords='offset pixels',
                                         xytext=xytext,picker = True,**kwargs)
             except AttributeError: 
                 Iplot.init()
@@ -393,7 +399,11 @@ class Iplot(object):
         plt.ion()
 
     @staticmethod
-    def export(name,ptype = 'ps'):
+    def export(name,ptype = None):
+        if ptype is None:
+            name  = name.split('.')
+            ptype = name[-1]
+            name  = '.'.join(name[:-1])
         plt.savefig(name + '.' + ptype,bbox_inches='tight')
 
     @staticmethod
