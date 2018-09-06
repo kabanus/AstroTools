@@ -91,11 +91,19 @@ def decToSex(coord):
     return deg,int(m),s
 
 def timer(com,iters=1):
+    got_e = None 
     t = 0 
     for _ in range(iters):
         begin = clock()
-        com() 
-        t+= (clock()-begin)
+        try:
+            com() 
+            end = clock()
+        except Exception as e:
+            end = clock()  
+            got_e = e 
+        t+= (end-begin)
+    if got_e is not None:
+        print("Got exception",got_e)
     return t/iters
 
 def timelist (l):

@@ -1,6 +1,7 @@
 from fitshandler import Response,Data,FakeResponse
 from os.path     import dirname,join
 from numpy       import array
+import operator
 
 class dataResponseMismatch(Exception): pass
 class noIgnoreBeforeLoad(Exception): pass
@@ -93,7 +94,12 @@ def group(self,g):
     self.resp.group(g)
     self.plot(user = False)
 
-def ignore(self, minX, maxX, noplot = False):
+def ignore(self, minX, maxX,noplot = False):
+    self.set_channels(self,minX,maxX,'ignore',noplot)
+def notice(self, minX, maxX,noplot = False):
+    self.set_channels(self,minX,maxX,'notice',noplot)
+
+def set_channels(self, minX, maxX,what,noplot):
     try:
         self.checkLoaded()
         if self.ptype == self.CHANNEL: 
@@ -103,20 +109,27 @@ def ignore(self, minX, maxX, noplot = False):
         if self.ptype == self.WAVE: 
             channels    = list(self.resp.wl_to_channel(minX, maxX))
         for fitshandler in (self.data,self.resp):
-            #Need to reset generator
-            fitshandler.ignore(channels)
+            fitshandler.__class__.__dict__[what](fitshandler,channels)
         if self.area.any():
             self.area = self.resp.eff
         if not channels: return
+
         minC  = channels[0]
         maxC  = channels[-1]
         total = maxC-minC+1
+        diff  = self.ionlabs[-1][3]-self.ionlabs[-1][0]
         start = None
         for label in self.ionlabs:
-            if label[self.CHANNEL] > maxC:
-                label[3] -= total
-            elif label[self.CHANNEL] >= minC:
-                label[3] = -1
+            if what == 'ignore':
+                if label[self.CHANNEL] > maxC:
+                    label[3] -= total
+                elif label[self.CHANNEL] >= minC:
+                    label[3] = -1
+            elif what == 'notice':
+                if label[self.CHANNEL] > maxC:
+                    label[3] += total
+                elif label[self.CHANNEL] >= minC:
+                    label[3] = label[0]-diff+total
         if not noplot: self.plot(user = False)
     except AttributeError as e:
         raise self.noIgnoreBeforeLoad()

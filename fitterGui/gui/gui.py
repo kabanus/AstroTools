@@ -22,7 +22,7 @@ class Gui(object):
                                           'Toggle Ion labels','Toggle effective area',
                                           'Toggle x log','toggle y log', 
                                           'Effective area','Data')),
-                ('Ignore', self.ignore,  ('Ignore','Reset')),
+                ('Ignore', self.ignore,  ('Ignore','Notice','Reset')),
                 ('Model' , parent.loadModel, None),
                 ('Fit'   , parent.runFit, None),
                 ('Calculate', self.calc, ('Model','Error','Group')),
@@ -52,7 +52,8 @@ class Gui(object):
                         lambda: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)),
                         lambda: self.parent.doAndPlot(self.parent.untransmit),
                         self.parent.loadSession,lambda: self.parent.loadSession(keyword='model'))
-        self.ignore  = (lambda: ignoreReader(self.parent), lambda: self.parent.doAndPlot(self.parent.resetIgnore))
+        self.ignore  = (lambda: ignoreReader(self.parent,'ignore'), lambda: ignoreReader(self.parent,'notice'),
+                        lambda: self.parent.doAndPlot(self.parent.resetIgnore))
         self.plot    = (lambda: zoomReader(self.parent), 
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.reset(ignore=False)),
                         lambda: rebinReader(self.parent),
@@ -93,7 +94,8 @@ class Gui(object):
         self.parent.canvas.get_tk_widget().bind("<b>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadBack)))
         self.parent.canvas.get_tk_widget().bind("<r>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp))) 
         self.parent.canvas.get_tk_widget().bind("<t>",lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)))
-        self.parent.canvas.get_tk_widget().bind("<i>",lambda event: ignoreReader(self.parent))
+        self.parent.canvas.get_tk_widget().bind("<i>",lambda event: ignoreReader(self.parent,'ignore'))
+        self.parent.canvas.get_tk_widget().bind("<n>",lambda event: ignoreReader(self.parent,'notice'))
         self.parent.canvas.get_tk_widget().bind("<z>",lambda event: zoomReader(self.parent))
         self.parent.canvas.get_tk_widget().bind("<s>",lambda event: Save(self.parent,self.parent.saveParams,"Save parameters and stats",'dat'))
         self.parent.canvas.get_tk_widget().bind("<S>",lambda event: Save(self.parent,self.parent.saveSession,"Save session",'fsess'))

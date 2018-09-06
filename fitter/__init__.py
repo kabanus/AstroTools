@@ -35,7 +35,7 @@ class Fitter(object):
 
     #Methods
     from ._datadefs import loadResp, loadData, loadBack, loadAncr
-    from ._datadefs import checkLoaded, transmit, ignore, reset
+    from ._datadefs import checkLoaded, transmit, ignore, notice, set_channels, reset
     from ._datadefs import untransmit, div, group, updateIonLabels
     from ._modeling import chisq,reduced_chisq,append,delete
     from ._modeling import activate,nameModel,energies,tofit,fit

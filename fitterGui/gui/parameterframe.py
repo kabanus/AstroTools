@@ -78,7 +78,7 @@ class parameterFrame(object):
         index,param = iparam
         place = 0
         for (i,p),_ in self.parent.fitter.getParams():
-            if i == index and len(param) <= len(p) and p[:len(param)] == param:
+            if (i == '*' or i == index) and param in p:
                 param = p
                 break
             place += 1

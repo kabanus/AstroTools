@@ -102,6 +102,10 @@ class Response(fitsHandler):
         self.roeff = self.omatrix.sum(axis=0)
         self.oeff  = self.omatrix.sum(axis=1)
 
+    def notice(self, channels):
+        self.deleted -= set([c-1 for c in channels if c > 0 and c <= len(self.omatrix)])
+        self.ignore([])
+
     def ignore(self, channels):
         self.group(self.grouping,reset = False)
         self.deleted.update([c-1 for c in channels if c > 0 and c <= len(self.matrix)])
@@ -393,6 +397,10 @@ class Data(fitsHandler):
         except AttributeError: pass
         if self.background != None:
             self.background.group(self.grouping,reset)
+    
+    def notice(self, channels):
+        self.deleted -= set([c-1 for c in channels if c > 0 and c <= self.ochannels[-1]])
+        self.ignore([])
 
     def ignore(self,channels):
         if self.asciiflag:

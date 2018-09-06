@@ -6,6 +6,7 @@ Created on Mar 15, 2013
 @author: kabanus
 '''
 if True or __name__ == "__main__":
+    from argparse import ArgumentParser
     import os
     import re
     from sys import argv
@@ -333,6 +334,7 @@ if True or __name__ == "__main__":
                 m = runMsg(self)
                 for iparam in args:
                     index,param = iparam
+                    index = int(index)
                     err = ''
                     self.errors[iparam] = self.fitter.error(index,param)
                     error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
@@ -447,22 +449,25 @@ if True or __name__ == "__main__":
             self.root.quit()
             self.root.destroy() 
 
-    readingX = False
-    if len(argv) > 1:
-        for arg in argv[1:]:
-            if arg == '-xspec-packages':
-                readingX = True
-                continue
-            if arg[0] == '-': 
-                readingX = False
-                if arg == '-debug':
-                    App.debug = True
-                continue
-            if readingX:
-                if not len(App.xspec_packages) or len(App.xspec_packages[-1]) > 1:
-                    App.xspec_packages.append([arg])
-                else: App.xspec_packages[-1].append(arg)
-        if len(App.xspec_packages) and len(App.xspec_packages[-1]) != 2:
-            raise Exception("Xspec packages should be pairs of <name> <path>. Got odd number of args.")
+    parser = ArgumentParser("Fitter Gui")
+    parser.add_argument('--xspec-packages',nargs='*',default=[],help="List of local packages for XSPEC (using lmod). Path must follow model if the local model directory is not set in Xspec.init.")
+    parser.add_argument('--debug',action="store_true",help="Add debug stuff to help locate errors.")
+
+    opt = parser.parse_args(argv[1:])
+    App.debug = opt.debug
+    reading_package = 0
+    for package in opt.xspec_packages:
+        if not reading_package:
+            App.xspec_packages.append([package])
+        else:
+            if os.path.isdir(package):
+                App.xspec_packages[-1].append(package)
+            else:
+                App.xspec_packages[-1].append('')
+                App.xspec_packages.append([package])
+                reading_package = 0
+        reading_package = 1 - reading_package
+    if len(App.xspec_packages) == 1:
+        App.xspec_packages[-1].append('')
     App()     
   

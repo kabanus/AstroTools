@@ -55,7 +55,7 @@ class Iplot(object):
         def scale(self,stype):
             eval("Iplot.axes.set_"+self.axis+"scale('"+stype+"')")
     
-        def resize(self,start = None,stop = None):
+        def resize(self,start = None,stop = None,minimal = None,maximal = None):
             if stop == None:
                 stop = Iplot.axes.axis()[self.ind*2+1]
             if start == None:
@@ -64,7 +64,16 @@ class Iplot(object):
             self.sizer(start,stop)
             if self.sizer2 is not None:
                 self.sizer2(start,stop)
-            plt.draw()
+            start = stop = None
+            bot,top = self.get_bounds()
+            if minimal is not None and minimal > bot:
+                start = minimal
+            if maximal is not None and maximal < top:
+                stop = maximal
+            if stop is not None or start is not None:
+                self.resize(start,stop)
+            else:
+                plt.draw()
         def get_bounds(self):
             return Iplot.axes.axis()[self.ind*2:self.ind*2+2]
         def label(self,title):
@@ -155,6 +164,8 @@ class Iplot(object):
         Iplot.axes.yaxis.set_tick_params(which='minor',width=2)
         Iplot.fillstylecount = 0
         Iplot.fillstyle      = 'none'
+        Iplot.xlog(False)
+        Iplot.ylog(False)
    
     @staticmethod
     def secondAxis(function,axis='x'):
@@ -198,7 +209,7 @@ class Iplot(object):
     @staticmethod
     def plotCurves(*args,**kwargs):
         if 'help' in kwargs:
-            print('Options not passed to matplotlib: plotype, scatter,autosize,chain,stepx,stepy,histogram,marker')
+            print('Options not passed to matplotlib: plotype, scatter,chain,stepx,stepy,histogram,marker')
             args = None
         if not args: return
 
@@ -207,8 +218,6 @@ class Iplot(object):
             raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
         try: scatter = kwargs.pop('scatter')
         except KeyError: scatter = False
-        try: autosize = kwargs.pop('autosize')
-        except KeyError: autosize = True
         try: chain = kwargs.pop('chain')
         except KeyError: chain = False
         try: stepx = kwargs.pop('stepx')
@@ -230,8 +239,8 @@ class Iplot(object):
             Iplot.fillstylecount += 1
         kwargs['linewidth'] = 2
         if not scatter and not histogram:
-            kwargs['markeredgewidth'] = 2
-            kwargs['markersize'] = 8
+            kwargs['markeredgewidth'] = 1
+            kwargs['markersize'] = 1
 
         my = mx = float("Inf")
         My = Mx = float("-Inf")
@@ -274,8 +283,9 @@ class Iplot(object):
                 color = kwargs.pop('color')
             except KeyError: pass
             if not histogram:
-                plot = Iplot.axes.errorbar(xdata,ydata,xerr=errs['x'],yerr=errs['y'],capsize = 0,
-                                elinewidth=kwargs['linewidth'],ecolor=color,color=color,**kwargs)
+                plot = Iplot.axes.errorbar(xdata,ydata,xerr=errs['x'],yerr=errs['y'],
+                        capsize = 0,elinewidth=kwargs['linewidth'],ecolor=color,
+                        color=color,rasterized=True,**kwargs)
             else:
                 kwargs.pop('marker')
                 kwargs.pop('fillstyle')
@@ -283,26 +293,8 @@ class Iplot(object):
                 plot = Iplot.axes.bar(xdata,ydata,**kwargs)
             Iplot.plots.append(plot)
             if scatter: plot[0].set_linestyle("")
-            xv = xdata
-            yv = ydata
-            if not chain and autosize:
-                if min(xv) < mx or max(xv) > Mx or\
-                   min(yv) < my or max(yv) > My:
-                    if stepx == None: 
-                        stepx = min(abs(max(xv)),abs(min(xv)))*0.5 if scatter else 0
-                    if stepy == None:
-                        stepy = stepy = min(abs(max(yv)),abs(min(yv)))*0.5 if scatter else 0
-                    if min(xv) < mx: mx = min(xv)
-                    if max(xv) > Mx: Mx = max(xv)
-                    if min(yv) < my: my = min(yv)
-                    if max(yv) > My: My = max(yv)
             if not onecolor: Iplot.col += col_step
-        if not chain and autosize:
-            Iplot.axes.set_xlim(mx-stepx,Mx+stepx)
-            Iplot.axes.set_ylim(my-stepy,My+stepy)
         plt.draw()
-        if Iplot.x.transform != None: Iplot.x.resize()
-        if Iplot.y.transform != None: Iplot.y.resize()
 
     @staticmethod
     def title(title,**kwargs):

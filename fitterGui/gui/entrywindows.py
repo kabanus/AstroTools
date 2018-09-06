@@ -88,11 +88,12 @@ class rebinReader(entryWindow):
         self.root.destroy()
 
 class ignoreReader(entryWindow):
-    def __init__(self, parent, gui = True):
+    def __init__(self, parent, what, gui = True):
+        self.what = what
         if not gui:
             self.parent = parent
             return
-        try: entryWindow.__init__(self,parent,'data/response',"ignorer","Ignore x-axis values")
+        try: entryWindow.__init__(self,parent,'data/response',"ignorer",what.title()+" x-axis values")
         except AttributeError: return
 
     def parse(self, event):
@@ -123,7 +124,7 @@ class ignoreReader(entryWindow):
             messagebox.showerror('Failed to ignore!', 'Channel values must be integers: '+str(e))
             return
         for start,stop in channels:
-            self.parent.fitter.ignore(start,stop,noplot = True)
+            self.parent.fitter.set_channels(start,stop,self.what,noplot = True)
 
         ignored = ''
         deleted = sorted(self.parent.fitter.data.deleted)
@@ -204,7 +205,6 @@ class paramReader(entryWindow):
         try:
             for iparam in self.entry.get().split():
                 iparam = iparam.split(':')
-                index  = int(iparam[0])
                 param  = ":".join(iparam[1:]).strip()
                 args.append((index,param))
                 if not self.multiple: break
