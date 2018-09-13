@@ -9,40 +9,43 @@ from plotInt import Iplot
 import staterr
 import re
 
-abundances = {
-'he' : 8.51e-02,
-'li' : 1.12e-11,
-'be' : 2.40e-11,
-'b'  : 5.01e-10,
-'c'  : 2.69e-04,
-'n'  : 6.76e-05,
-'o'  : 4.90e-04,
-'f'  : 3.63e-08,
-'ne' : 8.51e-05,
-'na' : 1.74e-06,
-'mg' : 3.98e-05,
-'al' : 2.82e-06,
-'si' : 3.24e-05,
-'p'  : 2.57e-07,
-'s'  : 1.32e-05,
-'cl' : 3.16e-07,
-'ar' : 2.51e-06,
-'k'  : 1.07e-07,
-'ca' : 2.19e-06,
-'sc' : 1.41e-09,
-'ti' : 8.91e-08,
-'v'  : 8.51e-09,
-'cr' : 4.37e-07,
-'mn' : 2.69e-07,
-'fe' : 3.16e-05,
-'co' : 9.77e-08,
-'ni' : 1.66e-06,
-'cu' : 1.55e-08,
-'zn' : 3.63e-08
-}
 
 class AMD(object):
-    def __init__(self, table, params = None):
+    abund = {
+        'he' : 8.51e-02,
+        'li' : 1.12e-11,
+        'be' : 2.40e-11,
+        'b'  : 5.01e-10,
+        'c'  : 2.69e-04,
+        'n'  : 6.76e-05,
+        'o'  : 4.90e-04,
+        'f'  : 3.63e-08,
+        'ne' : 8.51e-05,
+        'na' : 1.74e-06,
+        'mg' : 3.98e-05,
+        'al' : 2.82e-06,
+        'si' : 3.24e-05,
+        'p'  : 2.57e-07,
+        's'  : 1.32e-05,
+        'cl' : 3.16e-07,
+        'ar' : 2.51e-06,
+        'k'  : 1.07e-07,
+        'ca' : 2.19e-06,
+        'sc' : 1.41e-09,
+        'ti' : 8.91e-08,
+        'v'  : 8.51e-09,
+        'cr' : 4.37e-07,
+        'mn' : 2.69e-07,
+        'fe' : 3.16e-05,
+        'co' : 9.77e-08,
+        'ni' : 1.66e-06,
+        'cu' : 1.55e-08,
+        'zn' : 3.63e-08
+    }
+
+    def __init__(self, table, params = None,abund_mult = {}):
+        for k,v in abund_mult.items():
+            self.abund[k]*=v
         self._error = None
         data = []
         self._running_component = 0
@@ -110,7 +113,7 @@ class AMD(object):
                 self.nhMaps[component].append(list())
                 xis = fixedGrid if fixedGrid else self.relaventXis(ion,epsilon,amount)
                 for xi in xis:
-                    self._coeff[component][ion].append(abundances[elem]*self.fractions[xi][elem][charge])
+                    self._coeff[component][ion].append(self.abund[elem]*self.fractions[xi][elem][charge])
                     self.nhMaps[component][-1].append(xi)
                     self.xilist[component].add(xi)
 
@@ -164,8 +167,8 @@ class AMD(object):
                         elem,charge = self.getIon(ion,split=True)
                         if header: print('%-8s'%(ion))
                         print("%.2f %.2e %.2e %.2e %.2e"%(
-                                        xi,self.data[c][ion],self.fractions[xi][elem][charge],abundances[elem],
-                                        self.fractions[xi][elem][charge]*abundances[elem]))
+                                        xi,self.data[c][ion],self.fractions[xi][elem][charge],self.abund[elem],
+                                        self.fractions[xi][elem][charge]*self.abund[elem]))
             except KeyError: 
                 if not header: print(None)
     
@@ -313,7 +316,7 @@ class AMD(object):
 
     def AMD(self,component, guess = None,plot = False,onlyElem = None,
             filterElems = [], maxiter = 1000, add = None, errors = None, 
-            verbose = True):
+            verbose = True, clearPlot = False,**plotArgs):
         c = component
         if guess is None:
             guess = [1 for _ in range(len(self.xilist[c])-2)]
@@ -339,8 +342,9 @@ class AMD(object):
                                       NH.reshape(-1,1),zeros(shape=(len(NH),1))),axis=1)
                 if errors is not None:
                     toplot[:,-1] = array([(e[1]-e[0])/len(e) for e in errors])
-                Iplot.init()
-                Iplot.plotCurves(toplot,marker='o')
+                if 'axes' not in Iplot.__dict__ or clearPlot: 
+                    Iplot.init()
+                Iplot.plotCurves(toplot,plotype='xdxydy',**plotArgs)
                 Iplot.ylog(True)
                 Iplot.x.label('log $\\xi$')
                 Iplot.y.label('$N_H$ $10^{18}$ cm$^{-2}$ (log $\\xi$)$^{-1}$')
@@ -350,8 +354,8 @@ class AMD(object):
             self._last.bins = len(self._rVec[c])
             self._last.pars = len(guess)
             if verbose: 
-                print("{0} parameters, {1} bins, {2} d.o.f, \u03C7\u00B2 = {3},and reduced {4}".format(
-                    len(guess),len(self._rVec[c]),dof,self._last['fun'],red).encode('utf8'))
+                print(u"{0} parameters, {1} bins, {2} d.o.f, \u03C7\u00B2 = {3},and reduced {4}".format(
+                    len(guess),len(self._rVec[c]),dof,self._last['fun'],red))
             return NH
         if verbose: 
             print('Failed with '+ result.message)
@@ -380,12 +384,12 @@ class AMD(object):
     
     def NI(self,ion,xi,NH):
         elem,charge = self.getIon(ion,split=True)
-        return NH*self.fractions[xi][elem][charge]*abundances[elem]
+        return NH*self.fractions[xi][elem][charge]*self.abund[elem]
 
     def NH(self,ion,xi,NI):
         elem,charge = self.getIon(ion,split=True)
         if type(charge) is int: charge = RomanConversion.toRoman(charge).lower()
-        return NI/(self.fractions[xi][elem][charge]*abundances[elem])
+        return NI/(self.fractions[xi][elem][charge]*self.abund[elem])
    
     def probableXi(self,ion):
         elem,charge = self.getIon(ion,split=True)
