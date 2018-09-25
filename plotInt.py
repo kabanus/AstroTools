@@ -304,10 +304,8 @@ class Iplot(object):
     @staticmethod
     def annotate(labels,data,**kwargs):
         #slide should be relevant edge of bbox - e.g. (0,0) for left, (0,1) for bottom...
-        try: slide = kwargs.pop("slide")
-        except KeyError: slide = None
-        try: offset = kwargs.pop("offset")
-        except KeyError: offset = (0,0)
+        slide  = kwargs.pop("slide",None)
+        offset = kwargs.pop("offset",(0,0))
         try: 
             xytexts = kwargs.pop("xytexts")
             xytext  = xytexts

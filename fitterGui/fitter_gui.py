@@ -194,7 +194,7 @@ if True or __name__ == "__main__":
             if keyword is None or keyword == "Ignored":
                 try:
                     ignored = init['Ignored']
-                    ig = ignoreReader(self,gui=False)
+                    ig = ignoreReader(self,'ignore',gui=False)
                     ig.parse(ignored)
                 except (KeyError,AttributeError): pass
                 except Exception as e:
