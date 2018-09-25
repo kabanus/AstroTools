@@ -5,11 +5,16 @@ from   matplotlib.ticker  import ScalarFormatter, FuncFormatter, NullFormatter
 from   matplotlib.markers import MarkerStyle as MS
 from   itertools          import cycle
 from   numpy              import array
-import numpy as np
+import shutil as sh
+import numpy  as np
 import matplotlib
 warnings.filterwarnings('ignore')
-matplotlib.rc('text', usetex=True)
-matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
+
+usetex = sh.which('latex') is not None 
+
+if usetex:
+    matplotlib.rc('text', usetex=True)
+    matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
 
 SF = ScalarFormatter()
 plt.ion()
@@ -77,7 +82,10 @@ class Iplot(object):
         def get_bounds(self):
             return Iplot.axes.axis()[self.ind*2:self.ind*2+2]
         def label(self,title):
-            self.labelr(r'\textbf{'+title+'}')
+            if usetex: 
+                self.labelr(r'\textbf{'+title+'}')
+            else:
+                self.labelr(title)
             plt.draw()
 
     @staticmethod
@@ -327,7 +335,11 @@ class Iplot(object):
                 
             try:
                 loc = [d+o for d,o in zip(data[i],offset)]
-                a = Iplot.axes.annotate(r'\textbf{'+labels[i]+'}',xy=loc,textcoords='offset pixels',
+                if usetex:
+                    label = r'\textbf{'+labels[i]+'}'
+                else:
+                    label = labels[i]
+                a = Iplot.axes.annotate(label,xy=loc,textcoords='offset pixels',
                                         xytext=xytext,picker = True,**kwargs)
             except AttributeError: 
                 Iplot.init()
