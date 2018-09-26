@@ -206,6 +206,7 @@ class paramReader(entryWindow):
             for iparam in self.entry.get().split():
                 iparam = iparam.split(':')
                 param  = ":".join(iparam[1:]).strip()
+                index  = iparam[0]
                 args.append((index,param))
                 if not self.multiple: break
         except (IndexError,ValueError):

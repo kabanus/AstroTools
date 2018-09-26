@@ -437,7 +437,7 @@ if True or __name__ == "__main__":
             self.refreshPlot()
             #In case we changed axes, change ignore values to fit
             try:
-                if calcIgnore: ignoreReader(self,False).parse("")
+                if calcIgnore: ignoreReader(self,'ignore',False).parse("")
             except AttributeError: pass
 
         def resetIgnore(self):
