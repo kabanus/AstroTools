@@ -14,7 +14,11 @@ usetex = sh.which('latex') is not None
 
 if usetex:
     matplotlib.rc('text', usetex=True)
-    matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
+    matplotlib.rcParams['text.latex.preamble'] = [r"\usepackage{amsmath}"]
+    matplotlib.rcParams['text.fontsize']       = 15
+    matplotlib.rcParams['font.weight']         = 'bold'
+    matplotlib.rcParams['axes.labelweight']    = 'bold'
+    matplotlib.rcParams['axes.labelsize']      = 20 
 
 SF = ScalarFormatter()
 plt.ion()
@@ -224,18 +228,13 @@ class Iplot(object):
         try: plotype = kwargs.pop('plotype')
         except KeyError:
             raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
-        try: scatter = kwargs.pop('scatter')
-        except KeyError: scatter = False
-        try: chain = kwargs.pop('chain')
-        except KeyError: chain = False
-        try: stepx = kwargs.pop('stepx')
-        except KeyError: stepx = None
-        try: stepy = kwargs.pop('stepy')
-        except KeyError: stepy = None
-        try: histogram = kwargs.pop('histogram')
-        except KeyError: histogram = False
-        try: onecolor = kwargs.pop('onecolor')
-        except KeyError: onecolor = False
+
+        scatter = kwargs.pop('scatter',False)
+        chain = kwargs.pop('chain',False)
+        stepx = kwargs.pop('stepx',None)
+        stepy = kwargs.pop('stepy',None)
+        histogram = kwargs.pop('histogram',False)
+        onecolor = kwargs.pop('onecolor',False)
         if 'marker' not in kwargs:
             if not chain:
                 Iplot.cmarker = cycle(Iplot.markers)
@@ -245,10 +244,11 @@ class Iplot(object):
                 Iplot.fillstylecount = 0
             kwargs['fillstyle'] = Iplot.fillstyle
             Iplot.fillstylecount += 1
-        kwargs['linewidth'] = 2
+        kwargs['linewidth'] = kwargs.pop('lw',2)
+        kwargs['linewidth'] = kwargs.pop('linewidth',2)
         if not scatter and not histogram:
-            kwargs['markeredgewidth'] = 1
-            kwargs['markersize'] = 1
+            kwargs['markeredgewidth'] = kwargs.pop('markeredgewidth',1)
+            kwargs['markersize']      = kwargs.pop('markersize',1)
 
         my = mx = float("Inf")
         My = Mx = float("-Inf")

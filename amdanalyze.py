@@ -9,7 +9,6 @@ from plotInt import Iplot
 import staterr
 import re
 
-
 class AMD(object):
     abund = {
         'he' : 8.51e-02,
@@ -221,6 +220,7 @@ class AMD(object):
         kwargs['verbose'] = False
         kwargs['guess']   = guess
         kwargs['maxiter'] = maxiter
+        plot = kwargs.pop('plot',False)
         while True:
             if verbose: print('Iteration :',maxiter)
             try: 
@@ -233,9 +233,15 @@ class AMD(object):
                 if not maxiter: raise ValueError("Exceeded maximum iteration limit")
                 continue
             break
+
+        kwargs['plot'] = plot
+        if kwargs.get('plot',False):
+            kwargs['guess'] = res
+            kwargs['errors'] = err
+            res = self.AMD(component,**kwargs) 
         
         if not screen:
-            return list(zip(res,err))
+            return res,err
 
         if qdp:
             dxis = ((array(self.xilist[component][1:]) - array(self.xilist[component][:-1]))/2.0).reshape(-1,1)
@@ -266,7 +272,7 @@ class AMD(object):
             self.dxilist[c] = Odxi
             self.xilist[c]  = Oxi
         return self._last['fun']
-    
+
     def error(self, *indices,**kwargs):
         errors = []
         for index in indices:
@@ -294,14 +300,17 @@ class AMD(object):
     #1              : objective vector
     #other          : objective vector over errors
     #None - default : objective score
-    def AMDQuality(self,nh,c,estimate = None,add = None,pretty = True):
+    def AMDQuality(self,nh,c,estimate = None,add = None,pretty = True,stat='cstat'):
         nh = concatenate(([0],nh,[0]))
         predicted  = self._cMat[c].dot(nh*self.dxilist[c])
         if add is not None: predicted += add
-        #objective = predicted-self._rVec[c]
-        #objNormed = objective/self._eVec[c][:,0]
-        #res = objNormed.dot(objNormed)
-        objective = predicted-(self._rVec[c])*log(predicted)
+
+        if stat == 'chi':
+            objective = predicted-self._rVec[c]
+            objNormed = objective/self._eVec[c][:,0]
+            res = objNormed.dot(objNormed)
+        elif stat == 'cstat':
+            objective = predicted-(self._rVec[c])*log(predicted)
         res = 2*objective.sum()
         if estimate is not None:
             if estimate == 0:
@@ -334,7 +343,9 @@ class AMD(object):
         result      = minimize(self.AMDQuality,guess,args=(c,None,add,True),bounds=bounds,method='slsqp',options={'maxiter':maxiter})
         result.x[result.x < 0] = 0
         self._last  = result
-        self._error = lambda index,miter=maxiter: staterr.Error(lambda v,c=c,i=index,nh=result.x,f=self: f.estimateNH(c,i,v,nh,verbose = False),v0=10,maxiter=miter)
+        self._last.component = component
+        self._error = lambda index,miter=maxiter: staterr.Error(lambda v,c=c,i=index,nh=result.x,
+                                                            f=self: f.estimateNH(c,i,v,nh,verbose = False),v0=10,maxiter=miter)
         if result.success:
             NH = result.x
             if plot:

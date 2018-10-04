@@ -217,6 +217,9 @@ if True or __name__ == "__main__":
                         error = (self.errors[iparam][1]-self.errors[iparam][0])/2.0
                         self.thawedDict[iparam][1].set('(%.2E)'%error)
                         self.paramLabels[iparam][2].configure(relief='flat',state='disabled')
+                except ZeroDivisionError:
+                    if self.debug: raise
+                    messagebox.showerror("Failed to load session model!",'Likely all channels ignored somehow')
                 except KeyError: 
                     if self.debug: raise 
                     pass
