@@ -3,6 +3,7 @@ from numpy import float64,array,zeros,concatenate,delete,log,minimum,maximum,inf
 from numpy import append as ndappend
 from numpy import full   as ndfull
 from utils import RomanConversion
+from code  import interact
 from collections import defaultdict
 from numpy.random import triangular
 from plotInt import Iplot
@@ -185,53 +186,72 @@ class AMD(object):
             return res[(i-amount if i-amount > 0 else 0):(i+amount+1 if pxi+amount < len(res) else len(res))]
         return res
 
-    def rollTheDice(self,component,rolls,**kwargs):
+    def rollTheDice(self,component,rolls,throw=True,overtime=1000,**kwargs):
         c    = component
         save = self._rVec[c]
         lower= ndfull(len(self.xilist[c])-2, inf)
         upper= ndfull(len(self.xilist[c])-2,-inf)
+        res = None
+        plot = kwargs.pop('plot',False)
+        kwargs["screen"] = False
+        nh = self.converge(component,**kwargs)[0]
         for i in range(rolls):
+            print("-I- Roll",i)
             self._rVec[c] = triangular(save-self._eVec[c][:,0],
                                        save,
                                        save+self._eVec[c][:,1])
-            kwargs["screen"] = False
             try:
-                res   = array([x[0] for x in self.converge(component,**kwargs)])
+                res   = self.converge(component,verbose=False,**kwargs)[0]
             except Exception as e:
                 print("-E- failed with",e)
                 print("-E- Last array attempted:")
                 print(res)
                 print("-E- Current bounds returned, managed",i,"iterations")
+                if throw: raise
                 break
             lower = minimum(lower,res)
             upper = maximum(upper,res)
+        i = 0;
+        while i < overtime and ((nh < lower).any() or (nh > upper).any()):
+            print("-I- Roll overtime",i)
+            self._rVec[c] = triangular(save-self._eVec[c][:,0],
+                                       save,
+                                       save+self._eVec[c][:,1])
+            res   = self.converge(component,verbose=False,**kwargs)[0]
+            lower = minimum(lower,res)
+            upper = maximum(upper,res)
+            i+=1
+        if i == overtime: print("-E- Best fit outside of bounds after overtime!")
         self._rVec[c] = save
-        return concatenate((lower.reshape(-1,1),upper.reshape(-1,1)),1)
+        result = concatenate((nh.reshape(-1,1),(nh-lower).reshape(-1,1),(upper-nh).reshape(-1,1)),1)
+        res    = concatenate((array(self.xilist[component][1:-1]).reshape(-1,1),
+                                              self.dxilist[component][1:-1].reshape(-1,1),result),1)
+
+        if plot and i <= overtime:
+            Iplot.plotCurves(res,plotype='xdxydydy',scatter=True,**kwargs.get('plotOpts',{}))
+            Iplot.ylog(True)
+            Iplot.x.label('log $\\xi$')
+            Iplot.y.label('$N_H$ $10^{18}$ cm$^{-2}$ (log $\\xi$)$^{-1}$')
+        return res
 
     def converge(self,component,**kwargs):
-        maxiter = 1000
-        qdp = False
-        guess = [1 for _ in range(len(self.xilist[component])-2)]
-        screen = False 
-        verbose = False
-        for kw in ('qdp','guess','screen','maxiter','verbose'):
-            try: exec(kw+'='+str(kwargs.pop(kw)))
-            except KeyError:pass
-        kwargs['verbose'] = False
-        kwargs['guess']   = guess
-        kwargs['maxiter'] = maxiter
-        plot = kwargs.pop('plot',False)
+        for kw in ('cverbose','qdp','screen','plot'):
+            exec(kw+'='+str(kwargs.pop(kw,False)),globals())
+        maxiter = kwargs.pop('cmaxiter', 1000)
         while True:
-            if verbose: print('Iteration :',maxiter)
+            if cverbose: print('Iteration :',maxiter)
             try: 
                 res = self.AMD(component,**kwargs) 
-                err = self.error(*list(range(len(guess))),throw=True)
+                err = self.error(*list(range(len(res))),throw=True,**kwargs)
             except staterr.newBestFitFound as e:
-                if verbose: print('Got :',self._last)
+                if cverbose: print('Got :',self._last)
                 kwargs['guess'] = e.new
                 maxiter -= 1
                 if not maxiter: raise ValueError("Exceeded maximum iteration limit")
                 continue
+            except ValueError as e:
+                print(str(e))
+                return (res,None)
             break
 
         kwargs['plot'] = plot
@@ -241,7 +261,7 @@ class AMD(object):
             res = self.AMD(component,**kwargs) 
         
         if not screen:
-            return res,err
+            return (res,err)
 
         if qdp:
             dxis = ((array(self.xilist[component][1:]) - array(self.xilist[component][:-1]))/2.0).reshape(-1,1)
@@ -275,10 +295,14 @@ class AMD(object):
 
     def error(self, *indices,**kwargs):
         errors = []
+        miter  = kwargs.get('maxiter',None)
+        if not indices: indices = tuple(range(len(self._last.x)))
         for index in indices:
             last    = self._last
             lasterr = self._error
             errCalc = self._error(index)
+            if miter is not None:
+                errCalc.miter = miter
             try:
                 res = errCalc(self._last.x[index],minimum=0)
             except staterr.newBestFitFound as e:
@@ -344,8 +368,9 @@ class AMD(object):
         result.x[result.x < 0] = 0
         self._last  = result
         self._last.component = component
-        self._error = lambda index,miter=maxiter: staterr.Error(lambda v,c=c,i=index,nh=result.x,
-                                                            f=self: f.estimateNH(c,i,v,nh,verbose = False),v0=10,maxiter=miter)
+        self._error = lambda index,miter=maxiter: staterr.Error(
+            lambda v,c=c,i=index,nh=result.x, f=self: f.estimateNH(
+                c,i,v,nh,verbose = False,maxiter=miter),v0=10,maxiter=miter)
         if result.success:
             NH = result.x
             if plot:
@@ -355,7 +380,7 @@ class AMD(object):
                     toplot[:,-1] = array([(e[1]-e[0])/len(e) for e in errors])
                 if 'axes' not in Iplot.__dict__ or clearPlot: 
                     Iplot.init()
-                Iplot.plotCurves(toplot,plotype='xdxydy',**plotArgs)
+                Iplot.plotCurves(toplot,plotype='xdxydy',histogram=False,**plotArgs)
                 Iplot.ylog(True)
                 Iplot.x.label('log $\\xi$')
                 Iplot.y.label('$N_H$ $10^{18}$ cm$^{-2}$ (log $\\xi$)$^{-1}$')

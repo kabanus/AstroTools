@@ -96,7 +96,10 @@ class Iplot(object):
     def _log(axis,on):
         if Iplot.plots and axis.get_bounds()[0] <= 0:
             index = 0 if axis is Iplot.x else 1
-            minimum = min([min(p[0].get_xydata()[:,index]) for p in Iplot.plots])
+            try: 
+                minimum = min([min(p[0].get_xydata()[:,index]) for p in Iplot.plots])
+            except AttributeError: 
+                minimum = 1
             if minimum <= 0:
                 axis.resize(start=1e-10)
         if on:
