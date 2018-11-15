@@ -18,6 +18,9 @@ try:
            
             self.params   = dict(((str(i)+':'+self.model(i).name,self.model(i).values[0]) 
                                     for i in range(1,self.model.nParameters+1)))
+            for i in range(1,self.model.nParameters+1):
+                if self.model(i).name.endswith('Redshift') or self.model(i).name.endswith('redshift'):
+                    self.model(i).values = 0,-0.1,-10,-10,10,10
             params        = [str(i)+':'+self.model(i).name for i in range(1,self.model.nParameters+1)]
             self.paramMap = [list(self.params.keys()).index(x) for x in params]
             self.energies = ()
@@ -59,7 +62,14 @@ try:
             return self.ehash
 
         def sethook(self, index, key):
-            values = [x for x in list(self.params.values())]
+            values = []
+            for x in self.params:
+                i = int(x.split(':',1)[0])
+                if self.params[x]  < self.model(i).values[2]:
+                    self.params[x] = self.model(i).values[2]
+                if self.params[x]  > self.model(i).values[4]:
+                    self.params[x] = self.model(i).values[4]
+                values.append(self.params[x])
             self.model.setPars(*[values[k] for k in self.paramMap])
     
         def __str__(self):

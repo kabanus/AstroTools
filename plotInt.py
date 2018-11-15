@@ -231,6 +231,9 @@ class Iplot(object):
         try: plotype = kwargs.pop('plotype')
         except KeyError:
             raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
+        if 'fillstylecount' not in Iplot.__dict__:
+            print("-I- Please run Iplot.init() first.")
+            return
 
         scatter = kwargs.pop('scatter',False)
         chain = kwargs.pop('chain',False)

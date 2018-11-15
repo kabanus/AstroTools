@@ -470,7 +470,7 @@ if True or __name__ == "__main__":
                 App.xspec_packages.append([package])
                 reading_package = 0
         reading_package = 1 - reading_package
-    if len(App.xspec_packages) == 1:
+    if App.xspec_packages and len(App.xspec_packages[-1]) == 1:
         App.xspec_packages[-1].append('')
     App()     
   

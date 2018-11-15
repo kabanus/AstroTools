@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from tkinter import Tk,Frame,Label,Entry,StringVar,Button,Checkbutton,IntVar,Canvas,Text,Toplevel
 from tkinter import LEFT,RIGHT,BOTH,NW,BOTTOM,TOP,X,Y,END
 from PIL     import Image,ImageTk,ImageDraw
@@ -37,7 +38,7 @@ class DataExtraction:
         self.circles  = array((),dtype='int16').reshape(0,4)
         self.filename = image
         self.shapex   = -1
-        self.im       = Image.open(image)
+        self.im       = Image.open(image).convert('RGBA')
         self.original = self.im.copy()
         self.pim      = ImageTk.PhotoImage(self.im)
         self.canvas   = Canvas(self.main,cursor='plus',width=self.im.width,height=self.im.height)
@@ -127,7 +128,7 @@ class DataExtraction:
 
     def clear(self):
         self.writer.delete(1.0,END)
-        self.im = Image.open(self.filename)
+        self.im = Image.open(self.filename).convert('RGBA')
         self.pim.paste(self.im)
 
     def save(self):
@@ -171,7 +172,7 @@ class DataExtraction:
         except AttributeError: return
         if x0 == x1 or y0 == y1: return
 
-        self.im     = Image.open(self.filename)
+        self.im     = Image.open(self.filename).convert('RGBA')
         draw = ImageDraw.Draw(self.im)
         
         shape   = array(self.im)[y0:y1,x0:x1]
@@ -329,9 +330,10 @@ class DataExtraction:
             self.root.quit()
             self.root.destroy() 
 
-try:
-    DataExtraction(argv[1])
-except IndexError:
-    print("-E- Image filename missing!")
-
+if __name__ == "__main__":
+    try:
+        DataExtraction(argv[1])
+    except IndexError:
+        print("-E- Image filename missing!")
+    
 

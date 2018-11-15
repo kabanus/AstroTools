@@ -85,8 +85,12 @@ class AMD(object):
                 ion = self.getIon(line[1])
                 component = int(line[0])
             except KeyError: continue
+            exec(('errs = abs(array('+line[4]+'))'), locals(),globals())
+            if errs[0] == errs[1] == 0:
+                print('-W- Skipping',ion,', it has 0 errors.')
+                continue
+            self.errors[component][ion] = errs
             self.data[component][ion] = float(line[3])
-            exec(('self.errors[component][ion] = abs(array('+line[4]+'))'), locals(),globals())
         self.errors = dict(self.errors)
         self.data   = dict(self.data)
         self.params = dict()

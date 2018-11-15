@@ -1,7 +1,7 @@
 from model import _singleModel,modelExport
 from collections import OrderedDict
 from interpolations import linear
-from numpy import exp,sin,cos,tan
+from numpy import exp,sin,cos,tan,pi
 
 keVAfac = 12.39842
 class simple(_singleModel):
