@@ -2,28 +2,37 @@ from time      import clock
 from itertools import tee
 from inspect   import getsourcelines
 from importlib import reload
+from os        import getcwd
 import readline as rl
 
 class ArgLess(object):
-    def __init__(self,func,args = [],doneStr = ''):
+    def __init__(self,func,args = [],doneStr = '',verbose=False):
         self.f = func
         self.d = doneStr
         self.a = args
+        self.v = verbose
     def __call__(self):
         return self.f(*self.a)
     def __repr__(self):
-        print(self())
+        res = self()
+        if self.v:
+            print(res,end='')
         return self.d
 
-def history(start = 0, end = None):
+def history(start = 0, end = None,concat=False):
     if end is None:
         end = rl.get_current_history_length()
     if start < 0:
         start += rl.get_current_history_length()
+    if concat:
+        print(';'.join(rl.get_history_item(i+1) for i in range(start,end)))
+        return
     for i in range(start,end):
         print(str(i+1)+":",rl.get_history_item(i+1))
 
 hist = ArgLess(history)
+pwd  = ArgLess(getcwd,verbose=True)
+
 def whist(fname): rl.write_history_file(fname)
 def rhist(fname): 
     code = []

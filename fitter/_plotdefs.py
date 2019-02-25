@@ -19,8 +19,8 @@ def toggleIonLabels(self,mode = None):
     else: self.labelions = mode
     self.plot(user = False)
 
-def initplot(self):
-    Iplot.init()
+def initplot(self,font_size=44):
+    Iplot.init(font_size=font_size)
     loadIonPositions(self)
 
 def loadIonPositions(self):

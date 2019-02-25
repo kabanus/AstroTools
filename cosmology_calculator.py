@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #Please reference http://www.astro.ucla.edu/%7Ewright/CosmoCalc.html
 #http://adsabs.harvard.edu/abs/2006PASP..118.1711W
 import sys

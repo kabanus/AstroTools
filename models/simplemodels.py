@@ -62,6 +62,14 @@ class bbody(Function):
         if self.params['kT'] < 0: self.params['kT'] = 0
 
 @modelExport
+class gauss(Function):
+    description = "Everyone's favorite." 
+    def __init__(self):
+        Function.__init__(self,'N*exp(-(x-x0)**2/(2*sigma**2)',{'N':1,'x0':0,'sigma':0.1})
+    def sethook(self,param,val):
+        if self.params['N'] < 0: self.params['N'] = 0
+
+@modelExport
 class Table(simple):
     description = 'Single table (no fit)'
     def __init__(self,table):

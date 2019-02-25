@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #Program to calculate correlations (Partly integrated) using
 #the old school methods.
 #Based on Fortran programs given to me by shay. Fortran sucks.

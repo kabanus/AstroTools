@@ -1,5 +1,4 @@
-#!/usr/bin/python3
-
+#!/usr/bin/env python3
 '''
 Created on Mar 15, 2013
 
@@ -34,7 +33,7 @@ if True or __name__ == "__main__":
                   "on Windows machines if numpy or something close is missing."))
 
     import tkinter.messagebox as messagebox
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2TkAgg
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
     from tkinter             import Tk,StringVar,LEFT,TOP,N,S,E,W,Label,BOTH
     from tkinter.messagebox        import askquestion 
     from fitter              import Fitter
@@ -91,9 +90,9 @@ if True or __name__ == "__main__":
             self.root.protocol('WM_DELETE_WINDOW',self._quit) 
 
             self.canvas = FigureCanvasTkAgg(plt.get_current_fig_manager().canvas.figure, master = self.main)
-            nav = NavigationToolbar2TkAgg(self.canvas,self.main)
+            nav = NavigationToolbar2Tk(self.canvas,self.main)
             #Only load figure after manager has been set
-            self.fitter.initplot()
+            self.fitter.initplot(font_size = 16)
             for child in nav.winfo_children():
                 child.configure(takefocus=False)
             Label(nav,textvar= self.datafile,padx=self.border).pack(side=LEFT)
@@ -113,7 +112,7 @@ if True or __name__ == "__main__":
             self.root.mainloop()
 
         def refreshPlot(self):
-            self.canvas.show()
+            self.canvas.draw()
 
         def loadModel(self):
             try: self.modelload.root.destroy()

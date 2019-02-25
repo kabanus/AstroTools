@@ -1,5 +1,4 @@
 #Make an even simpler plotting interface
-import warnings
 import matplotlib.pyplot as plt
 from   matplotlib.ticker  import ScalarFormatter, FuncFormatter, NullFormatter
 from   matplotlib.markers import MarkerStyle as MS
@@ -7,22 +6,114 @@ from   itertools          import cycle
 from   numpy              import array
 import shutil as sh
 import numpy  as np
+import pandas as pd
+import warnings
+import logging
 import matplotlib
 warnings.filterwarnings('ignore')
+logging.getLogger('matplotlib.legend').disabled=True
 
 usetex = sh.which('latex') is not None 
 
-if usetex:
-    matplotlib.rc('text', usetex=True)
-    matplotlib.rcParams['text.latex.preamble'] = [r"\usepackage{amsmath}"]
-    matplotlib.rcParams['text.fontsize']       = 15
-    matplotlib.rcParams['font.weight']         = 'bold'
-    matplotlib.rcParams['axes.labelweight']    = 'bold'
-    matplotlib.rcParams['axes.labelsize']      = 20 
+def setTexFonts(font_size = 44):
+    if usetex:
+        matplotlib.rc('text', usetex=True)
+        matplotlib.rcParams['text.latex.preamble'] = [r"\usepackage{amsmath} \boldmath"]
+        matplotlib.rcParams['axes.labelweight']     = 'bold'
+        matplotlib.rcParams['axes.labelsize']       = font_size 
+        matplotlib.rcParams['axes.titlesize']       = font_size 
+        matplotlib.rcParams['legend.fontsize']      = font_size/1.7 
+        matplotlib.rcParams['legend.title_fontsize']= font_size 
+        matplotlib.rcParams['font.size']            = font_size
+        matplotlib.rcParams['font.weight']          = 'bold'
+
+def pd_plot(*dfs,axes=None,**plotkwargs):
+    x    = plotkwargs.pop('x')
+    y    = plotkwargs.pop('y')
+    xerr = plotkwargs.pop('xerr',None)
+    yerr = plotkwargs.pop('yerr',None)
+    if axes is not None:
+        try:
+            axes = axes.flatten()
+        except AttributeError: axes = [axes]
+    else: axes = Iplot.axes
+    for df,ax in zip(dfs,axes):
+        Iplot.axes = ax
+        try:
+            df.plot(x=x,xerr=xerr,y=y,yerr=yerr,ax=Iplot.axes,elinewidth=4,lw=4,**plotkwargs)
+        except KeyError:
+            df.plot(x=df.columns[x],xerr=xerr,y=df.columns[y],yerr=yerr,ax=Iplot.axes,elinewidth=4,lw=4,**plotkwargs)
+
+class Igrid:
+    def __init__(self,nrows,ncols,**subplot_kwargs):
+        subplot_kwargs['gridspec_kw'] = {'hspace':0.0,'wspace':0.05}
+        self.fig, self.axes = plt.subplots(nrows=nrows, ncols=ncols,**subplot_kwargs)
+        self.plots = array(
+            pd.DataFrame(self.axes).applymap(PlotMaker)).reshape(self.axes.shape)
+        
+        self.reset()
+
+    def reset(self,axes = None):
+        if axes is None: axes = self.axes
+        rows = self.axes if len(axes.shape) > 1 else [axes]
+        for row,raxes in enumerate(rows):
+            for col,ax in enumerate(raxes):
+                if col:
+                    ax.tick_params(axis='y',labelleft='off')
+                if row < len(self.axes.shape)-1:
+                    ax.tick_params(axis='x',labelbottom='off')
+
+    @staticmethod
+    def _twin(plot,which,func=None):
+        plot.secondAxis(func,which,override=True)
+        plot.axes.tick_params(which='both', direction='in',top=True)
+
+    def __iter__(self):
+        return iter(self.plots.flatten()) 
+
+    def twiny(self,func=None):
+        for plot in self.plots:
+            Igrid._twin(plot,'y',func)
+       
+        
+    def twinx(self,func=None):
+        for plot in self.plots:
+            Igrid._twin(plot,'x',func)
+            
+    def show(self):
+        self.fig.show()
+
+    def remove_labels(self):
+        for plot in self:
+            plot.axes.set_xlabel('')
+            plot.axes.set_ylabel('')
+
+    def ylabel(self,label,clear=True):
+        if clear: self.remove_labels()
+        try: self._ylabel.remove()
+        except AttributeError: pass
+        self._ylabel = self.fig.text(0.04, 0.5, label, va='center', rotation='vertical',fontsize=default_font)
+    
+    def xlabel(self,label,clear=True):
+        if clear: self.remove_labels()
+        try: self._xlabel.remove()
+        except AttributeError: pass
+        self._xlabel = self.fig.text(0.5, 0.01, label, ha='center',fontsize=default_font)
+
+    def xresize(self,min=None,max=None):
+        for plot in self:
+            plot.x.resize(min,max)
+    def yresize(self,min=None,max=None):
+        for plot in self:
+            plot.y.resize(min,max)
+
+    def __getitem__(self,i):
+        return self.plots[i]
+
 
 SF = ScalarFormatter()
 plt.ion()
-class Iplot(object):
+class PlotMaker:
     #markers = sorted((marker for marker in MS.markers.keys() 
     #    if marker not in (None,'None'," ","",',')+tuple(range(8))))
     markers = ('o','s','^','v')
@@ -30,46 +121,51 @@ class Iplot(object):
     xytext  = (-6,20)
     class axis(object):
         class noSuchAxis(Exception): pass
-        def __init__(self,axis):
+        def __init__(self,axis,axes):
             if axis == 'x':
                 self.ind = 0
             elif axis == 'y':
                 self.ind = 1
             else:
                 raise noSuchAxis(axis)
+            self.axes = axes
             self.axis = axis
-            self.sizer  = eval("Iplot.axes.set_"+axis+"lim") 
-            self.labelr = eval("Iplot.axes.set_"+axis+"label")
+            self.sizer  = eval("self.axes.set_"+axis+"lim") 
+            self.labelr = eval("self.axes.set_"+axis+"label")
             self.sizer2    = None
             self.labelr2   = None
             self.transform = None
-        def twin(self,function):
+        def twin(self,function,formatter=SF.format_data_short,override=False):
             op = 'y'
-            if self.sizer2 is None:
+            if override or self.sizer2 is None:
                 if self.ind: op = 'x'
-                self.second = eval('Iplot.axes.twin'+op+'()')
+                self.second = eval('self.axes.twin'+op+'()')
                 self.sizer2 = eval('self.second.set_'+self.axis+'lim')
-                plt.gcf().delaxes(Iplot.axes)
-                plt.gcf().add_axes(Iplot.axes)
+                plt.gcf().delaxes(self.axes)
+                plt.gcf().add_axes(self.axes)
             self.transform = function
             if function is not None:
                 eval("self.second."+self.axis+
                     "axis.set_major_formatter(FuncFormatter"+
-                    "(lambda c,p,t=self.transform: SF.format_data_short(t(c))))")
+                    "(lambda c,p,t=self.transform,f=formatter: f(t(c))))")
             else:
                 eval("self.second."+self.axis+"axis.set_major_formatter(NullFormatter())")
                 self.second.minorticks_on()
             self.resize()
 
         def scale(self,stype):
-            eval("Iplot.axes.set_"+self.axis+"scale('"+stype+"')")
+            eval("self.axes.set_"+self.axis+"scale('"+stype+"')")
+            if self.sizer2 is not None:
+                eval("self.second.set_"+self.axis+"scale('"+stype+"')")
     
         def resize(self,start = None,stop = None,minimal = None,maximal = None):
             if stop == None:
-                stop = Iplot.axes.axis()[self.ind*2+1]
+                stop = self.axes.axis()[self.ind*2+1]
             if start == None:
-                start = Iplot.axes.axis()[self.ind*2]
-            if start >= stop: raise Exception("Bad range! stop must be greater then start: "+str(start)+">="+str(stop))
+                start = self.axes.axis()[self.ind*2]
+            if start >= stop: 
+                start, stop = stop, start
+                #raise Exception("Bad range! stop must be greater then start: "+str(start)+">="+str(stop))
             self.sizer(start,stop)
             if self.sizer2 is not None:
                 self.sizer2(start,stop)
@@ -84,7 +180,7 @@ class Iplot(object):
             else:
                 plt.draw()
         def get_bounds(self):
-            return Iplot.axes.axis()[self.ind*2:self.ind*2+2]
+            return self.axes.axis()[self.ind*2:self.ind*2+2]
         def label(self,title):
             if usetex: 
                 self.labelr(r'\textbf{'+title+'}')
@@ -92,12 +188,16 @@ class Iplot(object):
                 self.labelr(title)
             plt.draw()
 
-    @staticmethod
-    def _log(axis,on):
-        if Iplot.plots and axis.get_bounds()[0] <= 0:
-            index = 0 if axis is Iplot.x else 1
+    def __init__(self,axes = None): 
+        if axes is not None:
+            self.axes = axes
+            self.init(False)
+
+    def _log(self,axis,on):
+        if self.plots and axis.get_bounds()[0] <= 0:
+            index = 0 if axis is self.x else 1
             try: 
-                minimum = min([min(p[0].get_xydata()[:,index]) for p in Iplot.plots])
+                minimum = min([min(p[0].get_xydata()[:,index]) for p in self.plots])
             except AttributeError: 
                 minimum = 1
             if minimum <= 0:
@@ -109,120 +209,137 @@ class Iplot(object):
         plt.draw()
 
     xlogon = False
-    @staticmethod
-    def xlog(on=None):
-        if on is None: on = not Iplot.xlogon
-        Iplot.xlogon = on
-        Iplot._log(Iplot.x,on)
+    def xlog(self,on=None):
+        if on is None: on = not self.xlogon
+        self.xlogon = on
+        self._log(self.x,on)
     ylogon = False
-    @staticmethod
-    def ylog(on=None):
-        if on is None: on = not Iplot.ylogon
-        Iplot.ylogon = on
-        Iplot._log(Iplot.y,on)
-    @staticmethod
-    def log(on=None):
-        Iplot.xlog(on)
-        Iplot.ylog(on)
+    def ylog(self,on=None):
+        if on is None: on = not self.ylogon
+        self.ylogon = on
+        self._log(self.y,on)
+    def log(self,on=None):
+        self.xlog(on)
+        self.ylog(on)
 
     pickstate = None
-    @staticmethod
-    def onclick(event):
+    def onclick(self,event):
+        print('CLICK')
         if event.mouseevent.button == 3:
-            try: event.artist.arrow.remove()
+            try: event.artist.arr.remove()
             except (AttributeError,ValueError): pass
             try: event.artist.remove()
             except (ValueError): pass
-        else: Iplot.pickstate = event.artist
+        else:
+            self.pickstate = event.artist
+        print(self.pickstate)
     
-    @staticmethod
-    def release(event):
-        if Iplot.pickstate is not None:
+    def move(self,event):
+        if self.pickstate is not None:
             xy                 = [event.xdata,event.ydata]
             if xy == [None,None]: return
             try: 
-                Iplot.pickstate.set_position((0,0))
-                Iplot.pickstate.xy = xy
+                b = self.pickstate.get_window_extent()
+                self.pickstate.set_position(((b.x0-b.x1)/2,(b.y0-b.y1)/4))
+                self.pickstate.xy = xy
                 try:
-                    origArrow          = Iplot.pickstate.arrow.get_xy()
-                    origArrow[3:5]     = xy
-                    Iplot.pickstate.arrow.set_xy(origArrow)
-                except AttributeError: pass
+                    (x0,y0),(x1,y1) = self.axes.transData.inverted().transform(b)
+                    a=xy[:] 
+                    a[1] += (y0-y1)/2
+                    origArrow          = self.pickstate.arr.get_xy()
+                    origArrow[3:5]     = a
+                except AttributeError: 
+                    self.pickstate.arr = self.axes.arrow(a[0],a[1],0.001,0.001,
+                            head_length=0,head_width=0,linewidth=2,overhang=100,color = 'black')
             except AttributeError:
-                xy  = Iplot.axes.transAxes.inverted().transform((event.x,event.y))
-                Iplot.axes.get_legend()._set_loc(10) #This means center
-                Iplot.axes.get_legend().set_bbox_to_anchor((xy))
+                xy  = self.axes.transAxes.inverted().transform((event.x,event.y))
+                self.axes.get_legend()._set_loc(10) #This means center
+                self.axes.get_legend().set_bbox_to_anchor((xy))
 
-            Iplot.pickstate    = None
-            plt.draw()
-        try: plt.gcf().canvas.draw()
-        except TypeError: pass
+                plt.draw()
 
-    @staticmethod
-    def init():
-        global Iplot
-        Iplot.axes = plt.gca()
-        Iplot.axes.minorticks_on()
-        Iplot.axes.tick_params(which='both', direction='in')
-        Iplot.x = Iplot.axis('x') 
-        Iplot.y = Iplot.axis('y')
-        Iplot.col = 0
-        Iplot.plots = list()
-        Iplot.clearPlots()
-        plt.gcf().canvas.mpl_connect('pick_event',Iplot.onclick)
-        plt.gcf().canvas.mpl_connect('button_release_event',Iplot.release)
+    def release(self,event):
+            try:
+                arrow = self.pickstate.arr
+                arrxy = arrow.get_xy()
+                x0,y0 = arrxy[0]
+                x1,y1 = arrxy[3]
+                if (x1-x0)**2+(y1-y0)**2 < 0.001:
+                    self.pickstate.arr.remove()
+                    delattr(self.pickstate,'arr')
+            except AttributeError: pass
+            self.pickstate = None
+
+    def init(self,get_current=True,no_picker=False,font_size = 44):
+        setTexFonts(font_size=font_size)
+        if get_current: self.axes = plt.gca()
+        self.axes.minorticks_on()
+        self.axes.tick_params(which='both', direction='in')
+        self.axes.tick_params(axis='both',top=True,right=True,which='both')
+        self.x = self.axis('x',self.axes)
+        self.y = self.axis('y',self.axes)
+        self.col = 0
+        self.plots = list()
+        self.clearPlots()
+        if no_picker:
+            plt.gcf().canvas.mpl_connect('pick_event',self.onclick)
+            plt.gcf().canvas.mpl_connect('motion_notify_event',self.move)
+            plt.gcf().canvas.mpl_connect('button_release_event',self.release)
         for axis in ['top','bottom','left','right']:
-            Iplot.axes.spines[axis].set_linewidth(2)
-        Iplot.axes.xaxis.set_tick_params(width=2)
-        Iplot.axes.yaxis.set_tick_params(width=2)
-        Iplot.axes.xaxis.set_tick_params(which='minor',width=2)
-        Iplot.axes.yaxis.set_tick_params(which='minor',width=2)
-        Iplot.fillstylecount = 0
-        Iplot.fillstyle      = 'none'
-        Iplot.xlog(False)
-        Iplot.ylog(False)
+            self.axes.spines[axis].set_linewidth(4)
+        self.axes.xaxis.set_tick_params(which='major',top=True,bottom=True,right=True,left=True,width=4,length=10)
+        self.axes.yaxis.set_tick_params(which='major',top=True,bottom=True,right=True,left=True,width=4,length=10)
+        self.axes.xaxis.set_tick_params(which='minor',top=True,bottom=True,right=True,left=True,width=4,length=5)
+        self.axes.yaxis.set_tick_params(which='minor',top=True,bottom=True,right=True,left=True,width=4,length=5)
+        self.fillstylecount = 0
+        self.fillstyle      = 'none'
+        self.xlog(False)
+        self.ylog(False)
+        self.axes.set_position([0.15, 0.15, 0.83, 0.83])
    
-    @staticmethod
-    def secondAxis(function,axis='x'):
-        axis = eval('Iplot.'+axis)
-        axis.twin(function)
+    def secondAxis(self,function,axis='x',override = False):
+        axis = self.__dict__[axis]
+        axis.twin(function,override=override)
+        cur,x,y = self.axes,self.x,self.y
+        self.axes = axis.second
+        self.init(False)
+        self.axes,self.x,self.y = cur,x,y
         plt.draw()
-    @staticmethod
-    def hideSecondAxis(axis='x'):
-        axis = eval('Iplot.'+axis)
+    def hideSecondAxis(self,axis='x'):
+        axis = eval('self.'+axis)
         if axis.transform != None:
             axis.twin(None)
             plt.draw()
         
-    @staticmethod
-    def clearPlots(keepannotations = False,keepscale = False):
-        if keepannotations: annotations = Iplot.axes.texts
-        Iplot.axes.clear()
-        if keepannotations: Iplot.axes.texts = annotations
-        try: Iplot.axes.legend().remove()
+    def clearPlots(self,keepannotations = False,keepscale = False):
+        if keepannotations: annotations = self.axes.texts
+        self.axes.clear()
+        if keepannotations: self.axes.texts = annotations
+        try: self.axes.legend().remove()
         except AttributeError: pass
-        Iplot.plots = list()
-        Iplot.axes.minorticks_on()
+        self.plots = list()
+        self.axes.minorticks_on()
         if keepscale:
-            Iplot.xlog(Iplot.xlogon)
-            Iplot.ylog(Iplot.ylogon)
+            self.xlog(self.xlogon)
+            self.ylog(self.ylogon)
         plt.draw()
 
-    @staticmethod 
-    def legend(*labels,**legend_kwrags):
-        if labels:
-            for plot,label in zip(Iplot.plots,labels):
-                plot.set_label(label)
-        legend = Iplot.axes.legend(
-                        frameon=False,numpoints=1,
-                        scatterpoints=1,**legend_kwrags)
+    def legend(self,*labels,**legend_kwrags):
+        legend = self.axes.get_legend()
+        if legend is None:
+            if labels:
+                for plot,label in zip(self.plots,labels):
+                    plot.set_label(label)
+            legend = self.axes.legend(
+                            frameon=False,numpoints=1,
+                            scatterpoints=1,**legend_kwrags)
+        legend.set_draggable(True)
         legend.set_picker(True)
         plt.draw()
 
     #Can send this a curve, ccf table or any list. If args contain
     #scatter makes scatter plots.
-    @staticmethod
-    def plotCurves(*args,**kwargs):
+    def plotCurves(self,*args,**kwargs):
         if 'help' in kwargs:
             print('Options not passed to matplotlib: plotype, scatter,chain,stepx,stepy,histogram,marker')
             args = None
@@ -231,8 +348,8 @@ class Iplot(object):
         try: plotype = kwargs.pop('plotype')
         except KeyError:
             raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
-        if 'fillstylecount' not in Iplot.__dict__:
-            print("-I- Please run Iplot.init() first.")
+        if 'fillstylecount' not in self.__dict__:
+            print("-I- Please run self.init() first.")
             return
 
         scatter = kwargs.pop('scatter',False)
@@ -243,15 +360,15 @@ class Iplot(object):
         onecolor = kwargs.pop('onecolor',False)
         if 'marker' not in kwargs:
             if not chain:
-                Iplot.cmarker = cycle(Iplot.markers)
-            kwargs['marker'] = next(Iplot.cmarker)
-            if Iplot.fillstylecount == len(Iplot.markers):
-                Iplot.fillstyle = 'none' if Iplot.fillstyle != 'none' else 'full' 
-                Iplot.fillstylecount = 0
-            kwargs['fillstyle'] = Iplot.fillstyle
-            Iplot.fillstylecount += 1
-        kwargs['linewidth'] = kwargs.pop('lw',2)
-        kwargs['linewidth'] = kwargs.pop('linewidth',2)
+                self.cmarker = cycle(self.markers)
+            kwargs['marker'] = next(self.cmarker)
+            if self.fillstylecount == len(self.markers):
+                self.fillstyle = 'none' if self.fillstyle != 'none' else 'full' 
+                self.fillstylecount = 0
+            kwargs['fillstyle'] = self.fillstyle
+            self.fillstylecount += 1
+        kwargs['linewidth'] = kwargs.pop('lw',4)
+        kwargs['linewidth'] = kwargs.pop('linewidth',4)
         if not scatter and not histogram:
             kwargs['markeredgewidth'] = kwargs.pop('markeredgewidth',1)
             kwargs['markersize']      = kwargs.pop('markersize',1)
@@ -259,16 +376,16 @@ class Iplot(object):
         my = mx = float("Inf")
         My = Mx = float("-Inf")
        
-        Iplot.col = 0
+        self.col = 0
         if not onecolor:
             col_step = 1.0/len(args)
             if chain:
-                col_step = 1.0/(len(Iplot.plots)+len(args))
-                for child in Iplot.plots:
-                    child[0].set_color([Iplot.col,0,1-Iplot.col])
+                col_step = 1.0/(len(self.plots)+len(args))
+                for child in self.plots:
+                    child[0].set_color([self.col,0,1-self.col])
                     for echild in child[1]+child[2]:
-                        echild.set_color([Iplot.col,0,1-Iplot.col])
-                    Iplot.col += col_step
+                        echild.set_color([self.col,0,1-self.col])
+                    self.col += col_step
 
         for c in args:
             iserr = False
@@ -292,31 +409,29 @@ class Iplot(object):
             except KeyError:
                 raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
             
-            color = [Iplot.col,0,1-Iplot.col]
+            color = [self.col,0,1-self.col]
             try:
                 color = kwargs.pop('color')
             except KeyError: pass
             if not histogram:
-                plot = Iplot.axes.errorbar(xdata,ydata,xerr=errs['x'],yerr=errs['y'],
+                plot = self.axes.errorbar(xdata,ydata,xerr=errs['x'],yerr=errs['y'],
                         capsize = 0,elinewidth=kwargs['linewidth'],ecolor=color,
                         color=color,rasterized=True,**kwargs)
             else:
                 kwargs.pop('marker')
                 kwargs.pop('fillstyle')
                 kwargs['fill'] = False
-                plot = Iplot.axes.bar(xdata,ydata,**kwargs)
-            Iplot.plots.append(plot)
+                plot = self.axes.bar(xdata,ydata,**kwargs)
+            self.plots.append(plot)
             if scatter: plot[0].set_linestyle("")
-            if not onecolor: Iplot.col += col_step
+            if not onecolor: self.col += col_step
         plt.draw()
 
-    @staticmethod
-    def title(title,**kwargs):
-        Iplot.axes.set_title(title,**kwargs)
+    def title(self,title,**kwargs):
+        self.axes.set_title(title,**kwargs)
         plt.draw()
 
-    @staticmethod
-    def annotate(labels,data,**kwargs):
+    def annotate(self,labels,data,**kwargs):
         #slide should be relevant edge of bbox - e.g. (0,0) for left, (0,1) for bottom...
         slide  = kwargs.pop("slide",None)
         offset = kwargs.pop("offset",(0,0))
@@ -324,12 +439,12 @@ class Iplot(object):
             xytexts = kwargs.pop("xytexts")
             xytext  = xytexts
         except KeyError: 
-            xytext = Iplot.xytext 
+            xytext = self.xytext 
             xytexts = None
         pixel_diff = 1
         
         boxes = []
-        for annotation in Iplot.axes.texts:
+        for annotation in self.axes.texts:
             boxes.append(annotation.get_window_extent())
 
         newlabs = []
@@ -345,20 +460,20 @@ class Iplot(object):
                     label = r'\textbf{'+labels[i]+'}'
                 else:
                     label = labels[i]
-                a = Iplot.axes.annotate(label,xy=loc,textcoords='offset pixels',
+                a = self.axes.annotate(label,xy=loc,textcoords='offset pixels',
                                         xytext=xytext,picker = True,**kwargs)
             except AttributeError: 
-                Iplot.init()
-                a = Iplot.axes.annotate(labels[i],xy=data[i],textcoords='offset pixels',
+                self.init()
+                a = self.axes.annotate(labels[i],xy=data[i],textcoords='offset pixels',
                                         xytext=xytext,picker = True,**kwargs)
             newlabs.append(a)
         plt.gcf().canvas.draw()
-        xstart,xstop = Iplot.x.get_bounds()
-        ystart,ystop = Iplot.y.get_bounds()
-        xtickshift  = (Iplot.axes.get_xticks()[1]-Iplot.axes.get_xticks()[0])
-        ytickshift  = (Iplot.axes.get_yticks()[1]-Iplot.axes.get_yticks()[0])
+        xstart,xstop = self.x.get_bounds()
+        ystart,ystop = self.y.get_bounds()
+        xtickshift  = (self.axes.get_xticks()[1]-self.axes.get_xticks()[0])
+        ytickshift  = (self.axes.get_yticks()[1]-self.axes.get_yticks()[0])
 
-        origin = Iplot.axes.transData.inverted().transform((0,0))
+        origin = self.axes.transData.inverted().transform((0,0))
         for i in range(len(labels)):
             a = newlabs[i]
             cbox = a.get_window_extent()
@@ -382,7 +497,7 @@ class Iplot(object):
                     a.set_position(position)
                     cbox = a.get_window_extent()
                     arrow = True
-            (x1,y1),(x2,y2) = Iplot.axes.transData.inverted().transform(cbox)
+            (x1,y1),(x2,y2) = self.axes.transData.inverted().transform(cbox)
             #For now arrow always to bottom mid
             x = (x1+x2)/2.0
             y = y1
@@ -391,34 +506,30 @@ class Iplot(object):
             if y < ystart: ystart = y - ytickshift 
             if y > ystop : ystop  = y + ytickshift 
             if arrow or offset[0] or offset[1]:
-                a.arrow = Iplot.axes.arrow(x,y,data[i][0]-x,
-                                               data[i][1]-y,
-                                               head_length=0,
-                                               head_width=0,width = 0)
+                a.arr = self.axes.arrow(x,y,data[i][0]-x,data[i][1]-y,
+                        head_length=0,head_width=0,linewidth=2,overhang=100,color = 'black')
             boxes.append(cbox)
         plt.draw()
         return (xstart,xstop,ystart,ystop)
 
-    @staticmethod
-    def quiet():
+    def quiet(self,):
         plt.ioff()
-    @staticmethod
-    def loud():
+    def loud(self,):
         plt.ion()
 
-    @staticmethod
-    def export(name,ptype = None):
+    def export(self,name,ptype = None):
         if ptype is None:
             name  = name.split('.')
             ptype = name[-1]
             name  = '.'.join(name[:-1])
         plt.savefig(name + '.' + ptype,bbox_inches='tight')
 
-    @staticmethod
-    def help():
+    def help(self,):
         print("-I- Helper class for plotting. You can:")
         print("-I- clearPlots      = Clear plot window.")
         print("-I- plotCurves      = Accepts any number of curves and plots them.")
         print("-I-                   Can be used with *Iccf.tables and Iccf.peaks.")
         print("-I-                   'scatter' keyword will make all remaining plots scatter.")
+
+Iplot = PlotMaker()
 

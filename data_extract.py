@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 from tkinter import Tk,Frame,Label,Entry,StringVar,Button,Checkbutton,IntVar,Canvas,Text,Toplevel
 from tkinter import LEFT,RIGHT,BOTH,NW,BOTTOM,TOP,X,Y,END
 from PIL     import Image,ImageTk,ImageDraw
@@ -9,9 +9,15 @@ from tkinter.messagebox import askquestion,showerror
 from tkinter.filedialog import asksaveasfilename
 
 class DataExtraction:
+    format_string = '{:.5g}'
+
+    @staticmethod
+    def nfmt(n):
+        return [DataExtraction.format_string]*n
+
     @staticmethod
     def logscale(value,p0,p1):
-        return p0*(p1/p0)**value
+        return 10**((value-p0)/(p1-p0))
 
     @staticmethod
     def rolling_window(a, shape):
@@ -29,6 +35,7 @@ class DataExtraction:
         
         self.root.wm_title('Plot Data Extraction Tool')
         self.root.bind("<Key-Escape>",self._quit)
+        self.root.bind("<Key-Return>",lambda event: self.fix())
         self.root.protocol('WM_DELETE_WINDOW',self._quit) 
         self.root.resizable(0,0)
         
@@ -79,7 +86,8 @@ class DataExtraction:
 
         bf = Frame(self.gui)
         bf.pack(fill=X)
-        Button(bf,text="Fix Scale",command=self.fix,bg='grey').pack(side=LEFT,fill=X,expand=True)
+        self.buttonFix = Button(bf,text="Fix Scale",command=self.fix,bg='grey')
+        self.buttonFix.pack(side=LEFT,fill=X,expand=True)
         c = Button(bf,text="Find shape",command=self.findShape,bg='grey',anchor='w')
         c.pack(side=RIGHT,fill=X,expand=True)
         c.pack_propagate(False)
@@ -165,7 +173,7 @@ class DataExtraction:
     def processShape(self,x0,y0,x1,y1,draw):
             draw.ellipse((x0,y0,x1,y1),outline='red')
             if self.fixed:
-                self.writer.insert(END,"{:.2g} , {:.2g}\n".format(*self.pixToPlot((x0+x1)/2,(y0+y1)/2)))
+                self.writer.insert(END,(' , '.join(self.nfmt(2))+'\n').format(*self.pixToPlot((x0+x1)/2,(y0+y1)/2)))
 
     def findShape(self):
         try: x0,y0,x1,y1 = self.shape
@@ -192,11 +200,13 @@ class DataExtraction:
             if not coord['lab'].set or not len(value):
                 showerror("Can't fix yet!","Make sure all pixels and plot values are set first!")
                 self.fixed = False
+                self.buttonFix.config(state='normal')
                 return
             try: points.append(float(value))
             except ValueError:
                 showerror("Can't fix yet!","Non-float value in entry, "+value+"!")
                 self.fixed = False
+                self.buttonFix.config(state='normal')
                 return
             pixels.append(eval(coord['lab'].var.get()))
         self.xscale = (points[1] - points[0])/((pixels[1][0]-pixels[0][0])**2 +
@@ -210,22 +220,26 @@ class DataExtraction:
         self.yx = pixels[3][0]-pixels[2][0]
         self.yy = pixels[3][1]-pixels[2][1]
         self.fixed = True
+        self.buttonFix.config(state='disabled')
 
     def pixToPlot(self,x,y):
         if not self.fixed:
             showerror("Can't calculate xy!","Mapping not fixed yet!")
         px = x - self.x0[0]
         py = y - self.x0[1]
-        X=(px*self.xx+py*self.xy)*self.xscale
+        X=(px*self.xx+py*self.xy)*self.xscale+self.px0
         px = x - self.y0[0]
         py = y - self.y0[1]
-        Y=(px*self.yx+py*self.yy)*self.yscale
-        try: 
-            if self.xlog.get(): X = self.logscale(X,self.px0,self.px1)
-            if self.ylog.get(): Y = self.logscale(Y,self.py0,self.py1)
+        Y=(px*self.yx+py*self.yy)*self.yscale+self.py0
+        try:
+            if self.xlog.get(): 
+                X = self.px0*self.logscale(X,self.px0,self.px1)
+            if self.ylog.get(): 
+                Y = self.py0*self.logscale(Y,self.py0,self.py1)
         except ZeroDivisionError:
             showerror("Invalid range!","0 or negative value in logarithmic scale!")
             self.fixed = False
+            self.buttonFix.config(state='normal')
             self.position.set("")
             return
         return X,Y
@@ -271,7 +285,7 @@ class DataExtraction:
                         self.removeShapes(where(rows))
                     else:
                         width = 5
-                        self.writer.insert(END,"{:.2g} , {:.2g}\n".format(*self.pixToPlot(x,y)))
+                        self.writer.insert(END,(' , '.join(self.nfmt(2))+"\n").format(*self.pixToPlot(x,y)))
                         self.drawCircle(x-width,y-width,x+width,y+width)
                     self.getZoom(x,y) 
                     return
@@ -313,7 +327,7 @@ class DataExtraction:
                 if not coord['lab'].set:
                     coord['lab'].var.set(str((x,y)))
         else:
-            self.position.set("x = {:.4f} , y = {:.4f}".format(*self.pixToPlot(x,y)))
+            self.position.set(("x = "+self.format_string+" , y = "+self.format_string).format(*self.pixToPlot(x,y)))
         self.getZoom(x,y)
 
     def setxy(self,event):
@@ -324,6 +338,7 @@ class DataExtraction:
         event.widget.configure(relief='solid')
         event.widget.set = False
         self.fixed = False
+        self.buttonFix.config(state='normal')
     
     def _quit(self, event = None):
             if askquestion("Exit","Sure?") == 'no': return

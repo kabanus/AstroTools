@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #Class to run interactive CCF calculations.
 #Uses the CCF and interpolation module. 
 import sys 
