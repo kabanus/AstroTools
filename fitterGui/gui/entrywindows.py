@@ -2,6 +2,7 @@ from tkinter import Entry,LEFT,Label
 import tkinter.messagebox as messagebox
 from plotInt import Iplot
 from .simplewindows import simpleWindow
+from fitshandler import FakeResponse
 
 class entryWindow(simpleWindow):
     def __init__(self,parent,check,field,title,width = 20):
@@ -106,7 +107,8 @@ class ignoreReader(entryWindow):
             channels = []
             for rng in res:
                 try:
-                    if self.parent.fitter.ptype == 0:
+                    if (self.parent.fitter.ptype == 0 and
+                        self.parent.fitter.resp.__class__ is not FakeResponse):
                         start = int(rng)
                     else:
                         start = float(rng)

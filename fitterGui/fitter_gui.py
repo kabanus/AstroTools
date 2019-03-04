@@ -293,6 +293,8 @@ if True or __name__ == "__main__":
             try: 
                 Iplot.clearPlots()
                 what(res)
+            except OSError:
+                what(res,text=True)
             except (ValueError,IOError,KeyError) as e:
                 messagebox.showerror('Bad file!','Please check file is correct format:\n'+str(e))
                 if self.debug: raise
@@ -452,8 +454,8 @@ if True or __name__ == "__main__":
             self.root.destroy() 
 
     parser = ArgumentParser("Fitter Gui")
-    parser.add_argument('--xspec-packages',nargs='*',default=[],help="List of local packages for XSPEC (using lmod). Path must follow model if the local model directory is not set in Xspec.init.")
-    parser.add_argument('--debug',action="store_true",help="Add debug stuff to help locate errors.")
+    parser.add_argument('--xspec-packages','-x',nargs='*',default=[],help="List of local packages for XSPEC (using lmod). Path must follow model if the local model directory is not set in Xspec.init.")
+    parser.add_argument('--debug','-d',action="store_true",help="Add debug stuff to help locate errors.")
 
     opt = parser.parse_args(argv[1:])
     App.debug = opt.debug

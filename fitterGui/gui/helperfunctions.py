@@ -1,6 +1,8 @@
 from tkinter import Frame,N,S,E,W,Button,Label,BOTH,TOP,Canvas,Scrollbar
+from tkinter.scrolledtext import ScrolledText
 from tkinter.filedialog import askopenfilename
 from .commandline import commandLine
+from .debugConsole import DebugConsole
 from os import path
 ALL = N+S+E+W
 
@@ -41,12 +43,17 @@ def make_frames(self):
     Label(self.canvasDataFrame, textvariable = self.datatitle, font = ('courier',12,'bold underline'),wraplength=370,bg='aliceblue',anchor=N).grid(row=0,column=0,columnspan=4,sticky=N)
     self.paramLavels = {}
 
+    if self.debug:
+        self.debugger = DebugConsole(self.root,
+                                     "Debug console. Access app through App.",
+                                     {'App':self},self._quit)
+
 def genScrollCanvas(root,root_frame, canvas):
     scrollbar = Scrollbar(root_frame,command = canvas.yview)
     canvas.configure(yscrollcommand=scrollbar.set)
     canvas.bind("<Configure>",updateFrame)
     canvas_frame = Frame(canvas)
-    canvas_frame.pack(fill=BOTH)
+    canvas_frame.pack(fill=BOTH,expand=True,side="left")
     #Catch both windows and linux
     root.bind("<Button-4>",onscroll(canvas,-1).do)
     root.bind("<Button-5>",onscroll(canvas,1).do)
@@ -67,7 +74,6 @@ class onscroll(object):
 def updateFrame(event):
     event.widget.configure(scrollregion = event.widget.bbox('all'))
     
-                
 def getfile(*defaults):
     filetypes = list()
     defaultextension = '.*'

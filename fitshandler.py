@@ -9,8 +9,8 @@ from numpy               import append as ndappend
 from numpy               import concatenate as ndconc
 from numpy               import array,dot,inf,delete,sort,zeros,where,arange,indices
 from numpy               import unravel_index,argmax,isnan,ones,fromfile,array_equal
+from numpy               import loadtxt
 from matplotlib.pyplot   import show,figure,Circle
-import re
 
 class fitsHandler(object):
     def group(self,binfactor = None,reset = True):
@@ -225,7 +225,7 @@ class Data(fitsHandler):
         if text is None:
             self.loadFits(data)
         else:   
-            self.loadText(data,text)
+            self.loadText(data)
 
         self.ochannels  = array(self.ochannels)
         self.ocounts    = array(self.ocounts)
@@ -279,19 +279,24 @@ class Data(fitsHandler):
                 self.oscales.append(scale)
                 self.obscales.append(bscale)
 
-    def loadText(self,fname,delimiter):
+    def loadText(self,fname):
         self.exposure    = 1
         self.errorarray = []
-        with open(fname) as data:
-            for line in data:
-                line = re.split(delimiter+"+",line.strip())
-                self.oscales.append(1.0)
-                self.obscales.append(1.0)
-                self.ochannels.append(float(line[0]))
-                self.ocounts.append(float(line[1]))
-                self.errorarray.append(float(line[2]))
-        self.errorarray = array(self.errorarray)
-        self.errors = lambda rebin=1,_=1,x=self.errorarray: Data.ndrebin(x,rebin)
+        try:
+            data = loadtxt(fname)
+        except ValueError:
+            data = loadtxt(fname,skiprows=1)
+                
+        if data.shape[1] == 4:
+            self.ochannels,_,self.ocounts,self.errorarray = data.T
+        else:
+            self.ochannels,self.ocounts,self.errorarray = data.T
+        self.ocounts    = self.ocounts
+        self.ochannels  = self.ochannels
+        self.oscales    = ones(data.shape[0]).astype('float64')
+        self.obscales   = ones(data.shape[0]).astype('float64')
+        self.errorarray = self.errorarray.reshape(-1,1)
+        self.errors     = lambda rebin=1,_=1,x=self.errorarray: Data.ndrebin(x,rebin)
 
     def getPlot(self,rebin = 1, eff = 1):
         return ndconc((
