@@ -62,6 +62,7 @@ class DebugConsole:
         self.console.bind("<Button-1>",lambda e: self.click())
         self.console.bind("<ButtonRelease-1>",lambda e: self.clack())
         self.console.bind("<B1-Motion>",self.cmove)
+        self.console.bind("<ButtonRelease-2>",lambda e: "break")
     
         self.after_id = self.console.after(500,self.monitor)
     
@@ -120,7 +121,7 @@ class DebugConsole:
                 s = self.locals.get('self',self)
                 
                 if cmd in locs: cmd = 'print({})'.format(cmd)
-                if re.match(r'(import|for|while|if) |[a-zA-Z_]\w*\s*=',cmd):
+                if re.match(r'(import|for|while|if|from) |[a-zA-Z_]\w*\s*=',cmd):
                     ret = exec(cmd,globals(),locs)
                 else:
                     ret = eval(cmd,globals(),locs)

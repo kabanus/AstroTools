@@ -204,6 +204,8 @@ class FakeResponse(object):
         return table
     def convolve_channels(self,vector):
         return vector
+    def ignore(self,channels): return
+    def notice(self,channels): return
     def wl_to_channel(self,minX,maxX):
         raise NotImplementedError("Can't ignore when using a text file as data.")
     def energy_to_channel(self,minX,maxX):
@@ -280,6 +282,7 @@ class Data(fitsHandler):
                 self.obscales.append(bscale)
 
     def loadText(self,fname):
+        self.asciiflag  = True
         self.exposure    = 1
         self.errorarray = []
         try:
@@ -295,8 +298,10 @@ class Data(fitsHandler):
         self.ochannels  = self.ochannels
         self.oscales    = ones(data.shape[0]).astype('float64')
         self.obscales   = ones(data.shape[0]).astype('float64')
-        self.errorarray = self.errorarray.reshape(-1,1)
-        self.errors     = lambda rebin=1,_=1,x=self.errorarray: Data.ndrebin(x,rebin)
+        self.errorarray = self.errorarray
+        self.errors     = (lambda rebin=1,_=1, row = False, x=self.errorarray: 
+                                Data.ndrebin(x,rebin) if row 
+                                    else Data.ndrebin(x,rebin).reshape(-1,1))
 
     def getPlot(self,rebin = 1, eff = 1):
         return ndconc((
@@ -408,10 +413,8 @@ class Data(fitsHandler):
         self.ignore([])
 
     def ignore(self,channels):
-        if self.asciiflag:
-            raise NotImplementedError("Can't ignore when using a text file as data.")
-        self.group(self.grouping,reset = False)
         self.deleted.update((c-1 for c in channels if c >= self.channels[0] and c <= self.channels[-1]))
+        self.group(self.grouping,reset = False)
         self.channels  = delete(self.channels ,list(self.deleted),axis = 0)
         self.counts    = delete(self.counts   ,list(self.deleted),axis = 0)
         self.scales    = delete(self.scales   ,list(self.deleted),axis = 0)

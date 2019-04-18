@@ -1,6 +1,6 @@
 from fitshandler import Response,Data,FakeResponse
 from os.path     import dirname,join
-from numpy       import array
+from numpy       import array,where
 import operator
 
 class dataResponseMismatch(Exception): pass
@@ -103,7 +103,10 @@ def set_channels(self, minX, maxX,what,noplot):
     try:
         self.checkLoaded()
         if self.ptype == self.CHANNEL: 
-            channels = list(range(minX,maxX+1))
+            if self.data.asciiflag:
+                channels = list(where((self.data.channels>=minX)&(self.data.channels<=maxX))[0])
+            else:
+                channels = list(range(minX,maxX+1))
         if self.ptype == self.ENERGY : 
             channels = list(self.resp.energy_to_channel(minX, maxX))
         if self.ptype == self.WAVE: 
@@ -113,23 +116,24 @@ def set_channels(self, minX, maxX,what,noplot):
         if self.area.any():
             self.area = self.resp.eff
         if not channels: return
-
-        minC  = channels[0]
-        maxC  = channels[-1]
-        total = maxC-minC+1
-        diff  = self.ionlabs[-1][3]-self.ionlabs[-1][0]
-        start = None
-        for label in self.ionlabs:
-            if what == 'ignore':
-                if label[self.CHANNEL] > maxC:
-                    label[3] -= total
-                elif label[self.CHANNEL] >= minC:
-                    label[3] = -1
-            elif what == 'notice':
-                if label[self.CHANNEL] > maxC:
-                    label[3] += total
-                elif label[self.CHANNEL] >= minC:
-                    label[3] = label[0]-diff+total
+        
+        if not self.data.asciiflag:
+            minC  = channels[0]
+            maxC  = channels[-1]
+            total = maxC-minC+1
+            diff  = self.ionlabs[-1][3]-self.ionlabs[-1][0]
+            start = None
+            for label in self.ionlabs:
+                if what == 'ignore':
+                    if label[self.CHANNEL] > maxC:
+                        label[3] -= total
+                    elif label[self.CHANNEL] >= minC:
+                        label[3] = -1
+                elif what == 'notice':
+                    if label[self.CHANNEL] > maxC:
+                        label[3] += total
+                    elif label[self.CHANNEL] >= minC:
+                        label[3] = label[0]-diff+total
         if not noplot: self.plot(user = False)
     except AttributeError as e:
         raise self.noIgnoreBeforeLoad()

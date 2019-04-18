@@ -26,6 +26,7 @@ class parameterFrame(object):
         self.frame.bind("<Button-3>",self.showMenu)
         for child in self.frame.winfo_children():
             child.bind("<Button-3>",self.showMenu)
+        self.place = -1
 
     def errorVisible(self):
         #x[0] is the iparam
@@ -76,16 +77,28 @@ class parameterFrame(object):
 
     def find(self,iparam):
         index,param = iparam
-        place = 0
-        for (i,p),_ in self.parent.fitter.getParams():
-            if (i == '*' or i == index) and param in p:
+        if not param:
+            param = index
+            index = '*'
+        try: index = int(index)
+        except ValueError: pass
+        param = param.lower()
+        self.place += 1
+        fail = not self.place
+        for j,((i,p),_) in enumerate(self.parent.fitter.getParams()):
+            if j < self.place: continue
+            if (index == '*' or i == index) and param in p.lower():
                 param = p
                 break
-            place += 1
-        if place == len(self.parent.paramLabels):
-            messagebox.showerror("No such parameter","Please make sure "+str(index)+":"+param+" exists")
+            self.place += 1
+        else:
+            self.place = -1
+            if fail:
+                messagebox.showerror("No such parameter","Please make sure "+str(index)+":*"+param+"* exists")
+            else:
+                self.find(iparam)
             return
-        placement = place / (len(self.parent.paramLabels)+1.0)
+        placement = self.place / (len(self.parent.paramLabels)+1.0)
         top,  bot = self.parent.scrollbar.get()
         offset       = (bot-top)/2.0
 
@@ -102,11 +115,12 @@ class parameterFrame(object):
             placement = 1
         self.parent.scrollbar.set(top,bot)
         self.parent.dataCanvas.yview_moveto(placement)
-        self.parent.paramLabels[(index,param)][1].focus_set()
+        self.parent.paramLabels[(i,param)][1].focus_set()
 
     def entryIn(self,event):
         self.lastEntry = event.widget.get()
         event.widget.configure(background='white')
+        self.place = event.widget.place
 
     def entryColor(self,event):
         event.widget.configure(background='white')
@@ -159,13 +173,14 @@ class parameterFrame(object):
         count = 1
         if self.parent.fitter.current == None: return
         self.parent.thawedDict = {}
-        for (index,param),value in self.parent.fitter.getParams():
+        for p,((index,param),value) in enumerate(self.parent.fitter.getParams()):
             l1 = Label(self.frame, text=str(index)+":"+param,width=12,justify = LEFT, font = ('courier',12),bg='aliceblue',anchor=N+W, takefocus = False)
             l1.grid(sticky=ALL,row=count, column=0),
             l2 = Entry(self.frame,justify = LEFT, font = ('courier',12),bg='aliceblue',width=7)
             l2.insert(0,str(value))
             l2.grid(sticky=ALL,row=count, column=1)
             exec(('l2.bind("<FocusOut>",lambda event: self.entryOut(event,'+str(index)+',"'+param+'"))'), locals(), globals())
+            l2.place = p
             l2.bind("<FocusIn>",self.entryIn)
             l2.bind("<Key>",self.entryColor)
             exec(('l2.bind("<Return>",lambda event: self.entryOut(event,'+str(index)+',"'+param+'"))'), locals(), globals())

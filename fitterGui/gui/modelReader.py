@@ -34,9 +34,8 @@ class XspecLoader(strReader):
             self.model = models.Xspec(self.string)
             self.good = True
         except Exception as e:
-            print('-'+str(e)+'-')
             if str(e) == 'Model Command Error' or str(e):
-                messagebox.showerror("Bad XSPEC string",'Consult XSPEC manual')
+                messagebox.showerror("Bad XSPEC string",'Consult XSPEC manual, got:\n    {}'.format(str(e)))
                 return
             raise
         self.eventDestroy(None) 
@@ -158,73 +157,75 @@ class modelReader(object):
                 txt += "%-31s : %15s : %15s\n"%(desc,model, '')
         return txt
 
+    @staticmethod
+    def get_model_string(arg):
+        if not arg: return arg
+        options = []
+        for m in MODELS:
+            if m.lower() == arg.lower():
+                options = [m]
+                break
+            if m.lower().startswith(arg.lower()):
+                options.append(m)
+        if not len(options):
+            messagebox.showerror( 'Bad syntax!', arg + ' is NOT a model, see table below.')
+            return
+        elif len(options) > 1:
+            messagebox.showerror('Ambiguous','{} matches all of {}.'.format(arg,','.join(options)))
+            return
+        return options[0]
+        
+
     def parse(self,event = None):
         try:
             model = self.entry.get().replace(" ","")
         except AttributeError:
             model = event.replace(" ","")
-        models  = ['']
-        inparam = False
-        last    = ''
-        paramrng= []
+        expression = ['']
+        inparam = 0
         for i in range(len(model)):
             char = model[i]
-            if char == '"' or char == "'": pass
-            elif char == ')':
-                if inparam:
-                    inparam = False
-                    paramrng[-1].append(i)
-            elif inparam: pass
-            elif char in '+*':
-                models.append('')
-            elif char == '(' and last and last not in '+*(':
-                inparam  = True
-                paramrng.append([i])
-            else: 
-                models[-1] += char
-            last = char
 
-        used = []
-        for m in models:
-            m = m.strip('(').strip(')')
-            try: 
-                index = m.index('(') 
-                m = m[:index]
-            except ValueError: pass
-            if m not in MODELS:
-                if m == '':
-                    messagebox.showerror( 'Bad syntax!', 'Bad operation or empty equation.' )
+            if inparam:
+                if char == '(': inparam+=1
+                elif char == ')': inparam -=1
+                expression[-1] += char
+                if not inparam:
+                    expression.append('')
+                    continue
+            else:
+                if char in '+*)':
+                    if not expression[-1]: expression.pop()
+                    if not expression[-1].endswith(')'):
+                        expression[-1] = self.get_model_string(expression[-1])
+                        if expression[-1] is None: return
+                        if expression[-1] in PARAMS:
+                            expression.append('({})'.format(PARAMS[expression[-1]]()))
+                        else: expression.append('()')
+                    expression.extend((char,''))
+                elif char == '(':
+                    expression.append(char)
+                    if expression[-2] not in '+*(':
+                        expression[-2] = self.get_model_string(expression[-2])
+                        if expression[-2] is None: return
+                        inparam += 1
+                    else:
+                        expression.append('')
                 else:
-                    messagebox.showerror( 'Bad syntax!', m + ' is NOT a model, see table below (CASE SENSITIVE).' )
-                return
-            used.append(m)
-        models = set(used)
-        try: 
-            for m in models:
-                padded = 0
-                for p in finditer(m,model):
-                    inparam = False
-                    for rng in paramrng:
-                        if p.start() >= rng[0] and p.start() <= rng[1]:
-                            inparam = True
-                            break
-                    if inparam: continue
-                    args = '()'
-                    if m in PARAMS:
-                        try:
-                            if model[padded+p.end()] == '(':
-                                args = ''
-                            else: 
-                                args = '('+PARAMS[m]()+')'
-                        except IndexError:
-                            args = '('+PARAMS[m]()+')'
-                    for rng in paramrng:
-                        if p.start() < rng[0]:
-                            rng[0] += len(args)
-                            rng[1] += len(args)
-                    model = model[:padded+p.end()] + args + model[padded+p.end():]
-                    padded += len(args)
-            model = eval(model) 
+                    expression[-1] += char
+        expression = [x for x in expression if x]
+        index = None
+        if not expression[-1].endswith(')'): index = len(expression)-1
+        elif expression[-1] == ')' and not expression[-2].endswith(')'): index = len(expression)-2
+        if index is not None:
+            expression[index] = self.get_model_string(expression[index])
+            if expression[index] is None: return
+            if expression[index] in PARAMS:
+                expression.insert(index+1,'({})'.format(PARAMS[expression[index]]()))
+            else: expression.insert(index+1,'()')
+        model = ''.join(expression)
+        try:
+            model = eval(model)
         except TypeError:
             messagebox.showerror("Failed to build model!","Perhaps you forgot '*' for multiplication?")
             if self.parent.debug: raise

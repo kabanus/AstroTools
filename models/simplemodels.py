@@ -21,10 +21,10 @@ class Function(simple):
             raise self.paramsMustBeDict()
         self.params = params
         self.expression = expression
-        exec(('self.func = lambda x,'+','.join(list(params.keys()))+': '+expression),globals(),locals())
+        exec(('self.func = lambda self,x,'+','.join(list(params.keys()))+': '+expression),globals(),locals())
    
     def __call__(self,x):
-        return self.func(x,**self.params)
+        return self.func(self,x,**self.params)
 
 #Pure lambda, overwrite __str__
 @modelExport
