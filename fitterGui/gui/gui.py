@@ -1,7 +1,7 @@
 from tkinter import Button,Menubutton,N,S,W,E,Menu
 from .entrywindows import (zoomReader, rebinReader, ignoreReader, 
                           Save, paramReader, zReader, rangeReader, 
-                          strReader, ionLabeler)
+                          strReader, ionLabeler,setEps)
 from .simplewindows import Help
 ALL = N+S+E+W
 
@@ -24,8 +24,7 @@ class Gui(object):
                                           'Effective area','Data')),
                 ('Ignore', self.ignore,  ('Ignore','Notice','Reset')),
                 ('Model' , parent.loadModel, None),
-                ('Fit'   , parent.runFit, None),
-                ('Calculate', self.calc, ('Model','Error','Group')),
+                ('Calculate', self.calc+(parent.runFit,)+self.step,('Model','Error','Group','Fit','Set Step')),
                 ('Save'  , self.save, ('Params','Image','Plot','Session')),
                 ('Help'  , lambda: Help(parent), None),
                 ('Quit'  , parent._quit, None)):
@@ -40,6 +39,7 @@ class Gui(object):
 
     def menuCommands(self):
         #Can't list comprehend with lambda. Arr.
+        self.step    = (lambda: setEps(self.parent),)
         self.setplot = (lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(0),True),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(1),True),
                         lambda: self.parent.doAndPlot(lambda: self.parent.fitter.setplot(2),True))

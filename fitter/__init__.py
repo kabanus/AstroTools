@@ -1,5 +1,5 @@
 import re
-from numpy import array
+from numpy import array, finfo
 
 class Fitter(object):
     from ._plotdefs import CHANNEL,ENERGY,WAVE
@@ -19,6 +19,7 @@ class Fitter(object):
         self.plotmodel = array(())
         self.labelions = False
         self.area      = array(())
+        self.eps       = finfo(float).eps
         self.axisOverride=[None,None]
         if not noinit: self.initplot()
         if data is not None:

@@ -50,8 +50,9 @@ class Igrid:
         self.fig, self.axes = plt.subplots(nrows=nrows, ncols=ncols,**subplot_kwargs)
         self.plots = array(
             pd.DataFrame(self.axes).applymap(PlotMaker)).reshape(self.axes.shape)
-        
+        self.default_font = 44 
         self.reset()
+        self.fig.set_size_inches(18.5, 10.5)
 
     def reset(self,axes = None):
         if axes is None: axes = self.axes
@@ -92,13 +93,13 @@ class Igrid:
         if clear: self.remove_labels()
         try: self._ylabel.remove()
         except AttributeError: pass
-        self._ylabel = self.fig.text(0.04, 0.5, label, va='center', rotation='vertical',fontsize=default_font)
+        self._ylabel = self.fig.text(0.04, 0.5, label, va='center', rotation='vertical',fontsize=self.default_font)
     
     def xlabel(self,label,clear=True):
         if clear: self.remove_labels()
         try: self._xlabel.remove()
         except AttributeError: pass
-        self._xlabel = self.fig.text(0.5, 0.01, label, ha='center',fontsize=default_font)
+        self._xlabel = self.fig.text(0.5, 0.01, label, ha='center',fontsize=self.default_font)
 
     def xresize(self,min=None,max=None):
         for plot in self:
@@ -109,6 +110,13 @@ class Igrid:
 
     def __getitem__(self,i):
         return self.plots[i]
+    
+    def export(self,name,ptype = None):
+        if ptype is None:
+            name  = name.split('.')
+            ptype = name[-1]
+            name  = '.'.join(name[:-1])
+        plt.savefig(name + '.' + ptype,bbox_inches='tight')
 
 
 SF = ScalarFormatter()
@@ -295,7 +303,6 @@ class PlotMaker:
         self.fillstyle      = 'none'
         self.xlog(False)
         self.ylog(False)
-        self.axes.set_position([0.15, 0.15, 0.83, 0.83])
    
     def secondAxis(self,function,axis='x',override = False):
         axis = self.__dict__[axis]

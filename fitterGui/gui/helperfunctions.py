@@ -9,6 +9,7 @@ ALL = N+S+E+W
 def make_frames(self):
     self.main = Frame(self.root, bg = 'navyblue')
     self.main.grid( row = 0, rowspan=2, column = 0, columnspan=2,sticky =  ALL )
+    bgcol = 'aliceblue'
 
     cmdFrame = Frame(self.root,width = 300)
     cmdFrame.grid(row=2,column=0,sticky=ALL)
@@ -19,28 +20,30 @@ def make_frames(self):
     self.gui = Frame(self.root, bg = 'navyblue', relief = 'sunken')
     self.gui.grid( row = 2, column = 1,sticky = ALL)
     self.gui.rowconfigure(0,weight=1)
-   
-    self.dump = Button( self.root, text='Dump command', command=self.dumpParamCmd)
-    self.dump.grid(row=2, column=2, sticky=ALL, padx=self.border)
+  
+    self.dumpFrame = Frame(self.root,bg=bgcol,bd=2)
+    self.dumpFrame.grid(row=2, column=2, sticky=ALL)
+    self.dump = Button(self.dumpFrame, text='Dump command', command=self.dumpParamCmd)
+    self.dump.pack(expand=True,fill=BOTH)
     
     self.info_frame = Frame(self.root)
     self.info_frame.grid(row=1,column=2,sticky=ALL)
-    Label(self.info_frame, textvariable = self.statistic, font = ('courier',12,'bold'),wraplength=370,bg='aliceblue',anchor=W).pack(fill=BOTH,side = TOP)
-    Label(self.info_frame, textvariable = self.ignored, font = ('courier',12,'bold'),wraplength=370,bg='aliceblue',anchor=W).pack(fill=BOTH,side = TOP)
-    Label(self.info_frame, textvariable = self.grouped, font = ('courier',12,'bold'),wraplength=370,bg='aliceblue',anchor=W).pack(fill=BOTH,side = TOP)
+    Label(self.info_frame, textvariable = self.statistic, font = ('courier',12,'bold'),wraplength=370,bg=bgcol,anchor=W).pack(fill=BOTH,side = TOP)
+    Label(self.info_frame, textvariable = self.ignored, font = ('courier',12,'bold'),wraplength=370,bg=bgcol,anchor=W).pack(fill=BOTH,side = TOP)
+    Label(self.info_frame, textvariable = self.grouped, font = ('courier',12,'bold'),wraplength=370,bg=bgcol,anchor=W).pack(fill=BOTH,side = TOP)
 
     self.data_frame = Frame(self.root)
     self.data_frame.grid( row = 0, column = 2, sticky = ALL  )
     self.data_frame.rowconfigure(0,weight=1)
-    self.dataCanvas = Canvas(self.data_frame, bg='aliceblue')
+    self.dataCanvas = Canvas(self.data_frame, bg=bgcol)
     self.dataCanvas.grid(row=0,column=0,sticky=ALL)
     self.dataCanvas.columnconfigure(0,weight=1)
    
     self.canvasDataFrame,self.scrollbar = genScrollCanvas(self.root,self.data_frame,self.dataCanvas)
     self.scrollbar.grid(row=0,column=2,sticky=ALL) 
-    self.canvasDataFrame.configure(bg = 'aliceblue')
+    self.canvasDataFrame.configure(bg = bgcol)
     
-    Label(self.canvasDataFrame, textvariable = self.datatitle, font = ('courier',12,'bold underline'),wraplength=370,bg='aliceblue',anchor=N).grid(row=0,column=0,columnspan=4,sticky=N)
+    Label(self.canvasDataFrame, textvariable = self.datatitle, font = ('courier',12,'bold underline'),wraplength=370,bg=bgcol,anchor=N).grid(row=0,column=0,columnspan=4,sticky=N)
     self.paramLavels = {}
 
     if self.debug:

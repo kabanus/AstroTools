@@ -219,6 +219,9 @@ if True or __name__ == "__main__":
                 except ZeroDivisionError:
                     if self.debug: raise
                     messagebox.showerror("Failed to load session model!",'Likely all channels ignored somehow')
+                except AttributeError as e:
+                    if 'Xspec' in str(e):
+                        messagebox.showerror("Failed to load session model!",'Model contains Xspec component, but heasarc not detected!')
                 except KeyError: 
                     if self.debug: raise 
                     pass

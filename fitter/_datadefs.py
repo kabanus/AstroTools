@@ -95,9 +95,9 @@ def group(self,g):
     self.plot(user = False)
 
 def ignore(self, minX, maxX,noplot = False):
-    self.set_channels(self,minX,maxX,'ignore',noplot)
+    self.set_channels(minX,maxX,'ignore',noplot)
 def notice(self, minX, maxX,noplot = False):
-    self.set_channels(self,minX,maxX,'notice',noplot)
+    self.set_channels(minX,maxX,'notice',noplot)
 
 def set_channels(self, minX, maxX,what,noplot):
     try:

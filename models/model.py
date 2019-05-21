@@ -3,7 +3,6 @@ from copy import deepcopy
 from copy import Error as copyError
 import operator
 
-from numpy import zeros
 from parameters import Parameters
 
 exported = {}
@@ -125,7 +124,6 @@ class _singleModel(Model):
         if defaults == None: defaults = []
         if len(args[0]) - len(defaults)< 2: 
             raise Exception('Calculator must have one non-default parameter! : ' + str(args[0])+" : "+str(args[-1]))
-        self.array = zeros(0)
         self.thawed    = [[]]    #Needs order
         self.changed   = set()          #For easy use in models
         self._changed  = [self.changed] #Actually used
@@ -146,11 +144,9 @@ class _singleModel(Model):
         return self.params 
     
     def calculate(self,xlist):
-        if len(xlist) != len(self.array):
-            self.array = zeros(len(xlist))
-        for i, el in enumerate(self._calculate(xlist)): self.array[i] = el
+        result = self._calculate(xlist)
         self.resetChanged()
-        return self.array
+        return result
 
     def __str__(self):
         return self.__class__.__name__

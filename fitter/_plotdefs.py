@@ -139,7 +139,8 @@ def plotModel(self,start = None,stop = None,delta = None):
 
 def plotEff(self):
     Iplot.clearPlots()
-    Iplot.plotCurves(concatenate((self.resp.ebinAvg.reshape(-1,1),self.resp.reff.reshape(-1,1)),axis=1),plotype="xy",markersize=1,marker='.')
+    Iplot.plotCurves(concatenate((self.resp.ebinAvg.reshape(-1,1),self.resp.reff.reshape(-1,1)),axis=1),
+                     plotype="xy",markersize=1,marker='.')
     Iplot.x.label('KeV')
     Iplot.y.label('cm$^2$')
 
@@ -153,9 +154,9 @@ def _plotOrSave(save = None,model = None, data = None):
     if save is None:
         if data is not None:
             plotype = "xdxydy" if len(data[0]) == 4 else "xydy"
-            Iplot.plotCurves(data,stepx = 0,scatter = True,plotype=plotype,marker="+")
+            Iplot.plotCurves(data,stepx = 0,scatter = True,plotype=plotype,marker="+",lw=2)
         if model is not None:
-            Iplot.plotCurves(model,chain=True,plotype="xy",scatter=False,marker=None)
+            Iplot.plotCurves(model,chain=True,plotype="xy",scatter=False,marker=None,lw=2)
     else:
         fd = open(save,'w')
         table = []

@@ -1,8 +1,8 @@
 from model import _singleModel,modelExport
 from collections import OrderedDict
-from interpolations import linear
-from numpy import exp,sin,cos,tan,pi
-
+from scipy.interpolate import interp1d
+from numpy import exp,sin,cos,tan,pi,zeros,array
+from os import getpid
 keVAfac = 12.39842
 class simple(_singleModel):
     def __init__(self):
@@ -76,16 +76,14 @@ class Table(simple):
         simple.__init__(self)
         try: 
             self.fname = table
-            table = [[float(x) for x in line.split()] for line in open(table)]
+            with open(table) as fd:
+                table = array([[float(x) for x in line.split()] for line in fd])
         except IOError: pass
-        self.interpolation = linear(table)
+        self.interpolation = interp1d(table[:,0],table[:,1])
         self.data = table
     
     def __call__(self,energies):
-        for energy in energies:
-            try:
-                yield self.interpolation(energy)[1]
-            except self.interpolation.outOfRange: yield 0
+        return self.interpolation(energies)
 
     def __str__(self):
         try: return 'Table("'+self.fname+'")'

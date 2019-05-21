@@ -3,6 +3,7 @@ import tkinter.messagebox as messagebox
 from plotInt import Iplot
 from .simplewindows import simpleWindow
 from fitshandler import FakeResponse
+from numpy import finfo
 
 class entryWindow(simpleWindow):
     def __init__(self,parent,check,field,title,width = 20):
@@ -43,6 +44,21 @@ class strReader(entryWindow):
     def parse(self,event):
         if self.action is None: return self.entry.get()
         self.parent.doAndPlot(lambda: self.action(self.entry.get()))
+        self.root.destroy()
+
+class setEps(entryWindow):
+    def __init__(self,parent):
+        try: entryWindow.__init__(self,parent,'','epsilon',"Set forward fit step")
+        except AttributeError: return
+
+    def parse(self,event):
+        try: 
+            step = float(self.entry.get())
+            if not step: step = np
+            self.parent.fitter.eps = finfo(float).eps
+        except ValueError:
+            messagebox.showerror('Bad step!', 'Must be number!')
+            return
         self.root.destroy()
 
 class zReader(entryWindow):
