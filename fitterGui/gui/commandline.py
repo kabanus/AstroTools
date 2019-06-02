@@ -1,5 +1,6 @@
 from tkinter import Entry,END,LEFT
 import tkinter.messagebox as messagebox
+from .simplewindows import runMsg
 
 class commandLine(object):
     class noModelWithParam(KeyError): pass
@@ -96,7 +97,8 @@ class commandLine(object):
             res = event.widget.get().split(',')
         except AttributeError:
             res = event.split(',')
-            
+   
+        m = runMsg(self.parent,'Parsing commands...')
         needReset = False
         toadd = ''
         for cmdstr in res:
@@ -134,6 +136,7 @@ class commandLine(object):
         if toadd:
             self.cmdHist.append(toadd[:-1])
         self.currentCmd = len(self.cmdHist)
+        m.destroy()
 
     def resizeCmd(self,event):
         self.entry.place(x=0,y=0,width=event.width)

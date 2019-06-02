@@ -193,6 +193,8 @@ class parameterFrame(object):
                              "padx=0,disabledforeground='black',foreground='purple',takefocus = False)"), locals(), globals())
             l3.grid(sticky=ALL,row=count,column=2)
             v = IntVar()
+            if (index,param) in self.parent.fitter.getThawed():
+                v.set(1)
             exec(('l4 = Checkbutton(self.frame,variable=v, text="thawed", command=lambda: self.parent.toggleParam('+str(index)+',"'+param+
                             '"),takefocus = False)'), locals(), globals())
             l4.grid(sticky=ALL,row=count,column=3)

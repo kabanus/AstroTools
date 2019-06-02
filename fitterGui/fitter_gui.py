@@ -203,10 +203,11 @@ if True or __name__ == "__main__":
            
             if keyword is None or keyword == "model":
                 try: 
-                    m = runMsg(self,"Loading Model")
+                    m = runMsg(self,"Loading Model...")
                     model     = modelReader(self,False)
                     init['model'] = re.sub('Table\("[^/]','Table("'+root,init['model'])
                     model.parse(init['model'])
+                    m.destroy()
                     self.commandline.parseCmd(init['param'])
                     e = init['errors'].split(',')
                     self.ranfit = True
@@ -228,7 +229,8 @@ if True or __name__ == "__main__":
                     if self.debug: raise 
                     pass
                 finally:
-                    m.destroy()
+                    try: m.destroy()
+                    except: pass
             self.refreshPlot()
 
         def saveSession(self, name, extension):
@@ -296,7 +298,7 @@ if True or __name__ == "__main__":
         def load(self, what, res = None, user = True):
             if res == None: res = getfile('pha','FTZ','FIT','ds','dat','RMF','RSP')
             if not res: return 
-            m = runMsg(self,"Loading data")
+            m = runMsg(self,"Loading data...")
             try: 
                 Iplot.clearPlots()
                 what(res)

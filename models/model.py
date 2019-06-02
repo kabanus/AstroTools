@@ -26,7 +26,7 @@ class Model(object, metaclass=prettyClass):
         return [self.__params__[i-1][p] for i,p in self.getThawed()]
     
     def tie(self,param,to):
-        if param == to: raise KeyError("Sure you want to a parameter to itself...?")
+        if param == to: raise KeyError("Sure you want to tie a parameter to itself...?")
         self.__params__[param[0]-1].clone_item(param[1],self.__params__[to[0]-1].pointer_to(*to))
         
     def is_tied(self,index,key):
@@ -37,7 +37,7 @@ class Model(object, metaclass=prettyClass):
                                             for param,val in list(params.items())]
     
     def getThawed(self):
-        return sum(self.thawed,[])            
+        return [(i+1,k) for i,comp in enumerate(self.thawed) for k in comp]
     
     def iterArgs(self, args):
         for index,key in args:
@@ -51,16 +51,14 @@ class Model(object, metaclass=prettyClass):
     
     def thaw(self, *args):
         if args == ("*",):
-            index = 1
-            for  thlist in self.thawed:
-                thlist[:] = [(index,param) for param in self.__params__[index-1]]
-                index += 1
+            for  index,thlist in enumerate(self.thawed):
+                thlist[:] = [param for param in self.__params__[index]]
             return
         for index,key,_,_ in self.iterArgs(args):
             self.__params__[index-1][key]
             thlist = self.thawed[index-1]
-            if (index,key) not in thlist:
-                thlist.append((index,key))
+            if key not in thlist:
+                thlist.append(key)
 
     def freeze(self, *args):
         if args == ("*",):
@@ -70,7 +68,7 @@ class Model(object, metaclass=prettyClass):
         for index,key,_,_ in self.iterArgs(args):
             thlist = self.thawed[index-1]
             try:
-                thlist.remove((index,key))
+                thlist.remove(key)
             except ValueError: pass
         
     def resetChanged(self):

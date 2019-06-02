@@ -1,12 +1,13 @@
 from tkinter import Frame,N,S,E,W,Button,Label,BOTH,TOP,Canvas,Scrollbar
 from tkinter.scrolledtext import ScrolledText
 from tkinter.filedialog import askopenfilename
-from .commandline import commandLine
-from .debugConsole import DebugConsole
 from os import path
 ALL = N+S+E+W
 
 def make_frames(self):
+    #Prevent circular imports
+    from .commandline import commandLine
+    from .debugConsole import DebugConsole
     self.main = Frame(self.root, bg = 'navyblue')
     self.main.grid( row = 0, rowspan=2, column = 0, columnspan=2,sticky =  ALL )
     bgcol = 'aliceblue'

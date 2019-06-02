@@ -9,6 +9,7 @@ from tkinter.font     import Font
 from re               import finditer
 from .helperfunctions import getfile
 from .entrywindows    import strReader
+from .simplewindows   import runMsg
 import models
 import tkinter.messagebox as messagebox
 ALL = N+S+W+E
@@ -199,6 +200,7 @@ class modelReader(object):
         if isinstance(event,str):
             self.entry = self.entryStr(event+'\n')
         index,char = self._nextChar(-1) 
+        m = runMsg(self.parent,'Loading model...')
         while char != '\n':
             model = ''
             if char in ('+*()\n'):
@@ -214,7 +216,9 @@ class modelReader(object):
                 model+=char
                 index,char = self._nextChar(index)
             model = self.get_model_string(model)
-            if model is None: return "break"
+            if model is None: 
+                m.destory()
+                return "break"
             if char == '(':
                 argdepth = 0
                 while True:
@@ -250,6 +254,8 @@ class modelReader(object):
             messagebox.showerror("Failed to build model!",str(e)+'\n\nFinal model attempted to execute: '+model)
             if self.parent.debug: raise
             return "break"
+        finally:
+            m.destroy()
        
         self.parent.fitter.append(model)
         self.parent.model = str(model)
