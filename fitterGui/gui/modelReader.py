@@ -4,7 +4,7 @@ Created on Mar 15, 2013
 @author: kabanus
 '''
 
-from tkinter          import LEFT,N,S,E,W,Button,Toplevel,Frame,Entry,Label
+from tkinter          import LEFT,N,S,E,W,Button,Toplevel,Frame,Entry,Label,Text
 from tkinter.font     import Font
 from re               import finditer
 from .helperfunctions import getfile
@@ -130,11 +130,23 @@ class modelReader(object):
         Button( self.main, text = 'Parse', command = self.parse).grid( column = 2, row = 3, rowspan = 2, sticky = ALL)
         Button( self.main, text = 'Cancel', command = self.root.destroy).grid( column = 2, row = 1, rowspan = 2, sticky = ALL)
 
-        self.entry  = Entry(self.main,width=80,font=Font(size=16))
+        self.entry  = Text(self.main,width=80,height=1,font=Font(size=16))
         self.entry.grid(row = 0, column = 0,  columnspan = 3,sticky = W+E)
         self.entry.bind("<Return>",self.parse)
         self.entry.bind("<Key-Escape>",self.eventDestroy)
-        self.entry.insert(0,self.parent.model)
+        if self.parent.model:
+            comps = iter(self.parent.fitter.current.modelList())
+            expr = self.parent.fitter.current.splitModelString(repr(self.parent.fitter.current))
+            c = 0
+            for word in expr:
+                if not word: continue
+                if word in ('*','+','(',')'):
+                    self.entry.insert('1.%d'%c,word)
+                else:
+                    l = Label(self.entry,text=word,relief='raised',font='courier 12 bold')
+                    l.model = next(comps)
+                    self.entry.window_create('1.%d'%c,window=l)
+                c += len(word)
 
         txt = "%-31s : %15s : %15s\n"%('description','name','parameters')
         Label( self.main, text = txt, justify = LEFT, font = ('courier',12,'bold underline'),anchor=N).grid( column = 0, row = 1,sticky = ALL)
@@ -174,62 +186,58 @@ class modelReader(object):
             messagebox.showerror('Ambiguous','{} matches all of {}.'.format(arg,','.join(options)))
             return
         return options[0]
+
+    def _nextChar(self,index):
+        return index+1,self.entry.get('1.%d'%(index+1))
+
+    class entryStr(str):
+        def get(self,index):
+            return self[int(index.split('.')[-1])]
         
-
     def parse(self,event = None):
-        try:
-            model = self.entry.get().replace(" ","")
-        except AttributeError:
-            model = event.replace(" ","")
-        expression = ['']
-        inparam = 0
-        for i in range(len(model)):
-            char = model[i]
-
-            if inparam:
-                if char == '(': inparam+=1
-                elif char == ')': inparam -=1
-                expression[-1] += char
-                if not inparam:
-                    expression.append('')
-                    continue
-            else:
-                if char in '+*)':
-                    if not expression[-1]: expression.pop()
-                    if not expression[-1].endswith(')'):
-                        expression[-1] = self.get_model_string(expression[-1])
-                        if expression[-1] is None: return
-                        if expression[-1] in PARAMS:
-                            expression.append('({})'.format(PARAMS[expression[-1]]()))
-                        else: expression.append('()')
-                    expression.extend((char,''))
-                elif char == '(':
+        expression = []
+        if isinstance(event,str):
+            self.entry = self.entryStr(event+'\n')
+        index,char = self._nextChar(-1) 
+        while char != '\n':
+            model = ''
+            if char in ('+*()\n'):
+                if char:
                     expression.append(char)
-                    if expression[-2] not in '+*(':
-                        expression[-2] = self.get_model_string(expression[-2])
-                        if expression[-2] is None: return
-                        inparam += 1
-                    else:
-                        expression.append('')
-                else:
-                    expression[-1] += char
-        expression = [x for x in expression if x]
-        index = None
-        if not expression[-1].endswith(')'): index = len(expression)-1
-        elif expression[-1] == ')' and not expression[-2].endswith(')'): index = len(expression)-2
-        if index is not None:
-            expression[index] = self.get_model_string(expression[index])
-            if expression[index] is None: return
-            if expression[index] in PARAMS:
-                expression.insert(index+1,'({})'.format(PARAMS[expression[index]]()))
-            else: expression.insert(index+1,'()')
-        model = ''.join(expression)
+                else: 
+                    lname = self.entry.window_cget('1.%d'%index,'window').split('.')[-1]
+                    label = self.entry.children[lname]
+                    expression.append(label.model)
+                index,char = self._nextChar(index)
+                continue
+            while char not in ('+*()\n'):
+                model+=char
+                index,char = self._nextChar(index)
+            model = self.get_model_string(model)
+            if model is None: return "break"
+            if char == '(':
+                argdepth = 0
+                while True:
+                    model+=char
+                    if char == '(': argdepth += 1
+                    if char == ')': argdepth -= 1
+                    index,char = self._nextChar(index)
+                    if not argdepth: break
+            else:
+                if model in PARAMS:
+                    model += '({})'.format(PARAMS[model]())
+                else: model+='()'
+            expression.append(eval(model))
+
+        if expression:
+            evalStr = ''.join(['expression[%d]'%i if not isinstance(c,str) else c for i,c in enumerate(expression)])
+
         try:
-            model = eval(model)
+            model = eval(evalStr)
         except TypeError:
             messagebox.showerror("Failed to build model!","Perhaps you forgot '*' for multiplication?")
             if self.parent.debug: raise
-            return
+            return "break"
         except AttributeError as e:
             if str(e) == "'Fitter' object has no attribute 'resp'":
                 messagebox.showerror("Failed to build model!","Can't use bbody without loaded response")
@@ -237,12 +245,12 @@ class modelReader(object):
                 messagebox.showerror("Failed to build model!", "Missing file for table!")
             else: raise
             if self.parent.debug: raise
-            return
+            return "break"
         except Exception as e:
             messagebox.showerror("Failed to build model!",str(e)+'\n\nFinal model attempted to execute: '+model)
             if self.parent.debug: raise
-            return
-        
+            return "break"
+       
         self.parent.fitter.append(model)
         self.parent.model = str(model)
         self.parent.modelLoaded() 

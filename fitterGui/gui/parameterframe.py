@@ -78,10 +78,12 @@ class parameterFrame(object):
     def find(self,iparam):
         index,param = iparam
         if not param:
-            param = index
-            index = '*'
-        try: index = int(index)
-        except ValueError: pass
+            try:
+                index = int(index)
+            except ValueError:
+                param = index
+                index = '*'
+        else: index = int(index)
         param = param.lower()
         self.place += 1
         fail = not self.place

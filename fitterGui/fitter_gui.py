@@ -200,9 +200,10 @@ if True or __name__ == "__main__":
                     messagebox.showerror("Failed to load session!",'Got ignore channels, but no data')
                     if self.debug: raise
                     return
-            
+           
             if keyword is None or keyword == "model":
                 try: 
+                    m = runMsg(self,"Loading Model")
                     model     = modelReader(self,False)
                     init['model'] = re.sub('Table\("[^/]','Table("'+root,init['model'])
                     model.parse(init['model'])
@@ -222,9 +223,12 @@ if True or __name__ == "__main__":
                 except AttributeError as e:
                     if 'Xspec' in str(e):
                         messagebox.showerror("Failed to load session model!",'Model contains Xspec component, but heasarc not detected!')
+                    else: raise
                 except KeyError: 
                     if self.debug: raise 
                     pass
+                finally:
+                    m.destroy()
             self.refreshPlot()
 
         def saveSession(self, name, extension):

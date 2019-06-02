@@ -35,9 +35,6 @@ vconsts = [[122.607931777104326, 214.382388694706425,
      1.474395,  -19.57862,
      802.4513,  -4850.316,
      8031.468]]
-globalIBIHash = {}
-globalkTHash = {}
-globalVHash = {}
 
 deflinepath = os.path.dirname(os.path.realpath(__file__))+'/../appdata/ionbyion/lines'
  
@@ -160,7 +157,6 @@ class ibifit(_singleModel):
         return cs
 
     def generator(self):
-        global globalVHash, globalkTHash, globalIBIHash
         kT       = self.params['kT']
         vturb    = self.params['vturb']
         for ion in self.ions:
@@ -169,14 +165,6 @@ class ibifit(_singleModel):
                                                     str(kT) +','+
                                                     str(vturb)+')'), locals(), globals())
          
-        if globalVHash == vturb and globalkTHash == kT and getsizeof(self.wlhash) < 2**32:
-            self.wlhash   = globalIBIHash 
-        else:
-            self.wlhash   = {}
-            globalkTHash  = kT
-            globalVHash   = vturb
-            globalIBIHash = self.wlhash
-
     def ionExp(self, ion, wl, units):
         try: return -self.params[ion]*units*self.ions[ion].t(wl)
         except TypeError: raise Exception('No data found for '+ion+'!')
