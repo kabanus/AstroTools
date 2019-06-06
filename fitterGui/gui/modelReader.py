@@ -24,6 +24,7 @@ class XspecLoader(strReader):
         if currentXread: currentXread.eventDestroy(None)
         currentXread = self
         self.good = False
+        self.string =''
 
     def activate(self):
         self.root.wait_window()
@@ -35,10 +36,9 @@ class XspecLoader(strReader):
             self.model = models.Xspec(self.string)
             self.good = True
         except Exception as e:
-            if str(e) == 'Model Command Error' or str(e):
-                messagebox.showerror("Bad XSPEC string",'Consult XSPEC manual, got:\n    {}'.format(str(e)))
-                return
-            raise
+            self.string = ''
+            messagebox.showerror("Bad XSPEC string",'Consult XSPEC manual, got:\n    {}'.format(str(e)))
+            return
         self.eventDestroy(None) 
 
 currentGetfun = None
@@ -77,7 +77,7 @@ class getFunc(object):
         try:
             params = {}
             if self.params.get(): 
-                params = dict((kv.split(':') for kv in self.params.get().split()))
+                params = dict((kv.split(':',1) for kv in self.params.get().split()))
             for key in params: params[key] = float(params[key])
             function(self.expr.get(),params)(10)
         except ValueError:
@@ -116,9 +116,15 @@ class modelReader(object):
         self.width  = parent.width
         self.height = parent.height
         self.parent = parent
-        
-        for package in self.parent.xspec_packages:
-            models.Xspec.lmod(*package)
+       
+        try:
+            for package in self.parent.xspec_packages:
+                models.Xspec.lmod(*package)
+        except Exception as e:
+            if str(e) == "Error attempting to load local model library.":
+                messagebox.showerror( 'Bad XSPEC library!','"{}" is not a valid lmod parameter.'.format(' '.join(p for p in package if p)))
+                return
+            raise
 
         if not gui: return
         self.root   = Toplevel(self.parent.root)
@@ -192,14 +198,23 @@ class modelReader(object):
         return index+1,self.entry.get('1.%d'%(index+1))
 
     class entryStr(str):
-        def get(self,index):
+        def get(self,index,finalIndex=None):
             return self[int(index.split('.')[-1])]
-        
+       
+    def returnDestroy(self,m):
+        try:
+            m.destroy()
+        except: pass
+        return "break"
+
     def parse(self,event = None):
         expression = []
         if isinstance(event,str):
             self.entry = self.entryStr(event+'\n')
-        index,char = self._nextChar(-1) 
+            msglen = len(self.entry)
+        else:
+            msglen = len(self.entry.get('1.0','end'))
+        index,char = self._nextChar(-1)
         m = runMsg(self.parent,'Loading model...')
         while char != '\n':
             model = ''
@@ -217,8 +232,7 @@ class modelReader(object):
                 index,char = self._nextChar(index)
             model = self.get_model_string(model)
             if model is None: 
-                m.destory()
-                return "break"
+                return self.returnDestroy(m)
             if char == '(':
                 argdepth = 0
                 while True:
@@ -226,12 +240,23 @@ class modelReader(object):
                     if char == '(': argdepth += 1
                     if char == ')': argdepth -= 1
                     index,char = self._nextChar(index)
+                    if index == msglen:
+                        messagebox.showerror("Bad syntax","Forgot to close paranthesis?")
+                        return self.returnDestroy(m)
                     if not argdepth: break
             else:
                 if model in PARAMS:
-                    model += '({})'.format(PARAMS[model]())
+                    params = PARAMS[model]()
+                    if params == "''":
+                        return self.returnDestroy(m)
+                    model += '({})'.format(params)
                 else: model+='()'
-            expression.append(eval(model))
+            try:
+                expression.append(eval(model))
+            except Exception as e:
+                if str(e) == 'Model Command Error':
+                    messagebox.showerror("Bad XSPEC string",'Consult XSPEC manual, got:\n    {}'.format(str(e)))
+                    return self.returnDestroy(m)
 
         if expression:
             evalStr = ''.join(['expression[%d]'%i if not isinstance(c,str) else c for i,c in enumerate(expression)])

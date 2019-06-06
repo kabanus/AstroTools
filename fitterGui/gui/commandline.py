@@ -16,7 +16,7 @@ class commandLine(object):
         self.entry.bind("<Down>"  ,lambda event: self.traverseCmd(event, False))
 
     def parseParam(self):
-        params = self.param.split(':')
+        params = self.param.split(':',1)
         try: self.index = int(params[0])
         except ValueError:
             if params[0] == '*': self.index = params[0]
@@ -78,7 +78,7 @@ class commandLine(object):
                 self.parent.fitter.current.setp({(self.index,self.param):float(value)})
         except ValueError:
             try:
-                toind,topar = value.split(":")
+                toind,topar = value.split(":",1)
                 self.parent.fitter.current.tie((self.index,self.param),(int(toind),topar))      
             except KeyError:
                 messagebox.showerror('Failed to parse!','Value (' +str(value)+') for '+str(self.index)+':'+self.param+' is not a float')
@@ -121,7 +121,7 @@ class commandLine(object):
                 break
             except ValueError as e:
                 passDoubleFreeze = "list.remove"
-                if e.message[:len(passDoubleFreeze)] != passDoubleFreeze:
+                if str(e)[:len(passDoubleFreeze)] != passDoubleFreeze:
                     messagebox.showerror('Failed to parse!',self.param+' is not a model parameter, missing index?')
                     if self.parent.debug: raise
                     break

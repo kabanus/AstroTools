@@ -1,4 +1,4 @@
-from tkinter import Entry,LEFT,Label
+from tkinter import Entry,LEFT,Label,Checkbutton,IntVar
 import tkinter.messagebox as messagebox
 from plotInt import Iplot
 from .simplewindows import simpleWindow
@@ -10,7 +10,7 @@ class entryWindow(simpleWindow):
         simpleWindow.__init__(self,parent,check,field,title)
         
         self.entry = Entry(self.root,justify = LEFT, font = ('courier',12), width = width, border = parent.border)
-        self.entry.pack()
+        self.entry.pack(side=LEFT)
         self.entry.focus_set()
 
 class ionLabeler(entryWindow):
@@ -213,25 +213,32 @@ class Save(entryWindow):
         self.root.destroy()
 
 class paramReader(entryWindow):
-    def __init__(self, parent, function, parent_field,title,multiple = False):
+    def __init__(self, parent, function, parent_field,title,multiple = False,exactToggle = False):
         try: entryWindow.__init__(self,parent,'model',parent_field,title)
         except AttributeError: return
-        self.do = function
+        if exactToggle:
+            self.exact    = IntVar()
+            self.toggle   = Checkbutton(self.root,variable=self.exact, text="Exact",takefocus = False)
+            self.toggle.pack(side="right")
+            self.root.bind('<Tab>',lambda e,t=self.toggle: self.toggle.toggle())
+        self.do       = function
         self.multiple = multiple
     def parse(self, event):
         args = []
         try:
             for iparam in self.entry.get().split():
-                iparam = iparam.split(':')
+                iparam = iparam.split(':',1)
                 param  = ":".join(iparam[1:]).strip()
                 index  = iparam[0]
                 args.append((index,param))
                 if not self.multiple: break
+            try: args.append(self.exact.get())
+            except AttributeError: pass
         except (IndexError,ValueError):
             messagebox.showerror('Bad format!',"Must be list of <index>:<parameter>")
             return
-        self.do(*args)
-        self.root.destroy()
+        if self.do(*args):
+            self.root.destroy()
 
 class rangeReader(simpleWindow):
     def __init__(self, parent):

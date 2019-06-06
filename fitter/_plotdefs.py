@@ -211,7 +211,7 @@ def plot(self, save = None, user = True, keepannotations = False):
                     dE = abs(model[i+1][0]-model[i][0])
                     C  = model[i][1]
                     amodel.append((keVAfac/model[i][0], model[i][1]**2*C/keVAfac))
-                model = amodel
+                model = array(amodel)
         _plotOrSave(save,model=model)
     if save is not None: return
 

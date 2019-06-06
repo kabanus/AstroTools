@@ -15,6 +15,9 @@ class simpleWindow(object):
         
         self.parent = parent
         self.root = Toplevel(self.parent.root)
+        self.root.transient(self.parent.root)
+        self.root.wm_geometry("+%d+%d" %(parent.root.winfo_rootx()+parent.root.winfo_width()/3.0, parent.root.winfo_rooty()+parent.root.winfo_height()/2.0))
+        self.root.wm_title(title)
         try: 
             exec(('fld=parent.'+field), locals(),globals())
             fld.focus_set()
@@ -23,9 +26,6 @@ class simpleWindow(object):
         except (AttributeError,TclError): pass
 
         exec(('parent.'+field+' = self.root'), locals(),globals())
-        self.root.transient(self.parent.root)
-        self.root.wm_geometry("+%d+%d" %(parent.root.winfo_rootx()+parent.root.winfo_width()/3.0, parent.root.winfo_rooty()+parent.root.winfo_height()/2.0))
-        self.root.wm_title(title)
         self.root.bind("<Key-Escape>",self.eventDestroy)
         self.root.bind("<Return>",self.parse)
         self.root.resizable(0,0)
@@ -168,7 +168,9 @@ class errorLog(ScrollingCanvas):
 class runMsg(simpleWindow):
     def __init__(self,parent,msg = "Running calculation"):
         simpleWindow.__init__(self,parent,"",'running',msg)
-        Label(self.root, text = "Cancel from terminal with Ctrl-C").pack()
+        self.root.overrideredirect(True)
+        Label(self.root, text = msg,bg='aliceblue',font='courier 12 bold').pack(fill=BOTH)
+        Label(self.root, text = "Cancel from terminal with Ctrl-C",bg='white').pack(fill=BOTH)
         self.parent.root.update()
     def destroy(self):
         self.root.destroy()

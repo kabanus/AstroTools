@@ -1,4 +1,4 @@
-from tkinter import Label, Entry, LEFT, W, N, S, E, IntVar, Checkbutton,StringVar,Button,END,Menu
+from tkinter import Entry, LEFT, W, N, S, E, IntVar, Checkbutton,StringVar,Button,END,Menu
 import tkinter.messagebox as messagebox
 from .simplewindows import errorLog
 from .entrywindows import paramReader
@@ -9,7 +9,7 @@ class parameterFrame(object):
         self.parent = parent
         self.frame  = frame
         frame.columnconfigure(2,weight=1)
-        self.parent.root.bind('<Control-f>',lambda event: paramReader(self.parent,self.find,"finder","Find parameter"))
+        self.parent.root.bind('<Control-f>',lambda event: paramReader(self.parent,self.find,"finder","Find parameter",exactToggle = True))
 
         self.menu = Menu(self.frame,tearoff=0)
         self.menu.add_command(label='Hide frozen',command = self.hide)
@@ -75,7 +75,7 @@ class parameterFrame(object):
             if not self.parent.thawedDict[iparam][0].get():
                 for label in labels: label.grid_remove()
 
-    def find(self,iparam):
+    def find(self,iparam,exact = False):
         index,param = iparam
         if not param:
             try:
@@ -83,23 +83,30 @@ class parameterFrame(object):
             except ValueError:
                 param = index
                 index = '*'
-        else: index = int(index)
-        param = param.lower()
+        else:
+            try: index = int(index)
+            except ValueError:
+                if index != '*':
+                    messagebox.showerror("Bad index","Got {}, expected integer or *".format(index))
+                    return
+        if not exact:
+            param = param.lower()
         self.place += 1
         fail = not self.place
         for j,((i,p),_) in enumerate(self.parent.fitter.getParams()):
             if j < self.place: continue
-            if (index == '*' or i == index) and param in p.lower():
-                param = p
-                break
+            if (index == '*' or i == index):
+                if (not exact and param in p.lower()) or param == p:
+                    param = p
+                    break
             self.place += 1
         else:
             self.place = -1
             if fail:
                 messagebox.showerror("No such parameter","Please make sure "+str(index)+":*"+param+"* exists")
+                return False
             else:
-                self.find(iparam)
-            return
+                return self.find(iparam,exact=exact)
         placement = self.place / (len(self.parent.paramLabels)+1.0)
         top,  bot = self.parent.scrollbar.get()
         offset       = (bot-top)/2.0
@@ -118,6 +125,7 @@ class parameterFrame(object):
         self.parent.scrollbar.set(top,bot)
         self.parent.dataCanvas.yview_moveto(placement)
         self.parent.paramLabels[(i,param)][1].focus_set()
+        return True
 
     def entryIn(self,event):
         self.lastEntry = event.widget.get()
@@ -136,7 +144,7 @@ class parameterFrame(object):
                 try:
                     self.parent.fitter.setp({(index,param):float(current)})
                 except ValueError:
-                    to_index,to_param = current.split(":")
+                    to_index,to_param = current.split(":",1)
                     to_param          = to_param.split("=")[0]
                     self.parent.fitter.tie((index,param),(int(to_index),to_param))
                 self.resetErrors()
@@ -176,7 +184,10 @@ class parameterFrame(object):
         if self.parent.fitter.current == None: return
         self.parent.thawedDict = {}
         for p,((index,param),value) in enumerate(self.parent.fitter.getParams()):
-            l1 = Label(self.frame, text=str(index)+":"+param,width=12,justify = LEFT, font = ('courier',12),bg='aliceblue',anchor=N+W, takefocus = False)
+            l1 = Entry(self.frame,width=12,justify=LEFT,readonlybackground='aliceblue',
+                       font=('courier',12),takefocus=False)
+            l1.insert(0,str(index)+":"+param)
+            l1.configure(state='readonly')
             l1.grid(sticky=ALL,row=count, column=0),
             l2 = Entry(self.frame,justify = LEFT, font = ('courier',12),bg='aliceblue',width=7)
             l2.insert(0,str(value))

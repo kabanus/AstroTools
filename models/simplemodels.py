@@ -63,7 +63,7 @@ class bbody(Function):
 
 @modelExport
 class gauss(Function):
-    description = "Everyone's favorite." 
+    description = "Everyone's favorite - centered on energy." 
     def __init__(self):
         Function.__init__(self,'N*exp(-(x-x0)**2/(2*sigma**2))',{'N':1,'x0':0,'sigma':0.1})
     def sethook(self,param,val):

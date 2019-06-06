@@ -9,13 +9,19 @@ if True or __name__ == "__main__":
     import os
     import re
     from sys import argv
+    bellfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),'bell.wav')
     if os.name == 'nt':
-        #Windows ctrl-c handling
+        #Windows ctrl-c and ring handling
         try:
+            import winsound
+            def ring(b=bellfile):
+                winsound.PlaySound(b,winsound.SND_FILENAME)
+            
             import win32api
             import _thread
             import ctypes
             import imp
+            import winsound
             
             basepath = imp.find_module('numpy')[1]
             ctypes.CDLL(os.path.join(basepath,'core','libmmd.dll'))
@@ -31,6 +37,31 @@ if True or __name__ == "__main__":
                   "this try 'pip installPyWin32'  from  any   terminal,  or download and  install binary  from\n" +
                   "https://sourceforge.net/projects/pywin32/files/pywin32/. This warning may also be generated\n"+
                   "on Windows machines if numpy or something close is missing."))
+    else:
+        from wave import open as waveOpen
+        from ossaudiodev import open as ossOpen
+        try: 
+            dsp = ossOpen('w')
+            dsp.close()
+            def ring(b=bellfile):
+                s = waveOpen(b,'rb')
+                (nc,sw,fr,nf,comptype, compname) = s.getparams( )
+                try:
+                    from ossaudiodev import AFMT_S16_NE
+                except ImportError:
+                    from sys import byteorder
+                    if byteorder == "little":
+                      AFMT_S16_NE = ossaudiodev.AFMT_S16_LE
+                    else:
+                      AFMT_S16_NE = ossaudiodev.AFMT_S16_BE
+                dsp.setparameters(AFMT_S16_NE, nc, fr)
+                data = s.readframes(nf)
+                s.close()
+                dsp.write(data)
+                dsp.close()
+        except FileNotFoundError:
+            def ring(b=None): return
+            print('-W- Could not find audio output device, no beep will be beeped.')
 
     import tkinter.messagebox as messagebox
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -161,7 +192,6 @@ if True or __name__ == "__main__":
                 messagebox.showerror("Failed to load session!",'Bad format, wrong file?')
                 if self.debug: raise
                 return
-
             root = os.path.dirname(fname) 
             root = root + '/' if root else './'
             for k,action in (
@@ -203,11 +233,9 @@ if True or __name__ == "__main__":
            
             if keyword is None or keyword == "model":
                 try: 
-                    m = runMsg(self,"Loading Model...")
                     model     = modelReader(self,False)
-                    init['model'] = re.sub('Table\("[^/]','Table("'+root,init['model'])
+                    init['model'] = re.sub('Table\("[^/]','Table("'+root,init['model']) 
                     model.parse(init['model'])
-                    m.destroy()
                     self.commandline.parseCmd(init['param'])
                     e = init['errors'].split(',')
                     self.ranfit = True
@@ -270,7 +298,7 @@ if True or __name__ == "__main__":
                             if param[0] != 't' and param[1] != 'f']
             
             for i in range(len(params)):
-                index,param = params[i][0].split(':')
+                index,param = params[i][0].split(':',1)
                 index = int(index)
                 param = param.strip()
                 try:
@@ -298,7 +326,7 @@ if True or __name__ == "__main__":
         def load(self, what, res = None, user = True):
             if res == None: res = getfile('pha','FTZ','FIT','ds','dat','RMF','RSP')
             if not res: return 
-            m = runMsg(self,"Loading data...")
+            m = runMsg(self,"Loading {}...".format(what.__name__[-4:]))
             try: 
                 Iplot.clearPlots()
                 what(res)
@@ -336,11 +364,11 @@ if True or __name__ == "__main__":
             except AttributeError: pass
 
         def getError(self, *args):
+            cont = False 
             if not self.ranfit:
                 messagebox.showerror('Why would you want to?!','Run fit before calculating errors')
                 if self.debug: raise
-                return
-           
+                return not cont
             try:
                 #Message construct used so beep is heard before message, 
                 #and save return on each one.
@@ -354,7 +382,7 @@ if True or __name__ == "__main__":
                     self.thawedDict[(index,param)][1].set('(%.2E)'%error)
                     self.paramLabels[(index,param)][2].configure(relief='flat',state='disabled')
             except (ValueError,KeyError):
-                title, err = (str(index)+':'+param+': No such parameter!','Check yourself')
+                title, err, cont = (str(index)+':'+param+': No such parameter!','Check yourself', True)
             except KeyboardInterrupt: 
                 title, err = ('Halt',"Caught Keyboard - thawed parameters may have changed.")
             except (self.fitter.errorNotConverging,RuntimeError):
@@ -369,13 +397,10 @@ if True or __name__ == "__main__":
                 self.ring()
                 if err:
                     messagebox.showerror(title,err)
-                    return 1
+                return not cont
 
         def ring(self):
-            #Windows
-            self.root.bell() 
-            #Anywhere else
-            print("\a")
+            ring()
 
         def calc(self):
             m = runMsg(self)
