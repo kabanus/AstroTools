@@ -34,7 +34,7 @@ class Model(object, metaclass=prettyClass):
     
     def getParams(self):
         return [((index,param),val) for index,params in enumerate(self.__params__,1)
-                                            for param,val in list(params.items())]
+                                            for param,val in params.enumerate()]
     
     def getThawed(self):
         return [(i+1,k) for i,comp in enumerate(self.thawed) for k in comp]
@@ -126,7 +126,7 @@ class Model(object, metaclass=prettyClass):
 
     def printParams(self):
         print(self.paramString())
-        
+    
     def __getitem__(self,iparam):
         index, param = iparam
         return self.__params__[index-1][param]

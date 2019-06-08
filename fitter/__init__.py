@@ -44,12 +44,6 @@ class Fitter(object):
     from ._plotdefs import zoomto,rebin,setplot,plot,shift,removeShift
     from ._plotdefs import initplot,plotModel, plotDiv, toggle_area
 
-    #utility
-    @staticmethod
-    def alphanum(x):
-        i,p = x[0] 
-        return (i,[int(c) if c.isdigit() else c for c in re.split('(\d+)',p)])
-    
     #Model wrappers
     def thaw(self, *params):
         self.current.thaw(*params)
@@ -58,7 +52,7 @@ class Fitter(object):
     def getThawed(self):
         return self.current.getThawed()
     def getParams(self):
-        return sorted(self.current.getParams(),key = Fitter.alphanum)
+        return self.current.getParams()
     def printParams(self):
         self.current.printParams()
     def initArgs(self):

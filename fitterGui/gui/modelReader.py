@@ -216,6 +216,7 @@ class modelReader(object):
             msglen = len(self.entry.get('1.0','end'))
         index,char = self._nextChar(-1)
         m = runMsg(self.parent,'Loading model...')
+        evalStr = ''
         while char != '\n':
             model = ''
             if char in ('+*()\n'):
@@ -260,6 +261,7 @@ class modelReader(object):
 
         if expression:
             evalStr = ''.join(['expression[%d]'%i if not isinstance(c,str) else c for i,c in enumerate(expression)])
+        if not evalStr: return self.returnDestroy(m)
 
         try:
             model = eval(evalStr)
@@ -276,7 +278,7 @@ class modelReader(object):
             if self.parent.debug: raise
             return "break"
         except Exception as e:
-            messagebox.showerror("Failed to build model!",str(e)+'\n\nFinal model attempted to execute: '+model)
+            messagebox.showerror("Failed to build model!",str(e)+'\n\nFinal model attempted to execute: "{}"'.format(model))
             if self.parent.debug: raise
             return "break"
         finally:

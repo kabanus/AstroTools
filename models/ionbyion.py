@@ -23,6 +23,21 @@ masses = { #keV
     'Na': 21415000,
     'S' : 29868000
 }
+order = {
+    'Fe': 26,
+    'O' : 8,
+    'Ni': 28,
+    'Mg': 12,
+    'Ne': 10,
+    'Si': 14,
+    'Al': 13,
+    'Ar': 18,
+    'C' : 6,
+    'Ca': 20,
+    'N' : 7,
+    'Na': 11,
+    'S' : 16
+}
 vconsts = [[122.607931777104326, 214.382388694706425,
      181.928533092181549, 93.155580458134410,
      30.180142196210589,  5.912626209773153,
@@ -50,6 +65,7 @@ class ibifit(_singleModel):
     description = 'Ion by ion absorption'
     def __init__(self, lines = deflinepath, fcut = 10**-3, ncut = float('inf')):
         super(ibifit,self).__init__()
+        self.params.prettify  = self.prettyParam
         self.params = {'kT':0.1,'redshift':0,'vturb':0,'C':1}
         self.ions   = {}
         if os.path.isfile(lines):
@@ -61,7 +77,7 @@ class ibifit(_singleModel):
             for elemf in glob(lines+'/*'):
                 elem = os.path.basename(elemf)
                 for ionf in glob(elemf+'/*'):
-                    ion = os.path.basename(ionf).strip('+')
+                    ion = os.path.basename(ionf)
                     self.ions[ion] = Ion(masses[elem])
                     files = glob(ionf+'/*')
                     if len(files) == 1:
@@ -76,7 +92,34 @@ class ibifit(_singleModel):
             raise Exception("Can't understand how to init lines!")
         self.nzeroions = set()
         self.generator()
-   
+    
+        for param in self.params:
+            param.prettify = lambda self=param,s=self: s.prettyParam(self)
+        self.params.key = self.ionKey
+
+    @staticmethod
+    def ionKey(ion):
+        try:
+            elem,charge = ion.split('+')
+            return order[elem],int(charge)
+        except ValueError:
+            return float(inf),ord(ion[0])
+            
+    @staticmethod
+    def prettyParam(param):
+        if param in set(('kT','redshift','vturb','C')): return param
+        elem,charge = param.split('+')
+        ion = '{}\u207A'.format(elem)
+        for d in charge:
+            if d == '1':
+                u = r'\u00B{}'.format(9)
+            elif d in '23':
+                u = r'\u00B{}'.format(d)
+            else:
+                u = r'\u207{}'.format(d)
+            ion += u.encode().decode('unicode-escape')
+        return ion
+
     @staticmethod
     def getlines(linef,fcut = 10**-3,edge = False, number = float('inf')):
         #Indices:
@@ -184,7 +227,7 @@ class ibifit(_singleModel):
         wl = 0.001*evAfac/(atrange*(1+self.params['redshift']))
         tau = sum(self.params[ion]*units*self.ions[ion].t(wl) for ion in self.nzeroions)
         return 1-self.params['C']*(1-exp(-tau))
-    
+
     def sethook(self, index, key):
         gparams = ['kT','redshift','vturb','C']
         if key not in gparams:

@@ -28,6 +28,10 @@ class View(Primitive):
     @val.setter
     def val(self,value):
         raise KeyError('Readonly pointer')
+
+class Parameter(str):
+    def prettify(self):
+        return self
                         
 class Parameters(UserDict):
     def __init__(self, args, clone = False):
@@ -35,7 +39,7 @@ class Parameters(UserDict):
         dictionary = dict(args)
         for k,v in list(dictionary.items()):
             if clone: self.clone_item(k, v)
-            else:     self[k] = v      
+            else:     self[k] = v
     def update(self,other):
         for k,v in map(lambda ko: (ko,UserDict.__getitem__(other,ko)),other):
             self.clone_item(k,v)         
@@ -53,7 +57,14 @@ class Parameters(UserDict):
         return dict([(key,View(val)) for key,val in list(self.items())])
     def __setitem__(self,key,value):
         try:               UserDict.__getitem__(self,key).val = value
-        except (KeyError): UserDict.__setitem__(self,key,Value(value))
+        except (KeyError): UserDict.__setitem__(self,Parameter(key),Value(value))
     def __getitem__(self,key):
         return UserDict.__getitem__(self,key).val
+    @staticmethod
+    def key(param):
+        return param
+    def enumerate(self):
+        for k in sorted(self,key=self.key):
+            yield k,self[k]
+    
     
