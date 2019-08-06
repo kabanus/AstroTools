@@ -20,6 +20,7 @@ class Fitter(object):
         self.labelions = False
         self.area      = array(())
         self.eps       = finfo(float).eps
+        self.stat      = self.chisq
         self.axisOverride=[None,None]
         if not noinit: self.initplot()
         if data is not None:
@@ -38,8 +39,8 @@ class Fitter(object):
     from ._datadefs import loadResp, loadData, loadBack, loadAncr
     from ._datadefs import checkLoaded, transmit, ignore, notice, set_channels, reset
     from ._datadefs import untransmit, div, group, updateIonLabels
-    from ._modeling import chisq,reduced_chisq,append,delete
-    from ._modeling import activate,nameModel,energies,tofit,fit
+    from ._modeling import chisq,reduced_chisq,append,delete,cstat
+    from ._modeling import activate,nameModel,energies,tofit,toMinimize,fit
     from ._error    import error
     from ._plotdefs import zoomto,rebin,setplot,plot,shift,removeShift
     from ._plotdefs import initplot,plotModel, plotDiv, toggle_area
@@ -63,6 +64,8 @@ class Fitter(object):
         return self.current.is_tied(index,param)
     def setp(self,pDict):
         self.current.setp(pDict)
+    def setStat(self,s):
+        self.stat = s
     def calc(self,pDict = {}):
         self.setp(pDict)
         self.result = self.tofit(self.energies())

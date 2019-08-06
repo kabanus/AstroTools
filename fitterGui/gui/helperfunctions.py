@@ -1,4 +1,4 @@
-from tkinter import Frame,N,S,E,W,Button,Label,BOTH,TOP,Canvas,Scrollbar
+from tkinter import Frame,N,S,E,W,Button,Label,BOTH,TOP,Canvas,Scrollbar,Menubutton,Menu
 from tkinter.scrolledtext import ScrolledText
 from tkinter.filedialog import askopenfilename
 from os import path
@@ -29,9 +29,25 @@ def make_frames(self):
     
     self.info_frame = Frame(self.root)
     self.info_frame.grid(row=1,column=2,sticky=ALL)
-    Label(self.info_frame, textvariable = self.statistic, font = ('courier',12,'bold'),wraplength=370,bg=bgcol,anchor=W).pack(fill=BOTH,side = TOP)
-    Label(self.info_frame, textvariable = self.ignored, font = ('courier',12,'bold'),wraplength=370,bg=bgcol,anchor=W).pack(fill=BOTH,side = TOP)
-    Label(self.info_frame, textvariable = self.grouped, font = ('courier',12,'bold'),wraplength=370,bg=bgcol,anchor=W).pack(fill=BOTH,side = TOP)
+    self.info_frame.columnconfigure(1,weight=1)
+    info_font = ('courier',12,'bold')
+    info_wrap = 370
+    #Statistic choice
+    mb=Menubutton(self.info_frame, text="Statistic:", font=info_font, direction='above', bg=bgcol,anchor=W,relief='raised')
+    mb.grid(column=0,row=0,sticky=ALL)
+    m = Menu(mb,tearoff = 0)
+    mb['menu'] = m
+    m.add_command(label = '\u03C7\u00B2',command = lambda: self.setStat('chisq'))
+    m.add_command(label = 'C stat',command = lambda: self.setStat('C'))
+    
+    Label( self.info_frame, textvariable=self.fstatistic , font=info_font, wraplength=info_wrap, bg=bgcol,anchor=W
+        ).grid(column=1,row=0,sticky=ALL)
+    Label( self.info_frame, textvariable=self.statistic  , font=info_font, wraplength=info_wrap, bg=bgcol,anchor=W
+        ).grid(column=0,row=1,columnspan=2,sticky=ALL)
+    Label( self.info_frame, textvariable=self.ignored    , font=info_font, wraplength=info_wrap, bg=bgcol,anchor=W
+        ).grid(column=0,row=2,columnspan=2,sticky=ALL)
+    Label( self.info_frame, textvariable=self.grouped    , font=info_font, wraplength=info_wrap, bg=bgcol,anchor=W
+        ).grid(column=0,row=3,columnspan=2,sticky=ALL) 
 
     self.data_frame = Frame(self.root)
     self.data_frame.grid( row = 0, column = 2, sticky = ALL  )

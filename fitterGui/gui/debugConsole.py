@@ -157,7 +157,7 @@ class DebugConsole:
         self.console.replace(self.lineStart,'end','')
         return "break"
     def ctrlL(self): 
-        self.console.replace('0.0 + {} chars'.format(3*(len(self.title)+3)),'end','\n>')
+        self.console.replace('1.0 + {} chars'.format(3*(len(self.title)+3)),'end - 1 chars','>')
         self.setLineStart()
         self.console.mark_set('insert',self.lineStart)
         return "break"

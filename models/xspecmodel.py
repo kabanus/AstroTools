@@ -32,6 +32,11 @@ try:
             if Xspec.modelCounter == '': 
                 Xspec.modelCounter = 0
             Xspec.modelCounter += 1
+            self.params.key = Xspec.modelKey
+        
+        @staticmethod
+        def modelKey(param):
+            return int(param.split(":")[0])
 
         def update(self):
             self.plot("model " + str(self.counter))

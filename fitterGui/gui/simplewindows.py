@@ -165,13 +165,19 @@ class errorLog(ScrollingCanvas):
         Label(self.canvasFrame, text = "\n".join(log), justify = LEFT, background = 'lightblue', 
               anchor = W, font =('courier',12),width=70).pack(side = TOP, fill = BOTH)
 
-class runMsg(simpleWindow):
+class runMsg:
     def __init__(self,parent,msg = "Running calculation"):
-        simpleWindow.__init__(self,parent,"",'running',msg)
-        self.root.overrideredirect(True)
-        Label(self.root, text = msg,bg='aliceblue',font='courier 12 bold').pack(fill=BOTH)
-        Label(self.root, text = "Cancel from terminal with Ctrl-C",bg='white').pack(fill=BOTH)
-        self.parent.root.update()
+        self.root = Frame(parent.root,bg='')
+        rows,cols = parent.root.grid_size()
+        self.root.grid(row=0,column=0,columnspan=cols,rowspan=rows,sticky='nesw')
+
+        frame = Frame(self.root)
+        frame.place(relx=0.5,rely=0.5)
+
+        Label(frame, text = msg,bg='aliceblue',font='courier 12 bold').pack(fill=BOTH)
+        Label(frame, text = "Cancel from terminal with Ctrl-C",bg='white').pack(fill=BOTH)
+        parent.root.update()
+
     def destroy(self):
         self.root.destroy()
 

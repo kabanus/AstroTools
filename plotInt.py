@@ -356,7 +356,7 @@ class PlotMaker:
         except KeyError:
             raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
         if 'fillstylecount' not in self.__dict__:
-            print("-I- Please run self.init() first.")
+            print("-I- Please run object.init() first.")
             return
 
         scatter = kwargs.pop('scatter',False)

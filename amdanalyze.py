@@ -1,4 +1,5 @@
 from scipy.optimize import minimize
+from scipy.interpolate import interp1d
 from numpy import float64,array,zeros,concatenate,delete,log,minimum,maximum,inf
 from numpy import append as ndappend
 from numpy import full   as ndfull
@@ -431,13 +432,20 @@ class AMD(object):
         if type(charge) is int: charge = RomanConversion.toRoman(charge).lower()
         return NI/(self.fractions[xi][elem][charge]*self.abund[elem])
    
-    def probableXi(self,ion):
+    def probableXi(self,ion,ion2=None,frac=None,):
         elem,charge = self.getIon(ion,split=True)
-        return max(((self.fractions[xi][elem][charge],xi)
-                        for xi in self.fractions))[1]
+        if ion2 is None:
+            if frac is not None: raise ValueError('Fraction=ion/ion2 must be None if ion2 is None.')
+            return max(((self.fractions[xi][elem][charge],xi)
+                            for xi in self.fractions))[1]
+        elem2,charge2 = self.getIon(ion2,split=True)
+        fracs = interp1d([abs(self.fractions[xi][elem][charge]/self.fractions[xi][elem2][charge2])
+                        for xi in self.xiOrder],self.xiOrder)
+        return float(fracs(frac))
   
     def plotModel(self,elem):
         charges = defaultdict(list) 
+        elem = elem.lower()
         for xi in self.fractions:
             for charge in self.fractions[xi][elem]:
                 val = self.fractions[xi][elem][charge]
@@ -460,7 +468,9 @@ class AMD(object):
                 try:
                     elem,charge = ion.split('_')
                 except ValueError:
-                    elem,charge,_ = re.split('([0-9]+)',ion)
+                    if '+' in ion:
+                        elem,charge = ion.split('+')
+                    else: elem,charge,_ = re.split('([0-9]+)',ion)
                     charge = RomanConversion.toRoman(int(charge)+1).lower()
                 ion = self.writeIon(elem,charge)
                 if ion not in self.ind: raise ValueError
@@ -472,5 +482,5 @@ class AMD(object):
         return float(xi.split('_')[1])
 
     def writeIon(self,elem,charge):
-        return elem + '_' + charge
+        return elem.lower() + '_' + charge.lower()
 

@@ -61,7 +61,7 @@ if True or __name__ == "__main__":
                 dsp.close()
         except FileNotFoundError:
             def ring(b=None): return
-            print('-W- Could not find audio output device, no beep will be beeped.')
+            print('Warning: Could not find audio output device, no beep will be beeped.')
 
     import tkinter.messagebox as messagebox
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -91,7 +91,9 @@ if True or __name__ == "__main__":
             self.fitter      = Fitter(noinit=True)
             self.thawedDict  = {}
             self.statistic   = StringVar()
-            self.statistic.set("No fit run")
+            self.statistic.set("Reduced \u03C7\u00B2: Not calculated yet.")
+            self.fstatistic  = StringVar()
+            self.fstatistic.set("\u03C7\u00B2 = Not calculated yet.")
             self.ignored     = StringVar()
             self.ignored.set("Ignored:")
             self.grouped     = StringVar()
@@ -150,10 +152,18 @@ if True or __name__ == "__main__":
             except AttributeError: pass
             self.modelload = modelReader(self)
 
+        def setStat(self,s):
+            l,func = {'C': ('C stat',self.fitter.cstat), 'chisq': ('\u03C7\u00B2',self.fitter.chisq)}[s]
+            self.fitter.setStat(func)
+            try:
+                self.fstatistic.set('{} = {}'.format(l,self.fitter.stat(self.fitter.result)))
+            except AttributeError: 
+                self.fstatistic.set('{} = {}'.format(l,"Not calculated yet."))
+
         def modelLoaded(self):
             self.datatitle.set(self.fitter.current)
+            self.calc(draw=False)
             self.params.draw()
-            self.calc()
 
         def toggleParam(self,index,param):
             if self.thawedDict[(index,param)][0].get():
@@ -254,7 +264,6 @@ if True or __name__ == "__main__":
                         messagebox.showerror("Failed to load session model!",'Model contains Xspec component, but heasarc not detected!')
                     else: raise
                 except KeyError: 
-                    if self.debug: raise 
                     pass
                 finally:
                     try: m.destroy()
@@ -402,7 +411,7 @@ if True or __name__ == "__main__":
         def ring(self):
             ring()
 
-        def calc(self):
+        def calc(self,draw=True):
             m = runMsg(self)
             try:
                 if not self.fitter.plotmodel.any():
@@ -412,8 +421,9 @@ if True or __name__ == "__main__":
                 self.refreshPlot()
             except (AttributeError,self.fitter.dataResponseMismatch): pass
             finally:
-                self.params.relabel()
-                self.params.resetErrors()
+                if draw:
+                    self.params.relabel()
+                    self.params.resetErrors()
                 self.ranfit = False
                 self.ring()
                 m.destroy()
@@ -442,6 +452,9 @@ if True or __name__ == "__main__":
             except AttributeError: 
                 messagebox.showerror('Failed fit!',"No fitting method!")
                 if self.debug: raise
+            except ValueError as e:
+                if not str(e).startswith("-E- Failed fit with:"): raise
+                messagebox.showerror('Failed fit!',str(e).split(':',1)[1])
             except RuntimeError:
                 messagebox.showerror('Failed fit!',"Can't converge, too many free parameters?")
                 if self.debug: raise
@@ -449,10 +462,9 @@ if True or __name__ == "__main__":
                 messagebox.showerror('Failed fit!',e)
                 raise
             finally:
-                if not self.debug:
-                    self.params.relabel()
-                    self.params.resetErrors()
-                    self.ring()
+                self.params.relabel()
+                self.params.resetErrors()
+                self.ring()
                 m.destroy()
             try:
                 for index,param in thawed:

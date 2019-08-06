@@ -1,4 +1,4 @@
-from tkinter import Button,Menubutton,N,S,W,E,Menu
+from tkinter import Button,Menubutton,N,S,W,E,Menu,StringVar
 from .entrywindows import (zoomReader, rebinReader, ignoreReader, 
                           Save, paramReader, zReader, rangeReader, 
                           strReader, ionLabeler,setEps)

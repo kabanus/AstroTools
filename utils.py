@@ -71,14 +71,19 @@ def lookin(module,string,nodir = False):
     for x in lst:
         if string.lower() in x.lower(): print(x)
 
-def frange(stop,start=None,step=1):
-    if start != None:
-        tmp   = stop
-        stop  = start
-        start = tmp
+def frange(stop,start=None,step=1,decimals=None):
+    if start is not None:
+        start, stop = stop, start
     else: start = 0
+    if decimals is None:
+        decimals = 0
+        for x in (start,step):
+            if x is None: continue
+            strx = str(x).split('.')
+            cdec = 0 if len(strx) == 1 else len(strx[1]) 
+            decimals = max(decimals,cdec)
     while start < stop:
-        yield start
+        yield round(start,decimals)
         start += step
 
 def raToSex(coord):

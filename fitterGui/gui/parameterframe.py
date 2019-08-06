@@ -172,6 +172,8 @@ class parameterFrame(object):
         self.parent.dataCanvas.update_idletasks()
         try: 
             self.parent.statistic.set("Reduced \u03C7\u00B2: " + str(self.parent.fitter.reduced_chisq()))
+            l = {'cstat':'C','chisq':'\u03C7\u00B2'}[self.parent.fitter.stat.__name__]
+            self.parent.fstatistic.set("{} = {}".format(l,self.parent.fitter.stat(self.parent.fitter.result)))
         except (AttributeError,IndexError): pass
 
     def draw(self):

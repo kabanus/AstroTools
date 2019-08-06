@@ -1,15 +1,19 @@
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit,minimize
+from numpy import log,nan,diag,sqrt,isfinite,isnan
 
 class NotAModel(Exception): pass
 
-def chisq(self):
-    try:
-        return sum((self.data.cts(row = True)-self.result)**2/self.data.errors(row = True)**2)
-    except ValueError:
-        return float('nan')
+def chisq(self,result):
+    return ((self.data.cts(row = True)-result)**2/self.data.errors(row = True)**2).sum()
+
+def cstat(self,result):
+    data   = self.data.counts
+    result = result*self.data.exposure
+    C = result+data*(log(data)-log(result)-1)
+    return 2*C[~isnan(C)].sum()
 
 def reduced_chisq(self):
-    return self.chisq()/(len(self.data.channels)-len(self.getThawed()))
+    return self.chisq(self.result)/(len(self.data.channels)-len(self.getThawed()))
 
 def append(self, *args):
     for model in args:
@@ -41,6 +45,9 @@ def energies(self):
 def tofit(self, elist, *args):
     res = self.current.tofit(elist,*args)
     return self.resp.convolve_channels(res)
+def toMinimize(self, args):
+    s = self.stat(self.tofit(self.energies(),*args))
+    return s
 
 def fit(self):
     model = self.current
@@ -48,9 +55,13 @@ def fit(self):
    
     bestfit,self.errs = curve_fit(self.tofit,self.energies(),self.data.cts(row = True),
                                   p0=args,sigma=self.data.errors(row = True),absolute_sigma=True,epsfcn=self.eps)
-
-    self.stderr  = dict(zip(model.getThawed(),
+    self.stderr = dict(zip(model.getThawed(),
                     [self.errs[j][j]**0.5 for j in range(len(self.errs))]))
-   
+    #ftol = 2.220446049250313e-09
+    #bestfit = minimize(self.toMinimize,args,method="L-BFGS-B",options={'ftol':ftol})
+    #if not bestfit.success:
+    #    raise ValueError("-E- Failed fit with: "+bestfit.message.decode('unicode-escape'))
+    #self.stderr = dict(zip(model.getThawed(),sqrt(abs(max(1,bestfit.fun)*ftol*diag(bestfit.hess_inv.todense())))))
+    #self.calc(dict(zip(model.getThawed(),bestfit.x)))
     self.calc(dict(zip(model.getThawed(),bestfit)))
 

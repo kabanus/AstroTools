@@ -45,6 +45,6 @@ rm table*
 sed -i 's|\s\+| |g' xitable.dat
 sed -i 's|^ ||g' xitable.dat
 sed -i '/^\s*$/d' xitable.dat
-$BASH_SOURCE/fixtable.py 
+$(dirname $(realpath $0))/fixtable.py 
 mv res.dat xitable.dat
 
