@@ -286,7 +286,6 @@ class PlotMaker:
         self.axes.tick_params(axis='both',top=True,right=True,which='both')
         self.x = self.axis('x',self.axes)
         self.y = self.axis('y',self.axes)
-        self.col = 0
         self.plots = list()
         self.clearPlots()
         if no_picker:
@@ -348,7 +347,7 @@ class PlotMaker:
     #scatter makes scatter plots.
     def plotCurves(self,*args,**kwargs):
         if 'help' in kwargs:
-            print('Options not passed to matplotlib: plotype, scatter,chain,stepx,stepy,histogram,marker')
+            print('Options not passed to matplotlib: plotype, scatter,chain,histogram,marker,onecolor')
             args = None
         if not args: return
 
@@ -361,10 +360,8 @@ class PlotMaker:
 
         scatter = kwargs.pop('scatter',False)
         chain = kwargs.pop('chain',False)
-        stepx = kwargs.pop('stepx',None)
-        stepy = kwargs.pop('stepy',None)
         histogram = kwargs.pop('histogram',False)
-        onecolor = kwargs.pop('onecolor',False)
+        onecolor = kwargs.pop('onecolor',None)
         if 'marker' not in kwargs:
             if not chain:
                 self.cmarker = cycle(self.markers)
@@ -382,56 +379,67 @@ class PlotMaker:
 
         my = mx = float("Inf")
         My = Mx = float("-Inf")
-       
-        self.col = 0
-        if not onecolor:
-            col_step = 1.0/len(args)
-            if chain:
-                col_step = 1.0/(len(self.plots)+len(args))
-                for child in self.plots:
-                    child[0].set_color([self.col,0,1-self.col])
-                    for echild in child[1]+child[2]:
-                        echild.set_color([self.col,0,1-self.col])
-                    self.col += col_step
-
+      
+        plots = []
         for c in args:
             iserr = False
-            errs  = {'x': None, 'y': None}
+            errs  = {'x': [], 'y': []}
+            data  = {'x': [], 'y': []}
             index = 0
+            lindex= 0
             try:
-                for letter in plotype:
-                    if letter == 'd':
-                        iserr = True
-                        continue
-                    if iserr:
-                        iserr = False
-                        if errs[letter] is not None: 
-                              errs[letter] = np.vstack((errs[letter],c[:,index]))
-                        else: errs[letter] = c[:,index]
-                    else:
-                        if   letter == 'x': xdata = c[:,index]
-                        elif letter == 'y': ydata = c[:,index]
-                        else: raise KeyError()
-                    index += 1
-            except KeyError:
+                while index < c.shape[1]:
+                    for axis in ('x','y')[(index>0):]:
+                        letter = plotype[lindex]
+                        if letter != axis: raise KeyError()
+                        data[axis].append(c[:,index])
+                        index += 1
+                        lindex += 1
+
+                        err = None
+                        while lindex < len(plotype) and plotype[lindex] == 'd':
+                            letter = plotype[lindex+1]
+                            if letter != axis: raise KeyError()
+                            if err is not None: 
+                                  err = np.vstack((errs[letter],c[:,index]))
+                            else: err = c[:,index]
+                            index += 1
+                            lindex += 2
+                        errs[axis].append(err)
+                    if lindex < len(plotype):
+                        raise IndexError()
+                    lindex = plotype.index('y')
+                if not data['y']:
+                    raise KeyError()
+                if histogram and (errs['x'] or errs['y']):
+                    raise ValueError('Cannot use histogram with error bars!')
+            except (KeyError,IndexError):
                 raise ValueError("Bad plotype! Use 'x[dxdx]y[dydy]'")
             
-            color = [self.col,0,1-self.col]
-            try:
-                color = kwargs.pop('color')
-            except KeyError: pass
-            if not histogram:
-                plot = self.axes.errorbar(xdata,ydata,xerr=errs['x'],yerr=errs['y'],
-                        capsize = 0,elinewidth=kwargs['linewidth'],ecolor=color,
-                        color=color,rasterized=True,**kwargs)
-            else:
-                kwargs.pop('marker')
-                kwargs.pop('fillstyle')
-                kwargs['fill'] = False
-                plot = self.axes.bar(xdata,ydata,**kwargs)
-            self.plots.append(plot)
-            if scatter: plot[0].set_linestyle("")
-            if not onecolor: self.col += col_step
+            xdata, xerr = data['x'][0],errs['x'][0]
+            for ydata,yerr in zip(data['y'],errs['y']):
+                if not histogram:
+                    plot = self.axes.errorbar(xdata,ydata,xerr=xerr,yerr=yerr,
+                            color=onecolor,ecolor=onecolor,
+                            capsize = 0,elinewidth=kwargs['linewidth'],rasterized=True,**kwargs)
+                else:
+                    kwargs.pop('marker')
+                    kwargs.pop('fillstyle')
+                    kwargs['fill'] = False
+                    plot = self.axes.bar(xdata,ydata,**kwargs)
+                plots.append(plot)
+                if scatter: plot[0].set_linestyle("")
+
+        self.plots.extend(plots)
+        if onecolor is None:
+            col = 0
+            if chain: plots = self.plots
+            col_step = 1.0/len(plots)
+            for child in plots:
+                child[0].set_color([col,0,1-col])
+                for echild in child[1]+child[2]:
+                    echild.set_color([col,0,1-col])
+                col += col_step
         plt.draw()
 
     def title(self,title,**kwargs):
