@@ -178,10 +178,12 @@ class parameterFrame(object):
         self.parent.dataCanvas.update_idletasks()
         try:
             self.parent.statistic.set(u"Reduced \u03C7\u00B2: " + str(self.parent.fitter.reduced_chisq()))
-            lab = {u'cstat': 'C', 'chisq': '\u03C7\u00B2'}[self.parent.fitter.stat.__name__]
+            lab = {u'cstat': 'C', 'chisq': u'\u03C7\u00B2'}[self.parent.fitter.stat.__name__]
             self.parent.fstatistic.set("{} = {}".format(lab, self.parent.fitter.stat(self.parent.fitter.result)))
         except (AttributeError, IndexError):
             pass
+        except ValueError:
+            messagebox.showwarning("No Response", "Model loaded, but no response yet, so can't calculate or plot.")
 
     def draw(self):
         while self.parent.paramLabels:
@@ -231,3 +233,5 @@ class parameterFrame(object):
             self.parent.statistic.set(u"Reduced \u03C7\u00B2: " + str(self.parent.fitter.reduced_chisq()))
         except (AttributeError, IndexError):
             pass
+        except ValueError:
+            messagebox.showwarning("No Response", "Model loaded, but no response yet, so can't calculate or plot.")

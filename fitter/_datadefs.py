@@ -35,7 +35,10 @@ def updateIonLabels(self, shift=None):
     self.ionlabs = []
     ions = iter(self.ionlocations)
     emin, emax = self.resp.minebounds, self.resp.maxebounds
-    channeliter = iter(list(range(len(emin))))
+    channeliter = iter(range(len(emin)))
+    if emin[0] < emin[1]:
+        channeliter = iter(range(len(emin))[::-1])
+
     try:
         while True:
             channel = next(channeliter)
@@ -128,23 +131,25 @@ def notice(self, minX, maxX, noplot=False):
 def set_channels(self, minX, maxX, what, noplot):
     try:
         self.checkLoaded()
-        if self.ptype == self.CHANNEL:
-            if self.data.asciiflag:
-                channels = list(where((self.data.channels >= minX) & (self.data.channels <= maxX))[0])
-            else:
-                channels = list(range(minX, maxX+1))
-        if self.ptype == self.ENERGY:
-            channels = list(self.resp.energy_to_channel(minX, maxX))
-        if self.ptype == self.WAVE:
-            channels = list(self.resp.wl_to_channel(minX, maxX))
-        for fitshandler in (self.data, self.resp):
-            fitshandler.__class__.__dict__[what](fitshandler, channels)
-        if self.area.any():
-            self.area = self.resp.eff
-        if not channels:
-            return
+        if self.data.asciiflag:
+            if self.ptype == self.WAVE:
+                minX, maxX = Response.keVAfac/maxX, Response.keVAfac/minX
+            channels = list(where((self.data.channels >= minX) & (self.data.channels <= maxX))[0])
+            self.data.__class__.__dict__[what](self.data, channels)
+        else:
+            if self.ptype == self.CHANNEL:
+                    channels = list(range(minX, maxX+1))
+            if self.ptype == self.ENERGY:
+                channels = list(self.resp.energy_to_channel(minX, maxX))
+            if self.ptype == self.WAVE:
+                channels = list(self.resp.wl_to_channel(minX, maxX))
+            for fitshandler in (self.data, self.resp):
+                fitshandler.__class__.__dict__[what](fitshandler, channels)
+            if self.area.any():
+                self.area = self.resp.eff
+            if not channels:
+                return
 
-        if not self.data.asciiflag:
             minC = channels[0]
             maxC = channels[-1]
             total = maxC-minC+1

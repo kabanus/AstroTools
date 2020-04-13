@@ -1,9 +1,3 @@
-'''
-Created on Mar 15, 2013
-
-@author: kabanus
-'''
-
 from tkinter import LEFT, N, S, E, W, Button, Toplevel, Frame, Entry, Label, Text
 from tkinter.font import Font
 from .helperfunctions import getfile

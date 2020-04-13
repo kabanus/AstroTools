@@ -105,6 +105,9 @@ class Gui(object):
                 "<r>", lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.loadResp)))
         self.parent.canvas.get_tk_widget().bind(
                 "<t>", lambda event: self.parent.doAndPlot(lambda: self.parent.load(self.parent.fitter.transmit)))
+        self.parent.canvas.get_tk_widget().bind(
+                "<a>", lambda event: self.parent.doAndPlot(lambda: self.parent.load(
+                            lambda fname: self.parent.fitter.loadData(fname, " "))))
         self.parent.canvas.get_tk_widget().bind("<i>", lambda event: ignoreReader(self.parent, 'ignore'))
         self.parent.canvas.get_tk_widget().bind("<n>", lambda event: ignoreReader(self.parent, 'notice'))
         self.parent.canvas.get_tk_widget().bind("<z>", lambda event: zoomReader(self.parent))

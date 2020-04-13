@@ -1,4 +1,4 @@
-from tkinter import Frame, N, S, E, W, Button, Label, BOTH, Canvas, Scrollbar, Menubutton, Menu
+from tkinter import Frame, N, S, E, W, Button, BOTH, Canvas, Scrollbar, Menubutton, Menu
 from tkinter.filedialog import askopenfilename
 from os import path
 ALL = N+S+E+W
@@ -8,6 +8,7 @@ def make_frames(self):
     # Prevent circular imports
     from .commandline import commandLine
     from .debugConsole import DebugConsole
+    from .simplewindows import WrappingLabel
     self.main = Frame(self.root, bg='navyblue')
     self.main.grid(row=0, rowspan=2, column=0, columnspan=2, sticky=ALL)
     bgcol = 'aliceblue'
@@ -30,8 +31,8 @@ def make_frames(self):
     self.info_frame = Frame(self.root)
     self.info_frame.grid(row=1, column=2, sticky=ALL)
     self.info_frame.columnconfigure(1, weight=1)
-    info_font = ('courier', 12, 'bold')
-    info_wrap = 370
+    info_font = ('Courier', 12, 'bold')
+
     # Statistic choice
     mb = Menubutton(self.info_frame, text="Statistic:", font=info_font,
                     direction='above', bg=bgcol, anchor=W, relief='raised')
@@ -41,28 +42,34 @@ def make_frames(self):
     m.add_command(label=u'\u03C7\u00B2', command=lambda: self.setStat('chisq'))
     m.add_command(label='C stat', command=lambda: self.setStat('C'))
 
-    Label(self.info_frame, textvariable=self.fstatistic, font=info_font, wraplength=info_wrap, bg=bgcol, anchor=W
-          ).grid(column=1, row=0, sticky=ALL)
-    Label(self.info_frame, textvariable=self.statistic, font=info_font, wraplength=info_wrap, bg=bgcol, anchor=W
-          ).grid(column=0, row=1, columnspan=2, sticky=ALL)
-    Label(self.info_frame, textvariable=self.ignored, font=info_font, wraplength=info_wrap, bg=bgcol, anchor=W
-          ).grid(column=0, row=2, columnspan=2, sticky=ALL)
-    Label(self.info_frame, textvariable=self.grouped, font=info_font, wraplength=info_wrap, bg=bgcol, anchor=W
-          ).grid(column=0, row=3, columnspan=2, sticky=ALL)
+    WrappingLabel(self.info_frame, textvariable=self.fstatistic, font=info_font, bg=bgcol, anchor=W
+                  ).grid(column=1, row=0, sticky=ALL)
+    WrappingLabel(self.info_frame, textvariable=self.statistic, font=info_font, bg=bgcol, anchor=W
+                  ).grid(column=0, row=1, columnspan=2, sticky=ALL)
+    WrappingLabel(self.info_frame, textvariable=self.ignored, font=info_font, bg=bgcol, anchor=W
+                  ).grid(column=0, row=2, columnspan=2, sticky=ALL)
+    WrappingLabel(self.info_frame, textvariable=self.grouped, font=info_font, bg=bgcol, anchor=W
+                  ).grid(column=0, row=3, columnspan=2, sticky=ALL)
 
     self.data_frame = Frame(self.root)
     self.data_frame.grid(row=0, column=2, sticky=ALL)
     self.data_frame.rowconfigure(0, weight=1)
-    self.dataCanvas = Canvas(self.data_frame, bg=bgcol)
+    self.data_frame.columnconfigure(0, weight=1)
+    self.dataCanvas = Canvas(self.data_frame)
     self.dataCanvas.grid(row=0, column=0, sticky=ALL)
-    self.dataCanvas.columnconfigure(0, weight=1)
-
     self.canvasDataFrame, self.scrollbar = genScrollCanvas(self.root, self.data_frame, self.dataCanvas)
-    self.scrollbar.grid(row=0, column=2, sticky=ALL)
+    self.scrollbar.grid(row=0, column=1, sticky=ALL)
     self.canvasDataFrame.configure(bg=bgcol)
 
-    Label(self.canvasDataFrame, textvariable=self.datatitle, font=('courier', 12, 'bold underline'),
-          wraplength=370, bg=bgcol, anchor=N).grid(row=0, column=0, columnspan=4, sticky=N)
+    def expand_canvas(e, w=self.canvasDataFrame, safety=[0]):
+        e.widget.grid(row=0, column=0, sticky=ALL)
+        w.pack(side='left', expand=True, fill=BOTH)
+        e.widget.unbind('<Configure>')
+
+    self.dataCanvas.bind('<Configure>', expand_canvas)
+
+    WrappingLabel(self.canvasDataFrame, textvariable=self.datatitle, font=('courier', 12, 'bold underline'),
+                  bg=bgcol, anchor=N).grid(row=0, column=0, columnspan=4, sticky=ALL)
     self.paramLavels = {}
 
     if self.debug:
@@ -77,6 +84,7 @@ def genScrollCanvas(root, root_frame, canvas):
     canvas.bind("<Configure>", updateFrame)
     canvas_frame = Frame(canvas)
     canvas_frame.pack(fill=BOTH, expand=True, side="left")
+
     # Catch both windows and linux
     root.bind("<Button-4>", onscroll(canvas, -1).do)
     root.bind("<Button-5>", onscroll(canvas, 1).do)

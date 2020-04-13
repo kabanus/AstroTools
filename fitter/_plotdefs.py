@@ -190,7 +190,7 @@ def plotDiv(self, other=None):
 
 
 def _writePlot(table):
-    "\n".join((" ".join((str(x) for x in line)) for line in table))
+    return "\n".join((" ".join((str(x) for x in line)) for line in table))
 
 
 def _plotOrSave(save=None, model=None, data=None):

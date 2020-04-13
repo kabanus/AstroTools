@@ -3,7 +3,7 @@ import tkinter.messagebox as messagebox
 from .helperfunctions import updateFrame, genScrollCanvas
 
 
-class simpleWindow(object):
+class simpleWindow:
     def __init__(self, parent, check, field, title):
         try:
             if check.find("data") > -1:
@@ -202,3 +202,17 @@ class runMsg:
 
     def destroy(self):
         self.root.destroy()
+
+
+class WrappingLabel(Label):
+    def __init__(self, parent, **kwargs):
+        Label.__init__(self, parent, **kwargs)
+        self.parent = parent
+
+        def wrap(e, s=self.parent):
+            old_wrap = int(str(self.cget('wraplength')))
+            self.config(wraplength=s.winfo_width())
+            if int(str(self.cget('wraplength'))) <= old_wrap:
+                e.widget.unbind('<Configure>')
+
+        self.bind('<Configure>', wrap)

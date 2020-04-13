@@ -51,7 +51,31 @@ class fitsHandler(object):
         return res
 
 
-class Response(fitsHandler):
+class WlConverter:
+    keVAfac = 12.39842
+
+    def wl(self, table, xonly=False):
+        wave = self.energy(table, xonly)
+        try:
+            return self.keVAfac/float(wave)
+        except TypeError:
+            pass
+        E = wave[:, 0]
+        dltodE = self.keVAfac/E**2
+        wave[:, 0] = self.keVAfac/E
+        if xonly:
+            if len(wave[0]) == 4:
+                wave[:, 1] *= dltodE
+            return wave
+        if len(wave[0]) == 4:
+            wave[:, 1] *= dltodE  # dl
+            wave[:, 2:] /= dltodE.reshape(-1, 1)
+            return wave
+        wave[:, 1] /= dltodE
+        return wave
+
+
+class Response(fitsHandler, WlConverter):
     def __init__(self, response):
         fitsio = fits.open(response)
         self.ominebounds = array(list(fitsio['EBOUNDS'].data))[:, 1]
@@ -144,7 +168,7 @@ class Response(fitsHandler):
     def convolve_channels(self, vector):
         return dot(self.matrix, vector*self.ebins)
 
-    def _to_channel(self, minX, maxX):
+    def energy_to_channel(self, minX, maxX):
         minE = self.minebounds
         maxE = self.maxebounds
         if minX == maxX:
@@ -153,14 +177,9 @@ class Response(fitsHandler):
             res = where((minX <= maxE) & (maxX > minE))[0]
         return res+1
 
-    keVAfac = 12.39842
-
     def wl_to_channel(self, minX, maxX):
         newMax = self.keVAfac/minX if minX else inf
-        return self._to_channel(self.keVAfac/maxX, newMax)
-
-    def energy_to_channel(self, minX, maxX):
-        return self._to_channel(minX, maxX)
+        return self.energy_to_channel(self.keVAfac/maxX, newMax)
 
     def energy(self, table=None, xonly=False):
         try:
@@ -184,50 +203,33 @@ class Response(fitsHandler):
             return ndconc((energy, eerror, cts, error), axis=1)
         return ndappend(energy, cts, axis=1)
 
-    def wl(self, table, xonly=False):
-        wave = self.energy(table, xonly)
-        try:
-            return self.keVAfac/float(wave)
-        except TypeError:
-            pass
-        E = wave[:, 0]
-        dltodE = self.keVAfac/E**2
-        wave[:, 0] = self.keVAfac/E
-        if xonly:
-            if len(wave[0]) == 4:
-                wave[:, 1] *= dltodE
-            return wave
-        if len(wave[0]) == 4:
-            wave[:, 1] *= dltodE  # dl
-            wave[:, 2:] /= dltodE.reshape(-1, 1)
-            return wave
-        wave[:, 1] /= dltodE
-        return wave
 
-
-class FakeResponse(object):
+class FakeResponse(WlConverter):
     def __init__(self, axis):
         self.ebinAvg = array(axis)
         self.eff = ones(len(axis))
 
     def energy(self, table=None, xonly=False):
+        if xonly:
+            if len(table[0]) > 2:
+                return table[:, [0, 1]]
+            return table[:, 0]
         return table
 
-    def wl(self, table=None, xonly=False):
-        return table
+    def energy_to_channel(self, minX, maxX):
+        return []
+
+    def wl_to_channel(self, minX, maxX):
+        return []
+
+    def ignore(self, channels):
+        pass
+
+    def notice(self, channels):
+        pass
 
     def convolve_channels(self, vector):
         return vector
-
-    def ignore(self, channels): return
-
-    def notice(self, channels): return
-
-    def wl_to_channel(self, minX, maxX):
-        raise NotImplementedError("Can't ignore when using a text file as data.")
-
-    def energy_to_channel(self, minX, maxX):
-        raise NotImplementedError("Can't ignore when using a text file as data.")
 
 
 class Data(fitsHandler):
