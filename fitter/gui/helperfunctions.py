@@ -55,18 +55,11 @@ def make_frames(self):
     self.data_frame.grid(row=0, column=2, sticky=ALL)
     self.data_frame.rowconfigure(0, weight=1)
     self.data_frame.columnconfigure(0, weight=1)
-    self.dataCanvas = Canvas(self.data_frame)
+    self.dataCanvas = Canvas(self.data_frame, bg=bgcol)
     self.dataCanvas.grid(row=0, column=0, sticky=ALL)
     self.canvasDataFrame, self.scrollbar = genScrollCanvas(self.root, self.data_frame, self.dataCanvas)
     self.scrollbar.grid(row=0, column=1, sticky=ALL)
     self.canvasDataFrame.configure(bg=bgcol)
-
-    def expand_canvas(e, w=self.canvasDataFrame, safety=[0]):
-        e.widget.grid(row=0, column=0, sticky=ALL)
-        w.pack(side='left', expand=True, fill=BOTH)
-        e.widget.unbind('<Configure>')
-
-    self.dataCanvas.bind('<Configure>', expand_canvas)
 
     WrappingLabel(self.canvasDataFrame, textvariable=self.datatitle, font=('courier', 12, 'bold underline'),
                   bg=bgcol, anchor=N).grid(row=0, column=0, columnspan=4, sticky=ALL)
@@ -78,18 +71,24 @@ def make_frames(self):
                                      {'App': self}, self._quit)
 
 
+def updateFrame(event, win_id=None):
+    if win_id is not None:
+        event.widget.itemconfig(win_id, width=event.width)
+    event.widget.configure(scrollregion=event.widget.bbox('all'))
+
+
 def genScrollCanvas(root, root_frame, canvas):
     scrollbar = Scrollbar(root_frame, command=canvas.yview)
     canvas.configure(yscrollcommand=scrollbar.set)
-    canvas.bind("<Configure>", updateFrame)
     canvas_frame = Frame(canvas)
     canvas_frame.pack(fill=BOTH, expand=True, side="left")
+    win_id = canvas.create_window((0, 0), window=canvas_frame, anchor='nw')
+    canvas.bind("<Configure>", lambda e, w=win_id: updateFrame(e, w))
 
     # Catch both windows and linux
     root.bind("<Button-4>", onscroll(canvas, -1).do)
     root.bind("<Button-5>", onscroll(canvas, 1).do)
     root.bind("<MouseWheel>", onscroll(canvas, 0).do)
-    canvas.create_window((0, 0), window=canvas_frame, anchor='nw')
     return canvas_frame, scrollbar
 
 
@@ -103,10 +102,6 @@ class onscroll(object):
         if not direct:
             direct = -1*event.delta/120
         self.canvas.yview_scroll(direct, "units")
-
-
-def updateFrame(event):
-    event.widget.configure(scrollregion=event.widget.bbox('all'))
 
 
 def getfile(*defaults):
