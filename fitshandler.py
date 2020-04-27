@@ -7,7 +7,7 @@ from numpy import int as ndint
 from numpy import max as ndmax
 from numpy import append as ndappend
 from numpy import concatenate as ndconc
-from numpy import array, dot, inf, delete, sort, zeros, where, arange, indices
+from numpy import array, dot, inf, delete, sort, zeros, where, arange, indices, argsort
 from numpy import unravel_index, argmax, isnan, ones, fromfile, array_equal
 from numpy import loadtxt
 from matplotlib.pyplot import show, figure, Circle
@@ -51,31 +51,9 @@ class fitsHandler(object):
         return res
 
 
-class WlConverter:
+class Response(fitsHandler):
     keVAfac = 12.39842
 
-    def wl(self, table, xonly=False):
-        wave = self.energy(table, xonly)
-        try:
-            return self.keVAfac/float(wave)
-        except TypeError:
-            pass
-        E = wave[:, 0]
-        dltodE = self.keVAfac/E**2
-        wave[:, 0] = self.keVAfac/E
-        if xonly:
-            if len(wave[0]) == 4:
-                wave[:, 1] *= dltodE
-            return wave
-        if len(wave[0]) == 4:
-            wave[:, 1] *= dltodE  # dl
-            wave[:, 2:] /= dltodE.reshape(-1, 1)
-            return wave
-        wave[:, 1] /= dltodE
-        return wave
-
-
-class Response(fitsHandler, WlConverter):
     def __init__(self, response):
         fitsio = fits.open(response)
         self.ominebounds = array(list(fitsio['EBOUNDS'].data))[:, 1]
@@ -181,6 +159,26 @@ class Response(fitsHandler, WlConverter):
         newMax = self.keVAfac/minX if minX else inf
         return self.energy_to_channel(self.keVAfac/maxX, newMax)
 
+    def wl(self, table, xonly=False):
+        wave = self.energy(table, xonly)
+        try:
+            return self.keVAfac/float(wave)
+        except TypeError:
+            pass
+        E = wave[:, 0]
+        dltodE = self.keVAfac/E**2
+        wave[:, 0] = self.keVAfac/E
+        if xonly:
+            if len(wave[0]) == 4:
+                wave[:, 1] *= dltodE
+            return wave
+        if len(wave[0]) == 4:
+            wave[:, 1] *= dltodE  # dl
+            wave[:, 2:] /= dltodE.reshape(-1, 1)
+            return wave
+        wave[:, 1] /= dltodE
+        return wave
+
     def energy(self, table=None, xonly=False):
         try:
             return ((self.maxebounds+self.minebounds)*0.5)[int(table)-1]
@@ -204,23 +202,16 @@ class Response(fitsHandler, WlConverter):
         return ndappend(energy, cts, axis=1)
 
 
-class FakeResponse(WlConverter):
-    def __init__(self, axis):
+class FakeResponse(Response):
+    def __init__(self, axis, minE, maxE):
         self.ebinAvg = array(axis)
+        self.minebounds = minE
+        self.maxebounds = maxE
         self.eff = ones(len(axis))
 
     def energy(self, table=None, xonly=False):
-        if xonly:
-            if len(table[0]) > 2:
-                return table[:, [0, 1]]
-            return table[:, 0]
-        return table
-
-    def energy_to_channel(self, minX, maxX):
-        return []
-
-    def wl_to_channel(self, minX, maxX):
-        return []
+        channels = array(range(len(table)))+1
+        return super().energy(ndconc([channels[:, None], table[:, -2:]], axis=1), xonly)
 
     def ignore(self, channels):
         pass
@@ -314,13 +305,18 @@ class Data(fitsHandler):
             data = loadtxt(fname)
         except ValueError:
             data = loadtxt(fname, skiprows=1)
+            data = data[argsort(data[:, 0])]
 
         if data.shape[1] == 4:
-            self.ochannels, _, self.ocounts, self.errorarray = data.T
+            self.minE, self.maxE, self.ocounts, self.errorarray = data.T
+            self.ochannels = (self.minE + self.maxE)/2
         else:
             self.ochannels, self.ocounts, self.errorarray = data.T
-        self.ocounts = self.ocounts
-        self.ochannels = self.ochannels
+            bounds = ndconc([[1.5*self.ochannels[0] - 0.5*self.ochannels[1]],
+                            (self.ochannels[:-1] + self.ochannels[1:])/2,
+                            [0.5*self.ochannels[-1] + self.ochannels[-1]/2]])
+            self.minE, self.maxE = bounds[:-1], bounds[1:]
+
         self.oscales = ones(data.shape[0]).astype('float64')
         self.obscales = ones(data.shape[0]).astype('float64')
         self.errorarray = self.errorarray

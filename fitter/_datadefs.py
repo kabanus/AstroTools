@@ -76,7 +76,7 @@ def loadData(self, data, text=None):
                 pass
 
     if text is not None:
-        self.resp = FakeResponse(self.data.channels)
+        self.resp = FakeResponse(self.data.channels, self.data.minE, self.data.maxE)
 
     self.checkLoaded()
     self.area = array(())
