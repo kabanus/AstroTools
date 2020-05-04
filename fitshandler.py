@@ -8,7 +8,7 @@ from numpy import max as ndmax
 from numpy import append as ndappend
 from numpy import concatenate as ndconc
 from numpy import array, dot, inf, delete, sort, zeros, where, arange, indices, argsort
-from numpy import unravel_index, argmax, isnan, ones, fromfile, array_equal
+from numpy import unravel_index, argmax, isnan, ones, fromfile, array_equal, identity
 from numpy import loadtxt
 from matplotlib.pyplot import show, figure, Circle
 
@@ -205,9 +205,12 @@ class Response(fitsHandler):
 class FakeResponse(Response):
     def __init__(self, axis, minE, maxE):
         self.ebinAvg = array(axis)
-        self.minebounds = minE
-        self.maxebounds = maxE
-        self.eff = ones(len(axis))
+        self.ominebounds = minE
+        self.omaxebounds = maxE
+        self.omatrix = identity(len(axis))
+        self.oeff = ones(len(axis))
+        self.roeff = array([])
+        self.reset()
 
     def energy(self, table=None, xonly=False):
         channels = array(range(len(table)))+1

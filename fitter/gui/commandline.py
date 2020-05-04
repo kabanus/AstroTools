@@ -108,9 +108,9 @@ class commandLine(object):
             return
 
         try:
-            res = event.widget.get().split(', ')
+            res = event.widget.get().split(',')
         except AttributeError:
-            res = event.split(', ')
+            res = event.split(',')
 
         m = runMsg(self.parent, 'Parsing commands...')
         needReset = False
