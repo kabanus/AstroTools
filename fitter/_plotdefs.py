@@ -37,9 +37,9 @@ def loadIonPositions(self):
     suffix = ['$\\alpha$', '$\\beta$', '$\\gamma$']
     self.ionlocations = sorted(
         sum([[[t[0], ion+a, i] if i > 0.5 else [1000*keVAfac/t[0], ion, i]
-            for i, a, t in zip(list(range(1, len(ions[ion].l)+1)) + [0.5, ]*len(ions[ion].e),
-                               suffix[:len(ions[ion].l)] + ['', ]*len(ions[ion].e),
-                               ions[ion].l + ions[ion].e)]
+            for i, a, t in zip(list(range(1, len(ions[ion].lines)+1)) + [0.5, ]*len(ions[ion].e),
+                               suffix[:len(ions[ion].lines)] + ['', ]*len(ions[ion].e),
+                               ions[ion].lines + ions[ion].e)]
             for ion in ions], []))
 
 
