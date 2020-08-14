@@ -56,13 +56,13 @@ def updateIonLabels(self, shift=None):
         pass
 
 
-def loadData(self, data, text=None):
+def loadData(self, data, text=None, device=None):
     try:
         self.resp = None
         self.data.resp = None
     except AttributeError:
         pass
-    self.data = Data(data, text=text)
+    self.data = Data(data, text=text, device=device)
     for key in ('resp', 'back', 'ancr'):
         if self.data.__dict__[key] is not None:
             try:

@@ -1,7 +1,7 @@
 from tkinter import LEFT, N, S, E, W, Button, Toplevel, Frame, Entry, Label, Text
 from tkinter.font import Font
 from .helperfunctions import getfile
-from .entrywindows import strReader
+from .entrywindows import varReader
 from .simplewindows import runMsg
 import models
 import tkinter.messagebox as messagebox
@@ -12,10 +12,10 @@ currentReader = None
 currentXread = None
 
 
-class XspecLoader(strReader):
+class XspecLoader(varReader):
     def __init__(self):
         global currentXread
-        strReader.__init__(self, currentReader, "Enter Xspec model string")
+        varReader.__init__(self, currentReader, "Enter Xspec model string")
         if currentXread:
             currentXread.eventDestroy(None)
         currentXread = self
@@ -27,7 +27,7 @@ class XspecLoader(strReader):
         return "'"+self.string+"'"
 
     def parse(self, event):
-        self.string = strReader.parse(self, event).replace(" ", "")
+        self.string = varReader.parse(self, event).replace(" ", "")
         try:
             self.model = models.Xspec(self.string)
             self.good = True

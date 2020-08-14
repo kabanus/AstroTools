@@ -230,7 +230,10 @@ class Data(fitsHandler):
     class lengthMismatch(Exception):
         pass
 
-    def __init__(self, data, background=None, text=None):
+    class MultipleDevices(Exception):
+        pass
+
+    def __init__(self, data, background=None, text=None, device=None):
         self.ochannels = []
         self.ocounts = []
         self.oscales = []
@@ -242,7 +245,7 @@ class Data(fitsHandler):
         self.background = None
 
         if text is None:
-            self.loadFits(data)
+            self.loadFits(data, device)
         else:
             self.loadText(data)
 
@@ -250,6 +253,7 @@ class Data(fitsHandler):
         self.ocounts = array(self.ocounts)
         self.oscales = array(self.oscales)
         self.obscales = array(self.obscales)
+
         if self.ochannels[0] == 0:
             self.ochannels += 1
         self.reset()
@@ -257,7 +261,7 @@ class Data(fitsHandler):
         if background is not None:
             self.loadback(background, text)
 
-    def loadFits(self, data):
+    def loadFits(self, data, device=None):
         fitsio = fits.open(data)
         data = fitsio[1].data
         h = fitsio[1].header
@@ -276,6 +280,18 @@ class Data(fitsHandler):
         QUALITY = "QUALITY"
         AREASCAL = "AREASCAL"
         BACKSCAL = "BACKSCAL"
+
+        if len(data['CHANNEL'].shape) > 1:
+            if device is None or device < 0 or device >= data['CHANNEL'].shape[0]:
+                raise Data.MultipleDevices('Found multiple devices in data file.'
+                                           ' Please provide device index ({}-{}).'.
+                                           format(0, data['CHANNEL'].shape[0]-1))
+            data = data[device]
+            self.ochannels = data['CHANNEL'].copy()
+            self.ocounts = data['COUNTS'].copy()
+            self.oscales = ones(self.ocounts.shape)
+            self.obscales = ones(self.ocounts.shape)
+            return
 
         for record in data:
             counts = record[COUNTS]

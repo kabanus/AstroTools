@@ -40,18 +40,31 @@ class ionLabeler(entryWindow):
         self.root.destroy()
 
 
-class strReader(entryWindow):
-    def __init__(self, parent, title, action=None):
+class varReader(entryWindow):
+    def __init__(self, parent, title, action=None, type=str, catch=False):
         try:
             entryWindow.__init__(self, parent, '', "stringer", title)
         except AttributeError:
             return
         self.action = action
+        self.type = type
+        self.catch = catch
 
     def parse(self, event):
-        if self.action is None:
-            return self.entry.get()
-        self.parent.doAndPlot(lambda: self.action(self.entry.get()))
+        try:
+            try:
+                result = self.type(self.entry.get())
+            except ValueError:
+                messagebox.showerror('Bad entry!', 'Expected something convertible to {}!'.format(self.type))
+                return
+            if self.action is None:
+                return result
+            self.parent.doAndPlot(lambda: self.action(result))
+        except Exception as e:
+            print(str(e), e)
+            if self.catch:
+                return
+            raise
         self.root.destroy()
 
 

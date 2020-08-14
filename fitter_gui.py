@@ -74,7 +74,7 @@ if True or __name__ == "__main__":
     from fitter import Fitter
     from fitter.gui.modelReader import modelReader
     from fitter.gui.simplewindows import runMsg
-    from fitter.gui.entrywindows import ignoreReader, rebinReader
+    from fitter.gui.entrywindows import ignoreReader, rebinReader, varReader
     from fitter.gui.parameterframe import parameterFrame
     from fitter.gui.helperfunctions import make_frames, getfile
     from fitter.gui.gui import Gui
@@ -368,17 +368,27 @@ if True or __name__ == "__main__":
                 for p in params:
                     paramFile.write(p + '\n')
 
-        def load(self, what, res=None, user=True):
+        def load(self, what, res=None, user=True, name=None):
             if res is None:
                 res = getfile('pha', 'FTZ', 'FIT', 'ds', 'dat', 'RMF', 'RSP')
             if not res:
                 return
-            m = runMsg(self, "Loading {}...".format(what.__name__[-4:]))
+            if name is None:
+                name = what.__name__[-4:]
+            m = runMsg(self, "Loading {}...".format(name))
             try:
                 Iplot.clearPlots()
                 what(res)
             except OSError:
                 what(res, text=True)
+            except Data.MultipleDevices as e:
+                devices = [int(x) for x in str(e).split()[-1].strip('().').split('-')]
+                m.destroy()
+                z = runMsg(self, 'Attempting to load multiple device fits file - please select valid device')
+                varReader(self, 'Device ({}-{})'.
+                          format(*devices), type=int, catch=True,
+                          action=lambda dev, z=z: what(d=res, dev=dev) or z.destroy())
+                return
             except (ValueError, IOError, KeyError) as e:
                 messagebox.showerror('Bad file!', 'Please check file is correct format:\n' + str(e))
                 if self.debug:
