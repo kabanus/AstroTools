@@ -3,7 +3,7 @@ from tkinter.font import Font
 from .helperfunctions import getfile
 from .entrywindows import varReader
 from .simplewindows import runMsg
-import models
+import AstroTools.models as models
 import tkinter.messagebox as messagebox
 ALL = N+S+W+E
 

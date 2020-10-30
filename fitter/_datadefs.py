@@ -1,4 +1,4 @@
-from fitshandler import Response, Data, FakeResponse
+from AstroTools.fitshandler import Response, Data, FakeResponse
 from os.path import dirname, join
 from numpy import array, where
 

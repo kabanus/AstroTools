@@ -2,8 +2,8 @@ from tkinter import Entry, LEFT, Label, Checkbutton, IntVar
 import tkinter.messagebox as messagebox
 from .simplewindows import simpleWindow
 from numpy import finfo
-from plotInt import Iplot
-from fitshandler import FakeResponse
+from AstroTools.plotInt import Iplot
+from AstroTools.fitshandler import FakeResponse
 
 
 class entryWindow(simpleWindow):

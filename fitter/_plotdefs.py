@@ -1,9 +1,9 @@
-from plotInt import Iplot
+from AstroTools.plotInt import Iplot
 from numpy import array, concatenate
 from numpy import append as ndappend
 
-from fitshandler import Data
-from models import ibifit  # For labeling
+from AstroTools.fitshandler import Data
+from AstroTools.models import ibifit  # For labeling
 
 CHANNEL = 0
 ENERGY = 1

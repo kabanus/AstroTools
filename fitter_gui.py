@@ -69,8 +69,8 @@ if True or __name__ == "__main__":
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
     from tkinter import Tk, StringVar, LEFT, TOP, N, S, E, W, Label, BOTH
     from tkinter.messagebox import askquestion
-    from fitshandler import Data
-    from plotInt import Iplot, plt
+    from AstroTools.fitshandler import Data
+    from AstroTools.plotInt import Iplot, plt
     from fitter import Fitter
     from fitter.gui.modelReader import modelReader
     from fitter.gui.simplewindows import runMsg
@@ -379,8 +379,11 @@ if True or __name__ == "__main__":
             try:
                 Iplot.clearPlots()
                 what(res)
-            except OSError:
-                what(res, text=True)
+            except OSError as e:
+                if type(e) is FileNotFoundError:
+                    messagebox.showerror('File not found!', str(e))
+                else:
+                    what(res, text=True)
             except Data.MultipleDevices as e:
                 devices = [int(x) for x in str(e).split()[-1].strip('().').split('-')]
                 m.destroy()

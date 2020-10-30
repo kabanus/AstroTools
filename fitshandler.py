@@ -35,7 +35,7 @@ class fitsHandler(object):
         final = arr[(arr.shape[0]//rebin)*rebin:]
 
         arr = npdict[function](start, axis=1)
-        if final.any():
+        if final.size:
             arr = ndappend(arr, npdict[function](final, axis=0))
         return arr
 
